@@ -1,0 +1,115 @@
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { UserRole, Permission } from '@lrms/shared';
+import { AppLayout } from '../components/layout/AppLayout.js';
+import { ProtectedRoute } from '../components/auth/ProtectedRoute.js';
+import { LoginPage } from '../features/auth/LoginPage.js';
+import { ChangePasswordPage } from '../features/auth/ChangePasswordPage.js';
+import { UnauthorizedPage } from '../features/auth/UnauthorizedPage.js';
+import { DashboardRouter } from '../features/dashboard/DashboardRouter.js';
+import { AdmissionsPage } from '../features/admissions/AdmissionsPage.js';
+import { AdmissionDetailPage } from '../features/admissions/AdmissionDetailPage.js';
+import { BedBoardPage } from '../features/beds/BedBoardPage.js';
+import { PatientDetailPage } from '../features/patients/PatientDetailPage.js';
+import { MaternalObservationsPage } from '../features/observations/MaternalObservationsPage.js';
+import { FetalObservationsPage } from '../features/observations/FetalObservationsPage.js';
+import { EmergencyAlertsPage } from '../features/alerts/EmergencyAlertsPage.js';
+import { ReportsPage } from '../features/reports/ReportsPage.js';
+import { AuditLogsPage } from '../features/audit/AuditLogsPage.js';
+import { StaffManagementPage } from '../features/staff/StaffManagementPage.js';
+import { StaffDetailPage } from '../features/staff/StaffDetailPage.js';
+import { ShiftManagementPage } from '../features/shifts/ShiftManagementPage.js';
+
+export const AppRoutes: React.FC = () => {
+  return (
+    <Routes>
+      {/* Public Authentication Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+      {/* Password Rotation / First-Login Password Change Gate */}
+      <Route element={<ProtectedRoute allowPendingPasswordChange />}>
+        <Route path="/change-password" element={<ChangePasswordPage />} />
+      </Route>
+
+      {/* Protected Staff Application Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          {/* Dynamic Role-Based Dashboard */}
+          <Route path="/" element={<DashboardRouter />} />
+
+          {/* Patient Admission & Triage */}
+          <Route path="/admissions" element={<AdmissionsPage />} />
+          <Route element={<ProtectedRoute requiredPermission={Permission.ADMISSIONS_VIEW} />}>
+            <Route path="/admissions/:id" element={<AdmissionDetailPage />} />
+          </Route>
+
+          {/* Ward Bed Board & Turnover */}
+          <Route path="/beds" element={<BedBoardPage />} />
+
+          {/* Ward Shift Scheduling & Duty Roster */}
+          <Route path="/shifts" element={<ShiftManagementPage />} />
+
+          {/* Patient Master File */}
+          <Route element={<ProtectedRoute requiredPermission={Permission.PATIENTS_VIEW} />}>
+            <Route path="/patients/:id" element={<PatientDetailPage />} />
+          </Route>
+
+          {/* Clinical Observations */}
+          <Route path="/observations/maternal" element={<MaternalObservationsPage />} />
+          <Route path="/observations/fetal" element={<FetalObservationsPage />} />
+
+          {/* Emergency Escalations & Notifications */}
+          <Route path="/alerts" element={<EmergencyAlertsPage />} />
+
+          {/* Operational Reports & Analytics (Admin only) */}
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Forensic Audit Logs (Admin & Doctor) */}
+          <Route
+            path="/audit"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.DOCTOR]}>
+                <AuditLogsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Staff Directory & Authorizations (Admin only) */}
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN]}
+                requiredPermission={Permission.USERS_VIEW}
+              >
+                <StaffManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/staff/:id"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN]}
+                requiredPermission={Permission.USERS_VIEW}
+              >
+                <StaffDetailPage />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+      </Route>
+
+      {/* Catch-all redirect */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+};

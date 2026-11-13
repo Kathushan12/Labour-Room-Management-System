@@ -1,0 +1,33 @@
+{
+  "name": "labour-room-management-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Labour Room Management System (LRMS) - University of Peradeniya CO2307 Group 07",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @lrms/* dev",
+    "dev:api": "pnpm --filter @lrms/api dev",
+    "dev:web": "pnpm --filter @lrms/web dev",
+    "build": "pnpm --recursive --filter @lrms/* build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "pnpm --recursive --filter @lrms/* typecheck",
+    "test": "pnpm --recursive --filter @lrms/* test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "eslint": "^9.14.0",
+    "prettier": "^3.3.3",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.14.0"
+  }
+}
