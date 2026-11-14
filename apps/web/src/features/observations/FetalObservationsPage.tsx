@@ -1,318 +1,132 @@
-import React, { useState } from 'react';
-import { PageHeader, SectionCard } from '../../components/shared/HeadersAndCards.js';
-import { PREVIEW_ADMISSIONS } from '../../mocks/ui-preview/preview-data.js';
-import { Button } from '../../components/ui/button.js';
-import { Input } from '../../components/ui/input.js';
-import { Label } from '../../components/ui/label.js';
-import { AlertTriangle, CheckCircle2, BellRing, PlusCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AdmissionStatus, AdmissionSummaryDto } from '@lrms/shared';
+import { fetchAdmissions } from '../../services/admissions.api.js';
+import { PageHeader } from '../../components/shared/HeadersAndCards.js';
+import { EmptyState } from '../../components/shared/FeedbackStates.js';
+import { ClinicalObservationPanel } from './components/ClinicalObservationPanel.js';
+import { Activity, Loader2, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-interface FetalObservationRecord {
-  id: string;
-  timestamp: string;
-  recordedBy: string;
-  fetalHeartRateBpm: number;
-  variability: string;
-  accelerations: boolean;
-  decelerations: string;
-  liquorStatus: string;
-}
-
-const SAMPLE_FETAL_LOGS: FetalObservationRecord[] = [
-  {
-    id: 'fob-1',
-    timestamp: '2026-11-11T09:10:00Z',
-    recordedBy: 'Staff Midwife Silva',
-    fetalHeartRateBpm: 104, // Bradycardia alert
-    variability: '< 5 bpm (Reduced)',
-    accelerations: false,
-    decelerations: 'Late Decelerations',
-    liquorStatus: 'Meconium-Stained (Grade 1)',
-  },
-  {
-    id: 'fob-2',
-    timestamp: '2026-11-11T08:40:00Z',
-    recordedBy: 'Staff Midwife Silva',
-    fetalHeartRateBpm: 128,
-    variability: '5-25 bpm (Normal)',
-    accelerations: true,
-    decelerations: 'None',
-    liquorStatus: 'Clear',
-  },
-  {
-    id: 'fob-3',
-    timestamp: '2026-11-11T08:10:00Z',
-    recordedBy: 'Staff Midwife Silva',
-    fetalHeartRateBpm: 136,
-    variability: '5-25 bpm (Normal)',
-    accelerations: true,
-    decelerations: 'None',
-    liquorStatus: 'Intact Membranes',
-  },
-];
+import { Button } from '../../components/ui/button.js';
 
 export const FetalObservationsPage: React.FC = () => {
-  const [selectedAdmissionId, setSelectedAdmissionId] = useState(PREVIEW_ADMISSIONS[0].id);
-  const [logs, setLogs] = useState(SAMPLE_FETAL_LOGS);
+  const [admissions, setAdmissions] = useState<AdmissionSummaryDto[]>([]);
+  const [selectedAdmissionId, setSelectedAdmissionId] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Form states
-  const [fhr, setFhr] = useState('132');
-  const [variability, setVariability] = useState('5-25 bpm (Normal)');
-  const [accelerations] = useState(true);
-  const [decelerations, setDecelerations] = useState('None');
-  const [liquor, setLiquor] = useState('Clear');
-  const [loggedSuccess, setLoggedSuccess] = useState(false);
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAdmissions() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchAdmissions({ status: AdmissionStatus.ADMITTED, limit: 50 });
+        if (isMounted) {
+          if (res.success && res.data?.items) {
+            setAdmissions(res.data.items);
+            if (res.data.items.length > 0) {
+              setSelectedAdmissionId(res.data.items[0].id);
+            }
+          }
+        }
+      } catch (err: unknown) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load active admissions');
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
 
-  const selectedAdm =
-    PREVIEW_ADMISSIONS.find((a) => a.id === selectedAdmissionId) || PREVIEW_ADMISSIONS[0];
-
-  const handleLogObservation = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newEntry: FetalObservationRecord = {
-      id: `fob-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      recordedBy: 'Staff Midwife Silva (SLNC-55219)',
-      fetalHeartRateBpm: Number(fhr),
-      variability,
-      accelerations,
-      decelerations,
-      liquorStatus: liquor,
+    loadAdmissions();
+    return () => {
+      isMounted = false;
     };
-    setLogs([newEntry, ...logs]);
-    setLoggedSuccess(true);
-    setTimeout(() => setLoggedSuccess(false), 3000);
-  };
+  }, []);
 
-  const isFhrAbnormal = Number(fhr) < 110 || Number(fhr) > 160 || decelerations !== 'None';
+  const selectedAdm = admissions.find((a) => a.id === selectedAdmissionId);
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
         title="Fetal Observations & Heart Rate Monitoring"
-        description="Continuous and periodic monitoring of fetal heart rate (bpm), CTG baseline variability, decelerations, and liquor condition."
+        description="Structured periodic assessment of fetal heart rate baseline, variability, decelerations, and liquor characteristics."
         breadcrumbs={[
           { label: 'Home', href: '/' },
-          { label: 'Fetal Vitals', active: true },
+          { label: 'Fetal Monitoring', active: true },
         ]}
         badge={
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-800 border border-purple-200">
-            CTG MONITORING
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
+            CTG SURVEILLANCE
           </span>
         }
       />
 
-      {/* Bed Selector */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <Label className="text-xs font-semibold text-slate-700">Active Inpatient Bed</Label>
-          <select
-            value={selectedAdmissionId}
-            onChange={(e) => setSelectedAdmissionId(e.target.value)}
-            className="mt-1 w-full sm:w-80 h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            {PREVIEW_ADMISSIONS.map((adm) => (
-              <option key={adm.id} value={adm.id}>
-                {adm.bedNumber} — {adm.referenceId} ({adm.patientPlaceholder})
-              </option>
-            ))}
-          </select>
+      {error && <div className="p-3 bg-red-50 text-red-800 rounded-lg text-xs">{error}</div>}
+
+      {loading ? (
+        <div className="p-12 text-center text-slate-500 text-xs flex items-center justify-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin text-indigo-700" />
+          <span>Loading inpatient admissions...</span>
         </div>
-        <div className="text-xs text-slate-600 sm:text-right">
-          <span className="font-semibold text-slate-800">Normal Baseline: </span>
-          <span className="font-bold text-teal-800">110 – 160 bpm</span>
-          <div className="text-[11px] text-slate-500">
-            Values outside baseline trigger immediate clinical escalation protocol.
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Entry Form */}
-        <div className="lg:col-span-1">
-          <SectionCard
-            title="Log Fetal Observation"
-            description="Recorded into electronic partogram"
-          >
-            <form onSubmit={handleLogObservation} className="space-y-4 text-xs">
-              {loggedSuccess && (
-                <div className="p-2.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Fetal observation recorded successfully.</span>
-                </div>
-              )}
-
-              {/* FHR in BPM */}
-              <div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-[11px] font-semibold text-slate-700">
-                    Fetal Heart Rate (bpm)
-                  </Label>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Unit: BPM</span>
-                </div>
-                <Input
-                  type="number"
-                  min="50"
-                  max="240"
-                  value={fhr}
-                  onChange={(e) => setFhr(e.target.value)}
-                  className="mt-1 text-xs"
-                  required
-                />
+      ) : admissions.length === 0 ? (
+        <EmptyState
+          title="No Active Inpatients"
+          description="There are currently no active patient admissions in Ward 18 to record fetal observations for."
+          actionLabel="Go to Admissions"
+          onAction={() => {}}
+        />
+      ) : (
+        <div className="space-y-6">
+          {/* Patient Selector Ribbon */}
+          <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold">
+                <Activity className="w-5 h-5" />
               </div>
-
-              {/* Abnormal Flag Notice */}
-              {isFhrAbnormal && (
-                <div className="p-2 rounded bg-red-50 border border-red-200 text-red-900 text-[11px] flex items-start space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Abnormal Fetal Parameters: </span>
-                    <span>Values suggest fetal distress. Consider escalating doctor alert.</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Variability */}
               <div>
-                <Label className="text-[11px] font-semibold text-slate-700">
-                  Baseline Variability
-                </Label>
-                <select
-                  value={variability}
-                  onChange={(e) => setVariability(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                <label
+                  htmlFor="fetal-patient-select"
+                  className="font-semibold text-slate-500 uppercase tracking-wider text-[11px] block"
                 >
-                  <option value="5-25 bpm (Normal)">5-25 bpm (Normal)</option>
-                  <option value="< 5 bpm (Reduced)">&lt; 5 bpm (Reduced / Abnormal)</option>
-                  <option value="> 25 bpm (Marked)">&gt; 25 bpm (Marked / Saltatory)</option>
+                  Select Active Inpatient
+                </label>
+                <select
+                  id="fetal-patient-select"
+                  aria-label="Select Active Inpatient"
+                  value={selectedAdmissionId}
+                  onChange={(e) => setSelectedAdmissionId(e.target.value)}
+                  className="font-bold text-slate-900 bg-transparent border-0 border-b border-indigo-500 focus:ring-0 focus:border-indigo-700 text-sm py-0.5 pr-8 pl-0 cursor-pointer"
+                >
+                  {admissions.map((adm) => (
+                    <option key={adm.id} value={adm.id}>
+                      {adm.admissionReferenceId} ({adm.admissionCategory})
+                    </option>
+                  ))}
                 </select>
               </div>
+            </div>
 
-              {/* Decelerations */}
-              <div>
-                <Label className="text-[11px] font-semibold text-slate-700">Decelerations</Label>
-                <select
-                  value={decelerations}
-                  onChange={(e) => setDecelerations(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="None">None</option>
-                  <option value="Early Decelerations">Early Decelerations</option>
-                  <option value="Variable Decelerations">Variable Decelerations</option>
-                  <option value="Late Decelerations">Late Decelerations (Pathological)</option>
-                  <option value="Prolonged Deceleration">Prolonged Deceleration</option>
-                </select>
-              </div>
-
-              {/* Liquor Status */}
-              <div>
-                <Label className="text-[11px] font-semibold text-slate-700">
-                  Amniotic Fluid / Liquor
-                </Label>
-                <select
-                  value={liquor}
-                  onChange={(e) => setLiquor(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="Intact Membranes">Intact Membranes</option>
-                  <option value="Clear">Clear Liquor</option>
-                  <option value="Meconium-Stained (Grade 1)">Meconium-Stained (Grade 1)</option>
-                  <option value="Meconium-Stained (Grade 2/3)">
-                    Meconium-Stained (Grade 2/3 - Thick)
-                  </option>
-                  <option value="Blood-Stained">Blood-Stained Liquor</option>
-                </select>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold text-xs h-9"
-              >
-                <PlusCircle className="w-4 h-4 mr-1.5" />
-                Record Fetal Vitals
-              </Button>
-
-              {isFhrAbnormal && (
-                <Link to="/alerts" className="block pt-1">
+            {selectedAdm && (
+              <div className="flex items-center space-x-2">
+                <Link to={`/admissions/${selectedAdm.id}`}>
                   <Button
-                    type="button"
-                    variant="destructive"
-                    className="w-full text-xs h-9 font-semibold"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 px-2.5 border-slate-300"
                   >
-                    <BellRing className="w-4 h-4 mr-1.5" />
-                    Escalate Emergency Doctor Alert
+                    <UserCheck className="w-3.5 h-3.5 mr-1 text-indigo-700" />
+                    View Admission File
                   </Button>
                 </Link>
-              )}
-            </form>
-          </SectionCard>
-        </div>
+              </div>
+            )}
+          </div>
 
-        {/* Fetal Observation Timeline Table */}
-        <div className="lg:col-span-2">
-          <SectionCard
-            title="Fetal Observation Log"
-            description={`Sequential CTG observations for ${selectedAdm.referenceId} (${selectedAdm.bedNumber})`}
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
-                    <th className="pb-2.5">Time</th>
-                    <th className="pb-2.5">FHR (bpm)</th>
-                    <th className="pb-2.5">Variability</th>
-                    <th className="pb-2.5">Decelerations</th>
-                    <th className="pb-2.5">Liquor</th>
-                    <th className="pb-2.5">Staff</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {logs.map((obs) => {
-                    const isAbnormal =
-                      obs.fetalHeartRateBpm < 110 ||
-                      obs.fetalHeartRateBpm > 160 ||
-                      obs.decelerations.includes('Late');
-                    return (
-                      <tr key={obs.id} className="hover:bg-slate-50">
-                        <td className="py-3 font-mono text-slate-600">
-                          {new Date(obs.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                        <td className="py-3">
-                          <span
-                            className={`font-bold font-mono px-2 py-0.5 rounded ${
-                              isAbnormal
-                                ? 'bg-red-100 text-red-900 border border-red-300'
-                                : 'text-slate-900 bg-slate-100'
-                            }`}
-                          >
-                            {obs.fetalHeartRateBpm} bpm
-                          </span>
-                        </td>
-                        <td className="py-3 text-slate-700">{obs.variability}</td>
-                        <td className="py-3">
-                          <span
-                            className={`font-medium ${
-                              obs.decelerations.includes('Late')
-                                ? 'text-red-700 font-bold'
-                                : 'text-slate-700'
-                            }`}
-                          >
-                            {obs.decelerations}
-                          </span>
-                        </td>
-                        <td className="py-3 text-slate-700">{obs.liquorStatus}</td>
-                        <td className="py-3 text-[11px] text-slate-500">{obs.recordedBy}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </SectionCard>
+          {/* Embedded Live Observations Panel */}
+          {selectedAdmissionId && <ClinicalObservationPanel admissionId={selectedAdmissionId} />}
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { AppDataSource } from '../../config/database.js';
 import {
   Admission,
   AuditLog,
+  EmergencyOverride,
   Patient,
   PatientStaffAssignment,
 } from '../../database/entities/index.js';
@@ -55,11 +56,20 @@ export function applyAdmissionVisibilityScope(
 
   if (actor.role === UserRole.DOCTOR || actor.role === UserRole.NURSE_STAFF) {
     qb.andWhere(
-      `EXISTS (
-        SELECT 1 FROM patient_staff_assignments psa
-        WHERE psa.admission_id = ${alias}.id
-          AND psa.staff_id = :scopeActorId
-          AND psa.unassigned_at IS NULL
+      `(
+        EXISTS (
+          SELECT 1 FROM patient_staff_assignments psa
+          WHERE psa.admission_id = ${alias}.id
+            AND psa.staff_id = :scopeActorId
+            AND psa.unassigned_at IS NULL
+        )
+        OR EXISTS (
+          SELECT 1 FROM emergency_overrides eo
+          WHERE eo.admission_id = ${alias}.id
+            AND eo.staff_id = :scopeActorId
+            AND eo.revoked_at IS NULL
+            AND (eo.expires_at IS NULL OR eo.expires_at > CURRENT_TIMESTAMP)
+        )
       )`,
       { scopeActorId: actor.id },
     );
@@ -128,6 +138,23 @@ export async function assertCanAccessAdmission(
     .getCount();
 
   if (activeAssignmentCount > 0) {
+    return admission;
+  }
+
+  // Phase 10: Check for active, unexpired break-glass emergency override
+  const activeOverrideCount = await manager
+    .createQueryBuilder(EmergencyOverride, 'eo')
+    .where(
+      'eo.admissionId = :admissionId AND eo.staffId = :staffId AND eo.revokedAt IS NULL AND (eo.expiresAt IS NULL OR eo.expiresAt > :now)',
+      {
+        admissionId: admission.id,
+        staffId: actor.id,
+        now: new Date(),
+      },
+    )
+    .getCount();
+
+  if (activeOverrideCount > 0) {
     return admission;
   }
 
@@ -208,3 +235,16 @@ export async function assertCanAccessPatient(
     'PATIENT_ACCESS_DENIED',
   );
 }
+
+export const patientAuthorizationService = {
+  assertCanAccessAdmission: (
+    actor: RequestUser,
+    admissionId: string,
+    ipAddress: string | null = null,
+    requestId: string | null = null,
+    context = 'ADMISSION_ACCESS',
+    tm?: EntityManager,
+  ) => assertCanAccessAdmission(actor, admissionId, ipAddress, requestId, context, tm),
+  assertCanAccessPatient,
+  applyAdmissionVisibilityScope,
+};

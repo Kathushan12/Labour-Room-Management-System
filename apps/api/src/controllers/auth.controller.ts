@@ -19,6 +19,7 @@ import {
   hashRefreshToken,
   generateRawRefreshToken,
 } from '../services/session.service.js';
+import { disconnectUserSessions } from '../modules/realtime/realtime.server.js';
 import { authRateLimiter } from '../common/middleware/rate-limiter.js';
 import { UnauthorizedError, BadRequestError } from '../common/errors/auth.errors.js';
 import { env } from '../config/env.js';
@@ -298,6 +299,7 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
       const session = await sessionRepo.findOne({ where: { tokenHash } });
       if (session) {
         await revokeSession(session.id);
+        disconnectUserSessions(session.userId).catch(() => {});
         await auditRepo.save(
           auditRepo.create({
             userId: session.userId,

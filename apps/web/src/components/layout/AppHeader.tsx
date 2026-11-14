@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, useInRouterContext } from 'react-router-dom';
-import { Menu, Bell, UserCircle2, LogOut, KeyRound } from 'lucide-react';
+import { Menu, UserCircle2, LogOut, KeyRound } from 'lucide-react';
 import { UserRole } from '@lrms/shared';
 import { NetworkStatusIndicator } from '../status/NetworkStatusIndicator.js';
 import { ServiceStatusIndicator } from '../status/ServiceStatusIndicator.js';
 import { Button } from '../ui/button.js';
 import { Badge } from '../ui/badge.js';
 import { useAuth } from '../../hooks/useAuth.js';
+import { NotificationBell } from '../../features/notifications/NotificationBell.js';
 
 interface AppHeaderProps {
   currentRole: UserRole;
@@ -92,17 +93,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
         )}
 
-        {/* Notifications Visual Preview */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative text-slate-600 hover:text-slate-900"
-          aria-label="Notifications"
-          title="Notification center preview"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-600" />
-        </Button>
+        {/* Real-Time Notification Bell & Dropdown */}
+        <NotificationBell />
 
         {/* User Profile, Change Password & Sign Out */}
         <div className="flex items-center space-x-2 pl-2 border-l border-slate-200">

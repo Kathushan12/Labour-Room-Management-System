@@ -17,6 +17,7 @@ import {
   Stethoscope,
   Clock,
   Baby,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Badge } from '../ui/badge.js';
 
@@ -39,8 +40,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const canViewStaff = isAuthenticated
     ? permissions.includes(Permission.USERS_VIEW)
     : currentRole === UserRole.ADMIN;
+  const canViewAnalytics = isAuthenticated ? permissions.includes(Permission.ANALYTICS_VIEW) : true;
   const canViewReports = isAuthenticated
-    ? permissions.includes(Permission.REPORTS_VIEW_DEIDENTIFIED) ||
+    ? permissions.includes(Permission.ANALYTICS_EXPORT) ||
+      permissions.includes(Permission.REPORTS_VIEW_DEIDENTIFIED) ||
       permissions.includes(Permission.REPORTS_VIEW_BED_UTILIZATION)
     : currentRole === UserRole.ADMIN;
   const canViewAudit = isAuthenticated
@@ -85,6 +88,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         icon: BellRing,
         badge: 'Priority',
       },
+      ...(canViewAnalytics
+        ? [
+            {
+              to: '/analytics',
+              label: 'Operational Analytics',
+              icon: FileBarChart2,
+            },
+          ]
+        : []),
     ];
 
     if (role === UserRole.ADMIN) {
@@ -102,7 +114,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         ...(canViewReports
           ? [
               {
-                to: '/reports',
+                to: '/analytics/reports',
                 label: 'Reports & Analytics',
                 icon: FileBarChart2,
               },
@@ -124,7 +136,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       return [
         ...baseItems,
         {
-          to: '/reports',
+          to: '/analytics/reports',
           label: 'Clinical Summaries',
           icon: FileBarChart2,
         },
@@ -135,7 +147,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     return [
       ...baseItems,
       {
-        to: '/reports',
+        to: '/analytics/reports',
         label: 'Ward Activity Log',
         icon: Clock,
       },

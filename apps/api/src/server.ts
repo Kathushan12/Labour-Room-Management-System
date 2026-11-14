@@ -1,9 +1,13 @@
+import http from 'http';
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './common/logging/logger.js';
 import { initializeDatabase, AppDataSource } from './config/database.js';
+import { initRealtimeServer } from './modules/realtime/realtime.server.js';
+import { notificationDispatcherService } from './modules/realtime/notification-dispatcher.service.js';
 
 const app = createApp();
+const httpServer = http.createServer(app);
 
 async function startServer() {
   try {
@@ -17,7 +21,13 @@ async function startServer() {
       );
     }
 
-    const server = app.listen(env.PORT, () => {
+    // Initialize Socket.IO real-time server
+    initRealtimeServer(httpServer);
+
+    // Start Transactional Outbox dispatcher background worker
+    notificationDispatcherService.start(1000);
+
+    const server = httpServer.listen(env.PORT, () => {
       logger.info(
         {
           service: 'lrms-api',
@@ -25,13 +35,17 @@ async function startServer() {
           env: env.NODE_ENV,
           webOrigin: env.WEB_ORIGIN,
         },
-        `Labour Room Management System API running at http://localhost:${env.PORT}/api/v1`,
+        `Labour Room Management System API running at http://localhost:${env.PORT}/api/v1 (Socket.IO enabled)`,
       );
     });
 
     // Graceful shutdown
     const shutdown = async (signal: string) => {
-      logger.info({ signal }, 'Received shutdown signal, closing HTTP server and database pool...');
+      logger.info(
+        { signal },
+        'Received shutdown signal, closing real-time dispatcher, HTTP server and database pool...',
+      );
+      notificationDispatcherService.stop();
       server.close(async () => {
         logger.info('HTTP server closed');
         if (AppDataSource.isInitialized) {

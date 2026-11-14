@@ -37,6 +37,7 @@ import {
   toUserListItemDto,
   toUserDetailDto,
 } from './user.dto.js';
+import { disconnectUserSessions } from '../realtime/realtime.server.js';
 
 export async function listUsers(filter: FindUsersFilter): Promise<PaginatedUsersResponse> {
   const { items, total } = await findPaginatedUsers(filter);
@@ -352,6 +353,10 @@ export async function updateUserStatus(
     });
   });
 
+  if (!isActive) {
+    disconnectUserSessions(targetUserId).catch(() => {});
+  }
+
   return toUserListItemDto(updatedUser);
 }
 
@@ -452,6 +457,8 @@ export async function updateUserRole(
       relations: ['role', 'staffProfile'],
     });
   });
+
+  disconnectUserSessions(targetUserId).catch(() => {});
 
   return toUserListItemDto(updatedUser);
 }

@@ -25,6 +25,9 @@ import {
   EmergencyOverride,
   MaternalObservation,
   FetalObservation,
+  LabourAssessment,
+  ContractionObservation,
+  ClinicalObservationAmendment,
   CarePlanTransition,
   EmergencyAlert,
   AlertRecipient,
@@ -32,6 +35,21 @@ import {
   NotificationOutbox,
   DischargeRecord,
   AuditLog,
+  ClinicalCarePlan,
+  ClinicalCarePlanVersion,
+  ClinicalCarePlanReview,
+  ClinicalEscalation,
+  ClinicalEscalationHistory,
+  EmergencyResponse,
+  SurgicalReview,
+  Notification,
+  NotificationDeliveryAttempt,
+  Delivery,
+  Newborn,
+  ApgarAssessment,
+  PostpartumMaternalAssessment,
+  PostpartumNewbornAssessment,
+  PostpartumDischargeAuthorization,
 } from '../database/entities/index.js';
 import { InitialCleanSchema1731300000000 } from '../database/migrations/1731300000000-InitialCleanSchema.js';
 import { AddSessionRevocationTracking1731400000000 } from '../database/migrations/1731400000000-AddSessionRevocationTracking.js';
@@ -41,6 +59,11 @@ import { Phase6PatientAndAdmissionHardening1731700000000 } from '../database/mig
 import { EnforceUniqueNicBlindIndex1731800000000 } from '../database/migrations/1731800000000-EnforceUniqueNicBlindIndex.js';
 import { Phase7WardBedCleaningAndTurnover1731900000000 } from '../database/migrations/1731900000000-Phase7WardBedCleaningAndTurnover.js';
 import { Phase8StaffShiftsAndPatientAssignments1732000000000 } from '../database/migrations/1732000000000-Phase8StaffShiftsAndPatientAssignments.js';
+import { Phase9ClinicalObservationsPartograph1732100000000 } from '../database/migrations/1732100000000-Phase9ClinicalObservationsPartograph.js';
+import { Phase10ClinicalCareAndEscalation1732200000000 } from '../database/migrations/1732200000000-Phase10ClinicalCareAndEscalation.js';
+import { Phase11RealTimeNotifications1732300000000 } from '../database/migrations/1732300000000-Phase11RealTimeNotifications.js';
+import { Phase12DeliveryNewbornPostpartum1732400000000 } from '../database/migrations/1732400000000-Phase12DeliveryNewbornPostpartum.js';
+import { Phase13OperationalAnalyticsIndexes1732500000000 } from '../database/migrations/1732500000000-Phase13OperationalAnalyticsIndexes.js';
 
 export const entities = [
   Role,
@@ -65,6 +88,9 @@ export const entities = [
   EmergencyOverride,
   MaternalObservation,
   FetalObservation,
+  LabourAssessment,
+  ContractionObservation,
+  ClinicalObservationAmendment,
   CarePlanTransition,
   EmergencyAlert,
   AlertRecipient,
@@ -72,6 +98,21 @@ export const entities = [
   NotificationOutbox,
   DischargeRecord,
   AuditLog,
+  ClinicalCarePlan,
+  ClinicalCarePlanVersion,
+  ClinicalCarePlanReview,
+  ClinicalEscalation,
+  ClinicalEscalationHistory,
+  EmergencyResponse,
+  SurgicalReview,
+  Notification,
+  NotificationDeliveryAttempt,
+  Delivery,
+  Newborn,
+  ApgarAssessment,
+  PostpartumMaternalAssessment,
+  PostpartumNewbornAssessment,
+  PostpartumDischargeAuthorization,
 ];
 
 export const migrations = [
@@ -83,6 +124,11 @@ export const migrations = [
   EnforceUniqueNicBlindIndex1731800000000,
   Phase7WardBedCleaningAndTurnover1731900000000,
   Phase8StaffShiftsAndPatientAssignments1732000000000,
+  Phase9ClinicalObservationsPartograph1732100000000,
+  Phase10ClinicalCareAndEscalation1732200000000,
+  Phase11RealTimeNotifications1732300000000,
+  Phase12DeliveryNewbornPostpartum1732400000000,
+  Phase13OperationalAnalyticsIndexes1732500000000,
 ];
 
 export const AppDataSource = new DataSource({

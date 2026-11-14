@@ -5,7 +5,12 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     fileParallelism: false, // Run database test files sequentially to avoid cross-suite race conditions
-    pool: 'forks',
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
     testTimeout: 30000,
     hookTimeout: 30000,
   },

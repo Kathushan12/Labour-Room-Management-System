@@ -14,11 +14,22 @@ import { PatientDetailPage } from '../features/patients/PatientDetailPage.js';
 import { MaternalObservationsPage } from '../features/observations/MaternalObservationsPage.js';
 import { FetalObservationsPage } from '../features/observations/FetalObservationsPage.js';
 import { EmergencyAlertsPage } from '../features/alerts/EmergencyAlertsPage.js';
-import { ReportsPage } from '../features/reports/ReportsPage.js';
 import { AuditLogsPage } from '../features/audit/AuditLogsPage.js';
 import { StaffManagementPage } from '../features/staff/StaffManagementPage.js';
 import { StaffDetailPage } from '../features/staff/StaffDetailPage.js';
 import { ShiftManagementPage } from '../features/shifts/ShiftManagementPage.js';
+
+// Phase 13: Operational Analytics & Management Dashboards
+import {
+  OperationalDashboardPage,
+  AdmissionAnalyticsPage,
+  DeliveryAnalyticsPage,
+  BedAnalyticsPage,
+  AlosAnalyticsPage,
+  StaffingAnalyticsPage,
+  ClinicalAlertAnalyticsPage,
+  ReportsAnalyticsPage,
+} from '../features/analytics/index.js';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -62,12 +73,78 @@ export const AppRoutes: React.FC = () => {
           {/* Emergency Escalations & Notifications */}
           <Route path="/alerts" element={<EmergencyAlertsPage />} />
 
-          {/* Operational Reports & Analytics (Admin only) */}
+          {/* Operational Analytics & Hospital Performance Dashboards (Phase 13) */}
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_VIEW}>
+                <OperationalDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/admissions"
+            element={
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_ADMISSIONS_VIEW}>
+                <AdmissionAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/deliveries"
+            element={
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_DELIVERIES_VIEW}>
+                <DeliveryAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/beds"
+            element={
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_BEDS_VIEW}>
+                <BedAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/alos"
+            element={
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_ALOS_VIEW}>
+                <AlosAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/staffing"
+            element={
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_STAFFING_VIEW}>
+                <StaffingAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/alerts"
+            element={
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_ALERTS_VIEW}>
+                <ClinicalAlertAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/reports"
+            element={
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_EXPORT}>
+                <ReportsAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Backward compatibility route for /reports */}
           <Route
             path="/reports"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                <ReportsPage />
+              <ProtectedRoute requiredPermission={Permission.ANALYTICS_EXPORT}>
+                <ReportsAnalyticsPage />
               </ProtectedRoute>
             }
           />

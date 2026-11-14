@@ -24,6 +24,10 @@ import {
   transferBed,
 } from '../../services/beds.api.js';
 import { AdmissionStaffResponsibilityCard } from './components/AdmissionStaffResponsibilityCard.js';
+import { ClinicalObservationPanel } from '../observations/components/ClinicalObservationPanel.js';
+import { ClinicalCarePanel } from '../clinical-care/components/ClinicalCarePanel.js';
+import { PostpartumDeliveryTab } from '../delivery/components/PostpartumDeliveryTab.js';
+import { useAuth } from '../../hooks/useAuth.js';
 import { PermissionGuard } from '../../components/auth/PermissionGuard.js';
 import { PageHeader, SectionCard, StatCard } from '../../components/shared/HeadersAndCards.js';
 import { EmptyState } from '../../components/shared/FeedbackStates.js';
@@ -41,9 +45,11 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog.js';
 import {
+  Activity,
   AlertCircle,
   ArrowLeft,
   ArrowRightLeft,
+  Baby,
   BedDouble,
   Clock,
   FileText,
@@ -51,6 +57,7 @@ import {
   Loader2,
   LogOut,
   Pencil,
+  Sparkles,
   UserCheck,
   UserPlus,
 } from 'lucide-react';
@@ -64,7 +71,11 @@ const CORE_RISK_KEYS: RiskFlagKey[] = [
 
 export const AdmissionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { role } = useAuth();
 
+  const [clinicalTab, setClinicalTab] = useState<'care-plan' | 'observations' | 'delivery'>(
+    'care-plan',
+  );
   const [admission, setAdmission] = useState<AdmissionDto | null>(null);
   const [bedHistory, setBedHistory] = useState<BedAllocationHistoryDto[]>([]);
   const [availableBeds, setAvailableBeds] = useState<BedDto[]>([]);
@@ -629,6 +640,64 @@ export const AdmissionDetailPage: React.FC = () => {
 
           <AdmissionStaffResponsibilityCard admissionId={admission.id} wardId={admission.wardId} />
         </div>
+      </div>
+
+      {/* Clinical Subsystems: Surveillance, Partograph, Care Plans & Escalations */}
+      <div className="mt-8 space-y-6">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-6">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={clinicalTab === 'care-plan'}
+            onClick={() => setClinicalTab('care-plan')}
+            className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
+              clinicalTab === 'care-plan'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            Care Plan, Escalation & Emergency Response
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={clinicalTab === 'observations'}
+            onClick={() => setClinicalTab('observations')}
+            className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
+              clinicalTab === 'observations'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Activity className="h-4 w-4" />
+            Observations & Partograph
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={clinicalTab === 'delivery'}
+            onClick={() => setClinicalTab('delivery')}
+            className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
+              clinicalTab === 'delivery'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Baby className="h-4 w-4" />
+            Delivery, Newborn & Postpartum
+          </button>
+        </div>
+
+        {clinicalTab === 'care-plan' && (
+          <ClinicalCarePanel admissionId={admission.id} userRole={role || undefined} />
+        )}
+
+        {clinicalTab === 'observations' && <ClinicalObservationPanel admissionId={admission.id} />}
+
+        {clinicalTab === 'delivery' && (
+          <PostpartumDeliveryTab admissionId={admission.id} userRole={role || undefined} />
+        )}
       </div>
 
       {/* Allocate Bed Dialog */}

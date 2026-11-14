@@ -21,6 +21,17 @@ export class NotificationOutbox {
   @Index('idx_notification_outbox_event_type')
   eventType!: string;
 
+  @Column({ name: 'aggregate_type', type: 'varchar', length: 50, nullable: true })
+  @Index('idx_notification_outbox_aggregate')
+  aggregateType!: string | null;
+
+  @Column({ name: 'aggregate_id', type: 'uuid', nullable: true })
+  aggregateId!: string | null;
+
+  @Column({ name: 'admission_id', type: 'uuid', nullable: true })
+  @Index('idx_notification_outbox_admission_id')
+  admissionId!: string | null;
+
   // Payloads MUST be free from patient PII and raw clinical narratives per security architecture
   @Column({ name: 'event_payload', type: 'jsonb' })
   eventPayload!: Record<string, unknown>;

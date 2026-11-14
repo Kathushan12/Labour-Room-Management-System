@@ -16,6 +16,11 @@ import { wardRouter } from './modules/wards/ward.routes.js';
 import { bedRouter } from './modules/beds/bed.routes.js';
 import { bedAllocationRouter } from './modules/bed-allocations/bed-allocation.routes.js';
 import { patientAssignmentRouter } from './modules/patient-assignments/patient-assignment.routes.js';
+import { clinicalObservationRoutes } from './modules/clinical-observations/clinical-observation.routes.js';
+import { clinicalCareRoutes } from './modules/clinical-care/clinical-care.routes.js';
+import { notificationRoutes } from './modules/realtime/notification.routes.js';
+import postpartumDeliveryRoutes from './modules/postpartum-delivery/delivery.routes.js';
+import { analyticsRouter } from './modules/analytics/analytics.routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -60,11 +65,16 @@ export function createApp(): Express {
   apiV1Router.use('/auth', authRouter);
   apiV1Router.use('/users', userRouter);
   apiV1Router.use('/patients', patientRouter);
+  apiV1Router.use('/analytics', analyticsRouter);
+  apiV1Router.use('/notifications', notificationRoutes);
   apiV1Router.use('/admissions', admissionRouter);
   apiV1Router.use('/wards', wardRouter);
   apiV1Router.use('/beds', bedRouter);
   apiV1Router.use('/bed-allocations', bedAllocationRouter);
   apiV1Router.use('/patient-assignments', patientAssignmentRouter);
+  apiV1Router.use('/', clinicalObservationRoutes);
+  apiV1Router.use('/', clinicalCareRoutes);
+  apiV1Router.use('/', postpartumDeliveryRoutes);
 
   app.use('/api/v1', apiV1Router);
 

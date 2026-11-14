@@ -38,8 +38,8 @@ export const WardDutyStatusBanner: React.FC = () => {
         ]);
 
         if (isMounted) {
-          setOnDutyRoster(rosterRes);
-          setUnassignedAdmissions(unassignedRes);
+          setOnDutyRoster(Array.isArray(rosterRes) ? rosterRes : []);
+          setUnassignedAdmissions(Array.isArray(unassignedRes) ? unassignedRes : []);
         }
       } catch (err) {
         console.error('Failed to load dashboard duty status:', err);
@@ -114,15 +114,15 @@ export const WardDutyStatusBanner: React.FC = () => {
       </div>
 
       {/* Unassigned Admissions Warning (If any) */}
-      {unassignedAdmissions.length > 0 && (
+      {(unassignedAdmissions?.length ?? 0) > 0 && (
         <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/80 text-xs text-amber-900 flex items-center justify-between shadow-sm">
           <div className="flex items-center space-x-2.5">
             <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
             <div>
               <span className="font-bold">Clinical Responsibility Attention Needed:</span>{' '}
-              {unassignedAdmissions.length} active inpatient
-              {unassignedAdmissions.length > 1 ? 's lack' : ' lacks'} an attending doctor or primary
-              nurse.
+              {unassignedAdmissions?.length ?? 0} active inpatient
+              {(unassignedAdmissions?.length ?? 0) > 1 ? 's lack' : ' lacks'} an attending doctor or
+              primary nurse.
             </div>
           </div>
           <Link to="/admissions">

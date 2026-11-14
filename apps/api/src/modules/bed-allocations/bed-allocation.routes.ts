@@ -11,7 +11,7 @@ import {
 export const bedAllocationRouter = Router();
 
 bedAllocationRouter.post(
-  '/',
+  ['/', '/allocate'],
   authenticate,
   requirePermission(Permission.BEDS_ALLOCATE),
   allocateBedHandler,
