@@ -8,6 +8,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/coverage/**',
       '**/*.d.ts',
+      'apps/web/e2e/**',
       '**/pnpm-lock.yaml',
     ],
   },
