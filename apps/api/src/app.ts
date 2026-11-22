@@ -21,6 +21,7 @@ import { clinicalCareRoutes } from './modules/clinical-care/clinical-care.routes
 import { notificationRoutes } from './modules/realtime/notification.routes.js';
 import postpartumDeliveryRoutes from './modules/postpartum-delivery/delivery.routes.js';
 import { analyticsRouter } from './modules/analytics/analytics.routes.js';
+import { auditRouter } from './modules/audit/audit.routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -66,6 +67,7 @@ export function createApp(): Express {
   apiV1Router.use('/users', userRouter);
   apiV1Router.use('/patients', patientRouter);
   apiV1Router.use('/analytics', analyticsRouter);
+  apiV1Router.use('/audit-logs', auditRouter);
   apiV1Router.use('/notifications', notificationRoutes);
   apiV1Router.use('/admissions', admissionRouter);
   apiV1Router.use('/wards', wardRouter);
