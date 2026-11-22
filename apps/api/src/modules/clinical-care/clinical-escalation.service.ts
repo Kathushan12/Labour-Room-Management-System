@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import {
   ClinicalEscalationDto,
+  EscalationFeedItemDto,
   CreateEscalationRequest,
   AcknowledgeEscalationRequest,
   AssignEscalationRequest,
@@ -17,6 +18,7 @@ import { AppDataSource } from '../../config/database.js';
 import {
   Admission,
   AuditLog,
+  BedAllocationHistory,
   ClinicalEscalation,
   ClinicalEscalationHistory,
   User,
@@ -28,6 +30,7 @@ import {
 import { RequestUser } from '../../common/middleware/auth.middleware.js';
 import { NotFoundError, ConflictError, BadRequestError } from '../../common/errors/auth.errors.js';
 import { toEscalationDto } from './clinical-care.dto.js';
+import { applyAdmissionVisibilityScope } from '../admissions/patient-authorization.service.js';
 
 const ALLOWED_ESCALATION_TRANSITIONS: Record<EscalationStatus, EscalationStatus[]> = {
   [EscalationStatus.OPEN]: [EscalationStatus.ACKNOWLEDGED, EscalationStatus.CANCELLED],
@@ -237,6 +240,46 @@ export class ClinicalEscalationService {
     });
 
     return escalations.map(toEscalationDto);
+  }
+
+  async listVisibleEscalations(actor: RequestUser, limit = 100): Promise<EscalationFeedItemDto[]> {
+    const visibleAdmissions = this.dataSource
+      .getRepository(Admission)
+      .createQueryBuilder('admission')
+      .select('admission.id');
+    applyAdmissionVisibilityScope(visibleAdmissions, actor, 'admission');
+
+    const escalations = await this.dataSource
+      .getRepository(ClinicalEscalation)
+      .createQueryBuilder('escalation')
+      .innerJoinAndSelect('escalation.admission', 'admission')
+      .leftJoinAndSelect('escalation.initiatedByUser', 'initiatedByUser')
+      .leftJoinAndSelect('escalation.assignedRecipientUser', 'assignedRecipientUser')
+      .leftJoinAndSelect('escalation.acknowledgedByUser', 'acknowledgedByUser')
+      .where(`escalation.admissionId IN (${visibleAdmissions.getQuery()})`)
+      .setParameters(visibleAdmissions.getParameters())
+      .orderBy('escalation.createdAt', 'DESC')
+      .take(limit)
+      .getMany();
+
+    const admissionIds = [...new Set(escalations.map((e) => e.admissionId))];
+    const bedByAdmission = new Map<string, string>();
+    if (admissionIds.length > 0) {
+      const allocations = await this.dataSource
+        .getRepository(BedAllocationHistory)
+        .createQueryBuilder('alloc')
+        .innerJoinAndSelect('alloc.bed', 'bed')
+        .where('alloc.admissionId IN (:...admissionIds)', { admissionIds })
+        .andWhere('alloc.releasedAt IS NULL')
+        .getMany();
+      for (const a of allocations) bedByAdmission.set(a.admissionId, a.bed.bedNumber);
+    }
+
+    return escalations.map((e) => ({
+      ...toEscalationDto(e),
+      admissionReferenceId: e.admission.admissionReferenceId,
+      bedNumber: bedByAdmission.get(e.admissionId) ?? null,
+    }));
   }
 
   async getEscalationById(

@@ -187,6 +187,19 @@ export class ClinicalCareController {
     }
   }
 
+  public async listVisibleEscalations(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await this.escalationService.listVisibleEscalations(req.user!);
+      res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   public async getEscalations(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const admissionId = req.params.id;

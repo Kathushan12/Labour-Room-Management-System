@@ -84,6 +84,13 @@ router.post(
 );
 
 router.get(
+  '/escalations',
+  ...clinicalGuards,
+  requirePermission(Permission.ESCALATIONS_VIEW),
+  clinicalCareController.listVisibleEscalations.bind(clinicalCareController),
+);
+
+router.get(
   '/admissions/:id/escalations',
   ...clinicalGuards,
   requirePermission(Permission.ESCALATIONS_VIEW),

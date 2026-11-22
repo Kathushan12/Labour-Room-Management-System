@@ -148,6 +148,11 @@ export interface ClinicalEscalationDto {
   history?: ClinicalEscalationHistoryDto[];
 }
 
+export interface EscalationFeedItemDto extends ClinicalEscalationDto {
+  admissionReferenceId: string;
+  bedNumber: string | null;
+}
+
 export interface CreateEscalationRequest {
   category: EscalationCategory;
   priority: EscalationPriority;

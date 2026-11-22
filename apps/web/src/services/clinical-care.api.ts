@@ -14,6 +14,7 @@ import {
   CreateSurgicalReviewRequest,
   EmergencyOverrideDto,
   EmergencyResponseDto,
+  EscalationFeedItemDto,
   RecordCarePlanReviewRequest,
   RecordSurgicalDecisionRequest,
   ResolveEscalationRequest,
@@ -122,6 +123,11 @@ export const clinicalCareApi = {
       `/admissions/${admissionId}/escalations`,
       payload,
     );
+    return res.data.data;
+  },
+
+  getVisibleEscalations: async (): Promise<EscalationFeedItemDto[]> => {
+    const res = await api.get<{ success: boolean; data: EscalationFeedItemDto[] }>('/escalations');
     return res.data.data;
   },
 
