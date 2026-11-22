@@ -47,14 +47,14 @@ export async function seedReferenceData(dataSource: DataSource): Promise<void> {
       isActive: true,
     },
     {
-      key: RiskFlagKey.PREVIOUS_CESAREAN,
-      label: 'Previous Cesarean Section',
+      key: RiskFlagKey.PRIOR_CESAREAN,
+      label: 'Prior Cesarean Section',
       description:
         'Patient has had one or more prior cesarean deliveries; clinical vigilance for uterine rupture.',
       isActive: true,
     },
     {
-      key: RiskFlagKey.OBSERVATION_20_PLUS_WEEKS,
+      key: RiskFlagKey.OBSERVATION_20PLUS,
       label: 'Observation (>= 20 Weeks)',
       description:
         'Antepartum observation admission at or beyond 20 gestational weeks requiring maternal/fetal monitoring.',
@@ -65,7 +65,8 @@ export async function seedReferenceData(dataSource: DataSource): Promise<void> {
       label: 'Other High-Risk Condition',
       description:
         'Other clinically significant maternal or fetal condition documented by admitting staff.',
-      isActive: true,
+      // Not one of the SRS risk flags (REQ-3.4); kept only so historical rows still resolve.
+      isActive: false,
     },
   ];
 

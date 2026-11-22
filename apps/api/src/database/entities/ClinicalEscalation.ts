@@ -13,6 +13,7 @@ import {
   ClinicalObservationType,
   EscalationCategory,
   EscalationPriority,
+  EscalationReason,
   EscalationStatus,
 } from '@lrms/shared';
 import type { Admission } from './Admission.js';
@@ -49,6 +50,21 @@ export class ClinicalEscalation {
 
   @Column({ name: 'clinical_reason', type: 'text' })
   clinicalReason!: string;
+
+  @Column({ name: 'reason_code', type: 'varchar', nullable: true })
+  reasonCode!: EscalationReason | null;
+
+  @Column({ name: 'care_plan_transition_id', type: 'uuid', nullable: true })
+  carePlanTransitionId!: string | null;
+
+  @Column({ name: 'reversed_at', type: 'timestamptz', nullable: true })
+  reversedAt!: Date | null;
+
+  @Column({ name: 'reversed_by_user_id', type: 'uuid', nullable: true })
+  reversedByUserId!: string | null;
+
+  @Column({ name: 'reversal_reason', type: 'text', nullable: true })
+  reversalReason!: string | null;
 
   @Column({ name: 'source_observation_type', type: 'varchar', length: 50, nullable: true })
   sourceObservationType!: ClinicalObservationType | null;
