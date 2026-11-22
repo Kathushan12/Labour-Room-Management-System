@@ -35,19 +35,25 @@ import { Button } from '../../../components/ui/button.js';
 import { Badge } from '../../../components/ui/badge.js';
 import { AlertCircle, Baby, CheckCircle2, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { formatColomboDateTime } from '../../../lib/datetime.js';
+import { useToast } from '../../../components/ui/toast.js';
 
 interface PostpartumDeliveryTabProps {
   admissionId: string;
   wardId: string;
+  admissionReferenceId: string;
+  bedNumber?: string | null;
   userRole?: string;
 }
 
 export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
   admissionId,
   wardId,
+  admissionReferenceId,
+  bedNumber,
   userRole,
 }) => {
   const { user } = useAuth();
+  const toast = useToast();
 
   const [doctors, setDoctors] = useState<StaffOption[]>([]);
   const [nurses, setNurses] = useState<StaffOption[]>([]);
@@ -169,52 +175,61 @@ export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
   const handleCreateDelivery = async (input: CreateDeliveryInput | UpdateDeliveryInput) => {
     await postpartumDeliveryApi.createDelivery(admissionId, input as CreateDeliveryInput);
     await loadData();
+    toast.success('Delivery recorded.');
   };
 
   const handleUpdateDelivery = async (input: CreateDeliveryInput | UpdateDeliveryInput) => {
     if (!delivery) return;
     await postpartumDeliveryApi.updateDelivery(delivery.id, input as UpdateDeliveryInput);
     await loadData();
+    toast.success('Delivery details updated.');
   };
 
   const handleFinalizeDelivery = async (clinicalSummary?: string) => {
     if (!delivery) return;
     await postpartumDeliveryApi.finalizeDelivery(delivery.id, { clinicalSummary });
     await loadData();
+    toast.success('Delivery finalised.');
   };
 
   const handleRegisterNewborn = async (input: RegisterNewbornInput) => {
     if (!delivery) return;
     await postpartumDeliveryApi.registerNewborn(delivery.id, input);
     await loadData();
+    toast.success('Newborn registered.');
   };
 
   const handleRecordApgar = async (input: RecordApgarInput) => {
     if (!selectedNewbornForApgar) return;
     await postpartumDeliveryApi.recordApgar(selectedNewbornForApgar.id, input);
     await loadData();
+    toast.success('Apgar score recorded.');
   };
 
   const handleAddMaternalAssessment = async (input: CreatePostpartumMaternalAssessmentInput) => {
     await postpartumDeliveryApi.createMaternalPostpartumAssessment(admissionId, input);
     await loadData();
+    toast.success('Postpartum assessment recorded.');
   };
 
   const handleAddNewbornCare = async (input: CreatePostpartumNewbornAssessmentInput) => {
     if (!selectedNewbornForCare) return;
     await postpartumDeliveryApi.createNewbornPostpartumAssessment(selectedNewbornForCare.id, input);
     await loadData();
+    toast.success('Newborn assessment recorded.');
   };
 
   const handleAuthorizeMaternalDischarge = async (input: AuthorizeMaternalDischargeInput) => {
     await postpartumDeliveryApi.authorizeMaternalDischarge(admissionId, input);
     await loadData();
+    toast.success('Maternal discharge authorised. The bed is sent for cleaning.');
   };
 
   const handleAuthorizeNewbornDischarge = async (input: AuthorizeNewbornDischargeInput) => {
     if (!selectedNewbornForDischarge) return;
     await postpartumDeliveryApi.authorizeNewbornDischarge(selectedNewbornForDischarge.id, input);
     await loadData();
+    toast.success('Newborn discharge authorised.');
   };
 
   // Check if mother has been discharged
@@ -430,7 +445,8 @@ export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
       <MaternalDischargeModal
         open={maternalDischargeOpen}
         onOpenChange={setMaternalDischargeOpen}
-        admissionReferenceId={delivery?.deliveryReferenceId || admissionId.slice(0, 8)}
+        admissionReferenceId={admissionReferenceId}
+        bedNumber={bedNumber}
         hasActiveBed={true}
         onSubmit={handleAuthorizeMaternalDischarge}
       />

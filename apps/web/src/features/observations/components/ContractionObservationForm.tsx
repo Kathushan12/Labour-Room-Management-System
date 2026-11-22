@@ -4,7 +4,10 @@ import { observationsApi } from '../../../services/observations.api.js';
 import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
+import { FieldError, errorProps } from '../../../components/ui/field-error.js';
+import { FormActions } from '../../../components/shared/FormActions.js';
 import { AlertCircle, Loader2, Waves } from 'lucide-react';
+import { colomboInputToIso } from '../../../lib/datetime.js';
 
 interface ContractionObservationFormProps {
   admissionId: string;
@@ -26,16 +29,29 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countError, setCountError] = useState<string | null>(null);
+  const [durationError, setDurationError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
 
     const count = Number(frequency);
-    if (isNaN(count) || count < 0 || count > 10) {
-      setError('Contractions count must be between 0 and 10 per 10 minutes');
-      return;
-    }
+    const countProblem =
+      frequency.trim() === ''
+        ? 'Enter how many contractions in 10 minutes. Enter 0 if there were none.'
+        : isNaN(count) || !Number.isInteger(count) || count < 0 || count > 10
+          ? 'Enter a whole number from 0 to 10 contractions per 10 minutes.'
+          : null;
+    const seconds = Number(duration);
+    const durationProblem =
+      duration.trim() !== '' && (isNaN(seconds) || !Number.isInteger(seconds) || seconds < 0 || seconds > 300)
+        ? 'Enter the average duration as whole seconds from 0 to 300.'
+        : null;
+    setCountError(countProblem);
+    setDurationError(durationProblem);
+    if (countProblem || durationProblem) return;
 
     setLoading(true);
     try {
@@ -45,7 +61,7 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
         durationSeconds: duration ? Number(duration) : null,
         intensity: intensity || null,
         clinicalNotes: notes.trim() || null,
-        observationTimestamp: observationTime ? new Date(observationTime).toISOString() : undefined,
+        observationTimestamp: observationTime ? colomboInputToIso(observationTime) : undefined,
       };
 
       const result = await observationsApi.recordContractionObservation(admissionId, payload);
@@ -61,9 +77,12 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs flex items-center space-x-2">
+        <div
+          role="alert"
+          className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs flex items-center space-x-2"
+        >
           <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
           <span>{error}</span>
         </div>
@@ -78,14 +97,16 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
           <Input
             id="contraction-frequency"
             type="number"
+            inputMode="numeric"
             min="0"
             max="10"
             placeholder="e.g. 3"
             value={frequency}
             onChange={(e) => setFrequency(e.target.value)}
-            required
             className="text-sm mt-1"
+            {...errorProps('contraction-frequency', countError)}
           />
+          <FieldError id="contraction-frequency-error" message={countError} />
           <p className="text-[11px] text-slate-500 mt-1">Normal active labour: 3–5 / 10 min</p>
         </div>
 
@@ -96,13 +117,16 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
           <Input
             id="contraction-duration"
             type="number"
+            inputMode="numeric"
             min="5"
             max="180"
             placeholder="e.g. 40"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
             className="text-sm mt-1"
+            {...errorProps('contraction-duration', durationError)}
           />
+          <FieldError id="contraction-duration-error" message={durationError} />
           <p className="text-[11px] text-slate-500 mt-1">
             &lt;20s: Mild, 20-40s: Moderate, &gt;40s: Strong
           </p>
@@ -116,7 +140,7 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
             id="contraction-intensity"
             value={intensity}
             onChange={(e) => setIntensity(e.target.value as ContractionIntensity)}
-            className="w-full mt-1 border border-slate-300 rounded-md px-3 py-2 text-sm bg-white"
+            className="w-full mt-1 border border-slate-300 rounded-md px-3 py-2 text-base sm:text-sm bg-white min-h-[44px] sm:min-h-0"
           >
             <option value={ContractionIntensity.MILD}>
               Mild (&lt; 20 seconds, dotted shading)
@@ -138,7 +162,7 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
             htmlFor="contraction-observation-time"
             className="text-xs font-semibold text-slate-700"
           >
-            Observation Timestamp (Optional - defaults to now)
+            Observation time (Colombo, 24 h). Leave empty for now.
           </Label>
           <Input
             id="contraction-observation-time"
@@ -166,7 +190,7 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
         </div>
       </div>
 
-      <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+      <FormActions>
         {onCancel && (
           <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={loading}>
             Cancel
@@ -181,7 +205,7 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
           {loading ? (
             <>
               <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              Recording...
+              Saving...
             </>
           ) : (
             <>
@@ -190,7 +214,7 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
             </>
           )}
         </Button>
-      </div>
+      </FormActions>
     </form>
   );
 };

@@ -100,7 +100,7 @@ export const PartographView: React.FC<PartographViewProps> = ({
           <span className="font-semibold text-slate-700">
             Active Labour Monitoring Surveillance
           </span>
-          <span className="text-slate-400">|</span>
+          <span className="text-slate-500">|</span>
           <span className="text-slate-600">Standard WHO 4-hour alert/action protocol</span>
         </div>
 
@@ -232,7 +232,7 @@ export const PartographView: React.FC<PartographViewProps> = ({
             </table>
           </div>
         ) : (
-          <p className="text-xs text-slate-400 italic">No FHR observations recorded.</p>
+          <p className="text-xs text-slate-500 italic">No FHR observations recorded.</p>
         )}
 
         {/* Liquor and Moulding Strip */}
@@ -248,7 +248,7 @@ export const PartographView: React.FC<PartographViewProps> = ({
                 )}
               </span>
             ) : (
-              <span className="text-slate-400 italic">Not recorded</span>
+              <span className="text-slate-500 italic">Not recorded</span>
             )}
           </div>
           <div>
@@ -263,7 +263,7 @@ export const PartographView: React.FC<PartographViewProps> = ({
                 )}
               </span>
             ) : (
-              <span className="text-slate-400 italic">Not recorded</span>
+              <span className="text-slate-500 italic">Not recorded</span>
             )}
           </div>
         </div>
@@ -329,7 +329,7 @@ export const PartographView: React.FC<PartographViewProps> = ({
                             : ''}
                         </span>
                       ) : (
-                        <span className="text-slate-400 italic">—</span>
+                        <span className="text-slate-500 italic">—</span>
                       )}
                     </td>
                     <td className="py-2 px-3">
@@ -348,7 +348,7 @@ export const PartographView: React.FC<PartographViewProps> = ({
             </table>
           </div>
         ) : (
-          <p className="text-xs text-slate-400 italic">
+          <p className="text-xs text-slate-500 italic">
             No cervical dilation assessments recorded.
           </p>
         )}
@@ -419,7 +419,7 @@ export const PartographView: React.FC<PartographViewProps> = ({
             </table>
           </div>
         ) : (
-          <p className="text-xs text-slate-400 italic">No contraction observations recorded.</p>
+          <p className="text-xs text-slate-500 italic">No contraction observations recorded.</p>
         )}
       </div>
 
@@ -485,7 +485,7 @@ export const PartographView: React.FC<PartographViewProps> = ({
             </table>
           </div>
         ) : (
-          <p className="text-xs text-slate-400 italic">No maternal vitals recorded.</p>
+          <p className="text-xs text-slate-500 italic">No maternal vitals recorded.</p>
         )}
       </div>
 

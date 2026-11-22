@@ -11,7 +11,10 @@ import { observationsApi } from '../../../services/observations.api.js';
 import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
+import { FieldError, errorProps } from '../../../components/ui/field-error.js';
+import { FormActions } from '../../../components/shared/FormActions.js';
 import { AlertCircle, GitCommit, Loader2 } from 'lucide-react';
+import { colomboInputToIso } from '../../../lib/datetime.js';
 
 interface LabourAssessmentFormProps {
   admissionId: string;
@@ -40,30 +43,29 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dilationError, setDilationError] = useState<string | null>(null);
+  const [effacementError, setEffacementError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
 
-    if (dilation && Number(dilation) > 10.0) {
-      setError('Cervical dilation cannot exceed 10.0 cm (maximum fully dilated is 10.0 cm)');
-      return;
-    }
-
-    if (dilation && Number(dilation) < 0) {
-      setError('Cervical dilation cannot be negative');
-      return;
-    }
-
-    if (effacement && (Number(effacement) < 0 || Number(effacement) > 100)) {
-      setError('Cervical effacement must be between 0 and 100 %');
-      return;
-    }
-
-    if (descent && (Number(descent) < 0 || Number(descent) > 5)) {
-      setError('Fetal descent must be between 0 and 5 fifths palpable');
-      return;
-    }
+    const dilationProblem =
+      dilation.trim() !== '' && (isNaN(Number(dilation)) || Number(dilation) < 0 || Number(dilation) > 10)
+        ? 'Enter cervical dilation from 0 to 10 cm (10 is fully dilated).'
+        : null;
+    const effacementProblem =
+      effacement.trim() !== '' &&
+      (isNaN(Number(effacement)) ||
+        !Number.isInteger(Number(effacement)) ||
+        Number(effacement) < 0 ||
+        Number(effacement) > 100)
+        ? 'Enter effacement as a whole number from 0 to 100 %.'
+        : null;
+    setDilationError(dilationProblem);
+    setEffacementError(effacementProblem);
+    if (dilationProblem || effacementProblem) return;
 
     setLoading(true);
     try {
@@ -78,7 +80,7 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
         caput,
         moulding,
         clinicalNotes: notes.trim() || null,
-        observationTimestamp: observationTime ? new Date(observationTime).toISOString() : undefined,
+        observationTimestamp: observationTime ? colomboInputToIso(observationTime) : undefined,
       };
 
       const result = await observationsApi.recordLabourAssessment(admissionId, payload);
@@ -96,7 +98,10 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
   return (
     <form noValidate onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs flex items-center space-x-2">
+        <div
+          role="alert"
+          className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs flex items-center space-x-2"
+        >
           <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
           <span>{error}</span>
         </div>
@@ -114,6 +119,7 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
           <Input
             id="labour-cervical-dilation"
             type="number"
+            inputMode="decimal"
             step="0.5"
             min="0.0"
             max="10.0"
@@ -121,7 +127,9 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
             value={dilation}
             onChange={(e) => setDilation(e.target.value)}
             className="text-sm mt-1"
+            {...errorProps('labour-cervical-dilation', dilationError)}
           />
+          <FieldError id="labour-cervical-dilation-error" message={dilationError} />
         </div>
 
         <div>
@@ -134,13 +142,16 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
           <Input
             id="labour-cervical-effacement"
             type="number"
+            inputMode="numeric"
             min="0"
             max="100"
             placeholder="e.g. 75"
             value={effacement}
             onChange={(e) => setEffacement(e.target.value)}
             className="text-sm mt-1"
+            {...errorProps('labour-cervical-effacement', effacementError)}
           />
+          <FieldError id="labour-cervical-effacement-error" message={effacementError} />
         </div>
       </div>
 
@@ -290,7 +301,7 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <Label htmlFor="labour-observation-time" className="text-xs font-semibold text-slate-700">
-            Observation Timestamp (Optional - defaults to now)
+            Observation time (Colombo, 24 h). Leave empty for now.
           </Label>
           <Input
             id="labour-observation-time"
@@ -315,7 +326,7 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+      <FormActions>
         {onCancel && (
           <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={loading}>
             Cancel
@@ -330,7 +341,7 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
           {loading ? (
             <>
               <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              Recording...
+              Saving...
             </>
           ) : (
             <>
@@ -339,7 +350,7 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
             </>
           )}
         </Button>
-      </div>
+      </FormActions>
     </form>
   );
 };

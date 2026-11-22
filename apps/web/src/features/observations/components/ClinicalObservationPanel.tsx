@@ -32,6 +32,7 @@ import { ObservationAmendmentDialog } from './ObservationAmendmentDialog.js';
 import { PartographView } from './PartographView.js';
 import { EscalationCreateDialog } from '../../clinical-care/components/EscalationCreateDialog.js';
 import { humanizeEnum } from '../../../lib/labels.js';
+import { useToast } from '../../../components/ui/toast.js';
 
 const HIGHLIGHT_LABELS: Record<ObservationHighlight, string> = {
   SYSTOLIC_HIGH: 'Systolic high',
@@ -68,6 +69,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
   admissionId,
 }) => {
   const { permissions } = useAuth();
+  const toast = useToast();
   const canRecordBP = permissions.includes(Permission.OBSERVATIONS_RECORD_BP);
   const canRecordFHR = permissions.includes(Permission.OBSERVATIONS_RECORD_FHR);
   const canRecordLabour = permissions.includes(Permission.OBSERVATIONS_RECORD_LABOUR);
@@ -79,7 +81,6 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
   const [partograph, setPartograph] = useState<PartographDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Forms open states
   const [showMaternalForm, setShowMaternalForm] = useState(false);
@@ -140,8 +141,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
   };
 
   const handleActionSuccess = (msg: string) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(null), 4000);
+    toast.success(msg);
     setShowMaternalForm(false);
     setShowFetalForm(false);
     setShowLabourForm(false);
@@ -171,12 +171,6 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
         <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs flex items-center space-x-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
           <span>{error}</span>
-        </div>
-      )}
-      {successMsg && (
-        <div className="mb-4 p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs flex items-center space-x-2">
-          <Clock className="w-4 h-4 flex-shrink-0 text-emerald-600" />
-          <span>{successMsg}</span>
         </div>
       )}
 
@@ -297,7 +291,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
           <GitCommit className="w-3.5 h-3.5" />
           <span>
             Labour Progress (
-            {(summary as any)?.labourAssessmentCount ?? summary?.labourAssessments?.length ?? 0}
+            {(summary as any)?.labourAssessmentCount ?? summary?.labourAssessments?.length ?? 0})
           </span>
         </button>
 
@@ -486,7 +480,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 italic py-4">
+                <p className="text-xs text-slate-500 italic py-4">
                   No maternal vitals recorded yet.
                 </p>
               )}
@@ -532,17 +526,17 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                       <div>
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-indigo-900 text-sm">
-                            FHR: {obs.fetalHeartRateBpm} bpm
+                            {obs.fetalHeartRateBpm != null ? `FHR: ${obs.fetalHeartRateBpm} bpm` : 'Amniotic fluid only'}
                           </span>
                           <HighlightBadges highlights={obs.highlights ?? []} />
                           {obs.liquorStatus && (
                             <Badge variant="outline" className="text-[10px] text-slate-700">
-                              Amniotic fluid: {obs.liquorStatus}
+                              Amniotic fluid: {humanizeEnum(obs.liquorStatus)}
                             </Badge>
                           )}
                           {obs.variability && (
                             <Badge variant="outline" className="text-[10px] text-slate-700">
-                              Var: {obs.variability}
+                              Var: {humanizeEnum(obs.variability)}
                             </Badge>
                           )}
                           {obs.supersedesId && (
@@ -574,7 +568,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                             handleOpenEscalate(
                               obs.id,
                               ClinicalObservationType.FETAL,
-                              `FHR: ${obs.fetalHeartRateBpm} bpm, Liquor: ${obs.liquorStatus || 'N/A'}`,
+                              `${obs.fetalHeartRateBpm != null ? `FHR: ${obs.fetalHeartRateBpm} bpm, ` : ''}Amniotic fluid: ${humanizeEnum(obs.liquorStatus) || 'not recorded'}`,
                             )
                           }
                           className="text-xs text-rose-700 hover:bg-rose-50 h-7 px-2"
@@ -608,7 +602,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 italic py-4">
+                <p className="text-xs text-slate-500 italic py-4">
                   No fetal observations recorded yet.
                 </p>
               )}
@@ -714,7 +708,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 italic py-4">
+                <p className="text-xs text-slate-500 italic py-4">
                   No labour assessments recorded yet.
                 </p>
               )}
@@ -771,7 +765,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                           )}
                           {obs.intensity && (
                             <Badge variant="outline" className="text-[10px] text-slate-700">
-                              Intensity: {obs.intensity}
+                              Intensity: {humanizeEnum(obs.intensity)}
                             </Badge>
                           )}
                         </div>
@@ -810,7 +804,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 italic py-4">
+                <p className="text-xs text-slate-500 italic py-4">
                   No contraction observations recorded yet.
                 </p>
               )}

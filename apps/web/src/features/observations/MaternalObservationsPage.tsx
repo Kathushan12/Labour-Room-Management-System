@@ -1,54 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { AdmissionStatus, AdmissionSummaryDto } from '@lrms/shared';
-import { fetchAdmissions } from '../../services/admissions.api.js';
+import { useClinicalDashboardData } from '../dashboard/useClinicalDashboardData.js';
+import { PatientHeader } from '../../components/shared/PatientHeader.js';
 import { PageHeader } from '../../components/shared/HeadersAndCards.js';
 import { EmptyState } from '../../components/shared/FeedbackStates.js';
 import { ClinicalObservationPanel } from './components/ClinicalObservationPanel.js';
 import { HeartPulse, Loader2, UserCheck } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button.js';
 import { humanizeEnum } from '../../lib/labels.js';
 
 export const MaternalObservationsPage: React.FC = () => {
-  const [admissions, setAdmissions] = useState<AdmissionSummaryDto[]>([]);
+  const navigate = useNavigate();
+  const { admissions, loading, error } = useClinicalDashboardData();
   const [selectedAdmissionId, setSelectedAdmissionId] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    async function loadAdmissions() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetchAdmissions({ status: AdmissionStatus.ADMITTED, limit: 50 });
-        if (isMounted) {
-          if (res.success && res.data?.items) {
-            setAdmissions(res.data.items);
-            if (res.data.items.length > 0) {
-              setSelectedAdmissionId(res.data.items[0].id);
-            }
-          }
-        }
-      } catch (err: unknown) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load active admissions');
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    loadAdmissions();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (!selectedAdmissionId && admissions.length > 0) setSelectedAdmissionId(admissions[0].id);
+  }, [admissions, selectedAdmissionId]);
 
   const selectedAdm = admissions.find((a) => a.id === selectedAdmissionId);
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6 p-4 pt-0 sm:p-6 sm:pt-0 lg:p-8 lg:pt-0">
+      {selectedAdm && (
+        <PatientHeader refId={selectedAdm.admissionReferenceId} bedNumber={selectedAdm.bedNumber} />
+      )}
       <PageHeader
         title="Maternal Observations & Vitals"
         description="Routine recording of maternal blood pressure, pulse, temperature, blood glucose, and clinical vitals."
@@ -73,19 +49,19 @@ export const MaternalObservationsPage: React.FC = () => {
       ) : admissions.length === 0 ? (
         <EmptyState
           title="No Active Inpatients"
-          description="There are currently no active patient admissions in Ward 18 to record maternal observations for."
+          description="Admit a patient first, then come back here to record observations."
           actionLabel="Go to Admissions"
-          onAction={() => {}}
+          onAction={() => navigate('/admissions')}
         />
       ) : (
         <div className="space-y-6">
           {/* Patient / Admission Selector Ribbon */}
           <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-full bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 font-bold">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="w-9 h-9 shrink-0 rounded-full bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 font-bold">
                 <HeartPulse className="w-5 h-5" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <label
                   htmlFor="maternal-patient-select"
                   className="font-semibold text-slate-500 uppercase tracking-wider text-[11px] block"
@@ -97,11 +73,11 @@ export const MaternalObservationsPage: React.FC = () => {
                   aria-label="Select Active Inpatient"
                   value={selectedAdmissionId}
                   onChange={(e) => setSelectedAdmissionId(e.target.value)}
-                  className="font-bold text-slate-900 bg-transparent border-0 border-b border-teal-500 focus:ring-0 focus:border-teal-700 text-sm py-0.5 pr-8 pl-0 cursor-pointer"
+                  className="w-full min-w-0 max-w-full truncate font-bold text-slate-900 bg-transparent border-0 border-b border-teal-500 focus:ring-0 focus:border-teal-700 text-sm py-0.5 pr-8 pl-0 cursor-pointer"
                 >
                   {admissions.map((adm) => (
                     <option key={adm.id} value={adm.id}>
-                      {adm.admissionReferenceId} ({humanizeEnum(adm.admissionCategory)})
+                      {adm.admissionReferenceId} · {adm.bedNumber ?? 'No bed'} ({humanizeEnum(adm.admissionCategory)})
                     </option>
                   ))}
                 </select>

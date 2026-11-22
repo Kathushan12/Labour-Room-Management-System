@@ -25,6 +25,7 @@ interface MaternalDischargeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   admissionReferenceId: string;
+  bedNumber?: string | null;
   hasActiveBed: boolean;
   onSubmit: (input: AuthorizeMaternalDischargeInput) => Promise<void>;
 }
@@ -33,6 +34,7 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
   open,
   onOpenChange,
   admissionReferenceId,
+  bedNumber,
   hasActiveBed,
   onSubmit,
 }) => {
@@ -104,9 +106,10 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
           <DialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             Authorize Maternal Discharge — {admissionReferenceId}
+            {bedNumber ? ` · Bed ${bedNumber}` : ''}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Closes the admission. The bed is sent for cleaning.
+            Closes admission {admissionReferenceId}. {bedNumber ? `Bed ${bedNumber} is sent for cleaning.` : 'The bed is sent for cleaning.'}
           </DialogDescription>
         </DialogHeader>
 

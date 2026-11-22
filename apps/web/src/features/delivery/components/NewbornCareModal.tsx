@@ -153,6 +153,7 @@ export const NewbornCareModal: React.FC<NewbornCareModalProps> = ({
               <Label className="text-xs">Heart Rate (bpm)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="50"
                 max="240"
                 value={heartRate}
@@ -165,6 +166,7 @@ export const NewbornCareModal: React.FC<NewbornCareModalProps> = ({
               <Label className="text-xs">Resp Rate (breaths/m)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="10"
                 max="120"
                 value={respiratoryRate}
@@ -177,6 +179,7 @@ export const NewbornCareModal: React.FC<NewbornCareModalProps> = ({
               <Label className="text-xs">Axillary Temp (°C)</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 step="0.1"
                 min="30"
                 max="45"

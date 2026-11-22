@@ -130,6 +130,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-systolic-bp"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.systolicBp ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -150,6 +151,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-diastolic-bp"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.diastolicBp ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -170,6 +172,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-pulse-rate"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.pulseRateBpm ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -190,6 +193,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-temperature"
                     type="number"
+                    inputMode="decimal"
                     step="0.1"
                     value={formValues.temperatureCelsius ?? ''}
                     onChange={(e) =>
@@ -207,19 +211,19 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
             {observationType === ClinicalObservationType.FETAL && (
               <div>
                 <Label htmlFor="amend-fhr" className="text-xs font-semibold text-slate-700">
-                  Fetal Heart Rate (bpm) *
+                  Fetal Heart Rate (bpm)
                 </Label>
                 <Input
                   id="amend-fhr"
                   type="number"
+                  inputMode="numeric"
                   value={formValues.fetalHeartRateBpm ?? ''}
                   onChange={(e) =>
                     handleFieldChange(
                       'fetalHeartRateBpm',
-                      e.target.value ? Number(e.target.value) : '',
+                      e.target.value ? Number(e.target.value) : null,
                     )
                   }
-                  required
                   className="text-sm mt-1"
                 />
               </div>
@@ -237,6 +241,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-cervical-dilation"
                     type="number"
+                    inputMode="decimal"
                     step="0.5"
                     value={formValues.cervicalDilationCm ?? ''}
                     onChange={(e) =>
@@ -258,6 +263,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-effacement"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.cervicalEffacementPercent ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -283,6 +289,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-contractions-count"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.contractionsCount ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -300,6 +307,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-duration"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.durationSeconds ?? ''}
                     onChange={(e) =>
                       handleFieldChange(

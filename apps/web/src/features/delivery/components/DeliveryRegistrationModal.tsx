@@ -11,8 +11,10 @@ import {
 import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
+import { FieldError, errorProps } from '../../../components/ui/field-error.js';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { StaffSelect, StaffOption } from './StaffSelect.js';
+import { colomboInputToIso, toColomboInput } from '../../../lib/datetime.js';
 
 interface DeliveryRegistrationModalProps {
   open: boolean;
@@ -50,12 +52,15 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
+  const [doctorError, setDoctorError] = useState<string | null>(null);
+  const [lossError, setLossError] = useState<string | null>(null);
 
   useEffect(() => {
     if (existingDelivery) {
       setDeliveryTimestamp(
         existingDelivery.deliveryTimestamp
-          ? new Date(existingDelivery.deliveryTimestamp).toISOString().slice(0, 16)
+          ? toColomboInput(existingDelivery.deliveryTimestamp)
           : '',
       );
       setDeliveryMode(existingDelivery.deliveryMode);
@@ -72,7 +77,7 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
       setClinicalNotes(existingDelivery.clinicalNotes || '');
       setAmendmentReason('');
     } else {
-      setDeliveryTimestamp(new Date().toISOString().slice(0, 16));
+      setDeliveryTimestamp(toColomboInput());
       setDeliveryMode(DeliveryMode.NORMAL);
       setDeliveryLocation('Ward 18 - Labour Room');
       setAttendingDoctorId(defaultDoctorId);
@@ -84,32 +89,37 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
       setAmendmentReason('');
     }
     setErrorMsg(null);
+    setTimeError(null);
+    setDoctorError(null);
+    setLossError(null);
   }, [existingDelivery, open, defaultDoctorId, defaultMidwifeId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setErrorMsg(null);
 
-    if (!deliveryTimestamp) {
-      setErrorMsg('Delivery timestamp is required.');
-      return;
-    }
-    if (!attendingDoctorId) {
-      setErrorMsg('Select the attending doctor.');
-      return;
-    }
-
     const bloodLoss = estimatedBloodLossMl ? parseInt(estimatedBloodLossMl, 10) : undefined;
-    if (bloodLoss !== undefined && (isNaN(bloodLoss) || bloodLoss < 0 || bloodLoss > 10000)) {
-      setErrorMsg('Estimated blood loss must be between 0 and 10,000 mL.');
-      return;
-    }
+    const timeProblem = !deliveryTimestamp
+      ? 'Enter the delivery date and time.'
+      : new Date(colomboInputToIso(deliveryTimestamp)) > new Date()
+        ? 'The delivery time cannot be in the future.'
+        : null;
+    const doctorProblem = attendingDoctorId ? null : 'Select the attending doctor.';
+    const lossProblem =
+      bloodLoss !== undefined && (isNaN(bloodLoss) || bloodLoss < 0 || bloodLoss > 10000)
+        ? 'Enter blood loss as a whole number from 0 to 10,000 mL.'
+        : null;
+    setTimeError(timeProblem);
+    setDoctorError(doctorProblem);
+    setLossError(lossProblem);
+    if (timeProblem || doctorProblem || lossProblem) return;
 
     try {
       setSubmitting(true);
       if (isEditing) {
         await onSubmit({
-          deliveryTimestamp: new Date(deliveryTimestamp).toISOString(),
+          deliveryTimestamp: colomboInputToIso(deliveryTimestamp),
           deliveryMode,
           deliveryLocation,
           attendingDoctorId,
@@ -122,7 +132,7 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
         });
       } else {
         await onSubmit({
-          deliveryTimestamp: new Date(deliveryTimestamp).toISOString(),
+          deliveryTimestamp: colomboInputToIso(deliveryTimestamp),
           deliveryMode,
           deliveryLocation,
           attendingDoctorId,
@@ -161,17 +171,19 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Delivery Timestamp *</Label>
               <Input
+                id="delivery-time"
                 type="datetime-local"
                 value={deliveryTimestamp}
                 onChange={(e) => setDeliveryTimestamp(e.target.value)}
-                required
-                className="h-8 text-xs"
+                className="text-xs"
+                {...errorProps('delivery-time', timeError)}
               />
+              <FieldError id="delivery-time-error" message={timeError} />
             </div>
 
             <div className="space-y-1.5">
@@ -196,8 +208,8 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
                 onChange={setAttendingDoctorId}
                 options={doctors}
                 placeholder="Select doctor"
-                required
               />
+              <FieldError id="delivery-doctor-error" message={doctorError} />
             </div>
 
             <div className="space-y-1.5">
@@ -215,14 +227,18 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
             <div className="space-y-1.5">
               <Label className="text-xs">Blood Loss (mL)</Label>
               <Input
+                id="delivery-blood-loss"
                 type="number"
+                inputMode="numeric"
                 min="0"
                 max="10000"
                 value={estimatedBloodLossMl}
                 onChange={(e) => setEstimatedBloodLossMl(e.target.value)}
                 placeholder="250"
-                className="h-8 text-xs"
+                className="text-xs"
+                {...errorProps('delivery-blood-loss', lossError)}
               />
+              <FieldError id="delivery-blood-loss-error" message={lossError} />
             </div>
 
             <div className="space-y-1.5">

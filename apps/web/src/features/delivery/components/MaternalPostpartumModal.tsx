@@ -117,6 +117,7 @@ export const MaternalPostpartumModal: React.FC<MaternalPostpartumModalProps> = (
               <Label className="text-xs">Systolic BP (mmHg)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="50"
                 max="260"
                 value={systolicBp}
@@ -129,6 +130,7 @@ export const MaternalPostpartumModal: React.FC<MaternalPostpartumModalProps> = (
               <Label className="text-xs">Diastolic BP (mmHg)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="30"
                 max="180"
                 value={diastolicBp}
@@ -141,6 +143,7 @@ export const MaternalPostpartumModal: React.FC<MaternalPostpartumModalProps> = (
               <Label className="text-xs">Pulse Rate (bpm)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="30"
                 max="220"
                 value={pulseRate}
@@ -153,6 +156,7 @@ export const MaternalPostpartumModal: React.FC<MaternalPostpartumModalProps> = (
               <Label className="text-xs">Temp (°C)</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 step="0.1"
                 min="30"
                 max="45"
@@ -210,6 +214,7 @@ export const MaternalPostpartumModal: React.FC<MaternalPostpartumModalProps> = (
               <Label className="text-xs">Pain Score (0-10)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="0"
                 max="10"
                 value={painScore}
