@@ -15,5 +15,6 @@ export * from './types/clinical-care.js';
 export * from './types/notification.js';
 export * from './types/postpartum-delivery.js';
 export * from './types/analytics.js';
+export * from './types/audit.js';
 export * from './constants/index.js';
 export * from './enums/index.js';

@@ -31,6 +31,7 @@ export interface AdmissionSummaryDto {
   hasPii: boolean;
   admissionCategory: AdmissionCategory;
   currentCarePlan: CarePlanState;
+  gestationWeeks: number | null;
   status: AdmissionStatus;
   admittedAt: string;
   dischargedAt: string | null;
@@ -54,6 +55,9 @@ export interface CreateTriageRiskFlagInput {
 
 export interface CreateTriageRequest {
   admissionCategory: AdmissionCategory;
+  gestationWeeks: number;
+  bedId: string;
+  attendingDoctorId: string;
   riskFlagKeys?: RiskFlagKey[];
   riskFlagNotes?: Partial<Record<RiskFlagKey, string | null>>;
   noListedRiskFlagsConfirmed?: boolean;
@@ -86,4 +90,10 @@ export interface PaginatedAdmissionsResponse {
     total: number;
     totalPages: number;
   };
+}
+
+// Returned in error.details when the chosen bed was taken meanwhile (REQ-3.11).
+export interface BedUnavailableDetails {
+  bedId: string;
+  availableBeds: Array<{ id: string; bedNumber: string }>;
 }
