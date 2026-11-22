@@ -11,6 +11,7 @@ import { notificationRecipientService } from './notification-recipient.service.j
 import { notificationService } from './notification.service.js';
 import { emitToUser, emitToAdmission } from './realtime.server.js';
 import { logger } from '../../common/logging/logger.js';
+import { escalationAlertService } from '../clinical-care/escalation-alert.service.js';
 
 export class NotificationDispatcherService {
   private timer: NodeJS.Timeout | null = null;
@@ -81,6 +82,7 @@ export class NotificationDispatcherService {
     await queryRunner.connect();
 
     let processedCount = 0;
+    const pendingAlerts: { escalationId: string; doctorId: string }[] = [];
 
     try {
       await queryRunner.startTransaction();
@@ -160,8 +162,17 @@ export class NotificationDispatcherService {
               createdAt: notif.createdAt.toISOString(),
             });
 
-            // Special high-priority alerts
-            if (priority === NotificationPriority.EMERGENCY) {
+            // Escalation alerts go to the doctor as alert:new (full-screen alert with receipt);
+            // the legacy alert banners are skipped so the doctor is not alerted twice.
+            if (
+              notificationType === NotificationType.CLINICAL_ESCALATION_CREATED ||
+              notificationType === NotificationType.CLINICAL_ESCALATION_ASSIGNED
+            ) {
+              if (event.aggregateId && recipientId === payload.assignedRecipientUserId) {
+                // Sent after commit so the doctor's receipt can update the delivery attempt row.
+                pendingAlerts.push({ escalationId: event.aggregateId, doctorId: recipientId });
+              }
+            } else if (priority === NotificationPriority.EMERGENCY) {
               emitToUser(recipientId, SocketEvent.ALERT_EMERGENCY, {
                 notificationId: notif.id,
                 eventType: notificationType,
@@ -229,9 +240,19 @@ export class NotificationDispatcherService {
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
+      pendingAlerts.length = 0;
       logger.error({ service: 'outbox-dispatcher', err }, 'Failed batch outbox processing');
     } finally {
       await queryRunner.release();
+    }
+
+    for (const alert of pendingAlerts) {
+      await escalationAlertService.emitAlertNew(alert.escalationId, alert.doctorId).catch((err) => {
+        logger.error(
+          { service: 'outbox-dispatcher', escalationId: alert.escalationId, err },
+          'Failed emitting escalation alert',
+        );
+      });
     }
 
     return processedCount;

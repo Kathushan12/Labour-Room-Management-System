@@ -236,10 +236,10 @@ export class ClinicalCareController {
       const admissionId = req.params.id;
       const escalationId = req.params.escalationId;
       const actor = req.user!;
-      await patientAuthorizationService.assertCanAccessAdmission(actor, admissionId);
-
+      // Access is checked in the service: the alerted doctor may not be assigned to the patient.
       const parsed = acknowledgeEscalationSchema.parse(req.body);
       const result = await this.escalationService.acknowledgeEscalation(
+        admissionId,
         escalationId,
         parsed,
         actor,

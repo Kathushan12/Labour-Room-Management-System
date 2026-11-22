@@ -21,6 +21,12 @@ export const markNotificationReadParamsSchema = z.object({
   id: z.string().uuid('Invalid notification ID format'),
 });
 
+export const alertReceiptSchema = z
+  .object({
+    escalationId: z.string().uuid('Invalid escalation ID format'),
+  })
+  .strict();
+
 export const roomSubscriptionSchema = z.object({
   room: z.string().min(3).max(100),
 });

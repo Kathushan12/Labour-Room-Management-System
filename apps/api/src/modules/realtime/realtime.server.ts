@@ -3,6 +3,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { env } from '../../config/env.js';
 import { authenticateSocket } from './realtime.auth.js';
 import { handleRoomJoin, handleRoomLeave } from './realtime.rooms.js';
+import { registerAlertHandlers } from './alert-socket.handlers.js';
 import { SocketEvent } from '@lrms/shared';
 import { logger } from '../../common/logging/logger.js';
 import { RequestUser } from '../../common/middleware/auth.middleware.js';
@@ -71,6 +72,8 @@ export function initRealtimeServer(httpServer: HttpServer): SocketIOServer {
       },
     );
 
+    registerAlertHandlers(socket);
+
     // Handle disconnection
     socket.on('disconnect', (reason: string) => {
       logger.info(
@@ -104,6 +107,12 @@ export function emitToUser(userId: string, event: SocketEvent, payload: unknown)
   if (!io) return false;
   io.to(`user:${userId}`).emit(event, payload);
   return true;
+}
+
+export async function isUserOnline(userId: string): Promise<boolean> {
+  if (!io) return false;
+  const sockets = await io.in(`user:${userId}`).fetchSockets();
+  return sockets.length > 0;
 }
 
 export function emitToAdmission(

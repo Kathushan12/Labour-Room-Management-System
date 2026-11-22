@@ -11,7 +11,11 @@ import {
   ClinicalObservationType,
   NotificationType,
   NotificationPriority,
+  AlertStateChange,
+  UserRole,
 } from '@lrms/shared';
+import { escalationAlertService } from './escalation-alert.service.js';
+import { patientAuthorizationService } from '../admissions/patient-authorization.service.js';
 import { outboxService } from '../realtime/outbox.service.js';
 import { notificationDispatcherService } from '../realtime/notification-dispatcher.service.js';
 import { AppDataSource } from '../../config/database.js';
@@ -28,7 +32,12 @@ import {
   ContractionObservation,
 } from '../../database/entities/index.js';
 import { RequestUser } from '../../common/middleware/auth.middleware.js';
-import { NotFoundError, ConflictError, BadRequestError } from '../../common/errors/auth.errors.js';
+import {
+  NotFoundError,
+  ConflictError,
+  BadRequestError,
+  ForbiddenError,
+} from '../../common/errors/auth.errors.js';
 import { toEscalationDto } from './clinical-care.dto.js';
 import { applyAdmissionVisibilityScope } from '../admissions/patient-authorization.service.js';
 
@@ -85,14 +94,21 @@ export class ClinicalEscalationService {
         throw new NotFoundError('Admission episode not found');
       }
 
-      // Verify recipient if provided
+      let recipientUserId: string | null = null;
       if (payload.assignedRecipientUserId) {
         const recipient = await manager.findOne(User, {
           where: { id: payload.assignedRecipientUserId },
+          relations: ['role'],
         });
         if (!recipient) {
           throw new NotFoundError('Assigned recipient user not found');
         }
+        if (!recipient.isActive || recipient.role?.name !== UserRole.DOCTOR) {
+          throw new BadRequestError('Escalation alerts can only be sent to an active doctor');
+        }
+        recipientUserId = recipient.id;
+      } else {
+        recipientUserId = await escalationAlertService.resolveRecipient(manager, admission);
       }
 
       // Verify observation link if provided
@@ -140,9 +156,10 @@ export class ClinicalEscalationService {
         sourceObservationType: payload.sourceObservationType || null,
         sourceObservationId: payload.sourceObservationId || null,
         initiatedByUserId: actor.id,
-        assignedRecipientUserId: payload.assignedRecipientUserId || null,
+        assignedRecipientUserId: recipientUserId,
       });
 
+      // dispatched_at is filled by the database default inside this transaction (REQ-7.1).
       const savedEscalation = await manager.save(ClinicalEscalation, escalation);
 
       // Save initial history record
@@ -151,7 +168,7 @@ export class ClinicalEscalationService {
         fromStatus: EscalationStatus.OPEN,
         toStatus: EscalationStatus.OPEN,
         changedByUserId: actor.id,
-        newAssignedUserId: payload.assignedRecipientUserId || null,
+        newAssignedUserId: recipientUserId,
         reason: 'Initial escalation creation',
       });
       await manager.save(ClinicalEscalationHistory, history);
@@ -187,26 +204,7 @@ export class ClinicalEscalationService {
             (payload.priority as unknown as NotificationPriority) || NotificationPriority.URGENT,
           referenceId,
           clinicalReason: payload.clinicalReason,
-          assignedRecipientUserId: payload.assignedRecipientUserId || null,
-          initiatedByUserId: actor.id,
-          sourceObservationType: payload.sourceObservationType || null,
-          sourceObservationId: payload.sourceObservationId || null,
-        },
-      });
-
-      // Outbox Event for real-time notification
-      await outboxService.recordEvent(manager, {
-        eventType: NotificationType.CLINICAL_ESCALATION_CREATED,
-        aggregateType: 'ClinicalEscalation',
-        aggregateId: savedEscalation.id,
-        admissionId,
-        payload: {
-          category: payload.category,
-          priority:
-            (payload.priority as unknown as NotificationPriority) || NotificationPriority.URGENT,
-          referenceId,
-          clinicalReason: payload.clinicalReason,
-          assignedRecipientUserId: payload.assignedRecipientUserId || null,
+          assignedRecipientUserId: recipientUserId,
           initiatedByUserId: actor.id,
           sourceObservationType: payload.sourceObservationType || null,
           sourceObservationId: payload.sourceObservationId || null,
@@ -239,7 +237,7 @@ export class ClinicalEscalationService {
       },
     });
 
-    return escalations.map(toEscalationDto);
+    return escalationAlertService.attachRecipientContact(escalations.map(toEscalationDto));
   }
 
   async listVisibleEscalations(actor: RequestUser, limit = 100): Promise<EscalationFeedItemDto[]> {
@@ -275,11 +273,13 @@ export class ClinicalEscalationService {
       for (const a of allocations) bedByAdmission.set(a.admissionId, a.bed.bedNumber);
     }
 
-    return escalations.map((e) => ({
-      ...toEscalationDto(e),
-      admissionReferenceId: e.admission.admissionReferenceId,
-      bedNumber: bedByAdmission.get(e.admissionId) ?? null,
-    }));
+    return escalationAlertService.attachRecipientContact(
+      escalations.map((e) => ({
+        ...toEscalationDto(e),
+        admissionReferenceId: e.admission.admissionReferenceId,
+        bedNumber: bedByAdmission.get(e.admissionId) ?? null,
+      })),
+    );
   }
 
   async getEscalationById(
@@ -307,22 +307,47 @@ export class ClinicalEscalationService {
       throw new NotFoundError('Clinical escalation not found');
     }
 
-    return toEscalationDto(escalation);
+    const [dto] = await escalationAlertService.attachRecipientContact([toEscalationDto(escalation)]);
+    return dto;
   }
 
   async acknowledgeEscalation(
+    admissionId: string,
     escalationId: string,
     payload: AcknowledgeEscalationRequest,
     actor: RequestUser,
   ): Promise<ClinicalEscalationDto> {
     const result = await this.dataSource.transaction(async (manager) => {
       const escalation = await manager.findOne(ClinicalEscalation, {
-        where: { id: escalationId },
+        where: { id: escalationId, admissionId },
         lock: { mode: 'pessimistic_write' },
       });
 
       if (!escalation) {
         throw new NotFoundError('Clinical escalation not found');
+      }
+
+      // Acknowledgement is the doctor's proof of receipt, so only the alerted doctor may give it.
+      // With no recipient, any doctor with access to the patient may acknowledge.
+      if (escalation.assignedRecipientUserId) {
+        if (escalation.assignedRecipientUserId !== actor.id) {
+          throw new ForbiddenError(
+            'Only the doctor this alert was sent to can acknowledge it',
+            'ALERT_ACK_NOT_RECIPIENT',
+          );
+        }
+      } else {
+        if (actor.role !== UserRole.DOCTOR) {
+          throw new ForbiddenError('Only a doctor can acknowledge this alert', 'ALERT_ACK_DENIED');
+        }
+        await patientAuthorizationService.assertCanAccessAdmission(
+          actor,
+          admissionId,
+          null,
+          null,
+          'ALERT_ACKNOWLEDGE',
+          manager,
+        );
       }
 
       if (escalation.status !== EscalationStatus.OPEN) {
@@ -332,11 +357,14 @@ export class ClinicalEscalationService {
       }
 
       const previousStatus = escalation.status;
-      escalation.status = EscalationStatus.ACKNOWLEDGED;
-      escalation.acknowledgedAt = new Date();
-      escalation.acknowledgedByUserId = actor.id;
-
-      await manager.save(ClinicalEscalation, escalation);
+      // Database clock keeps the receipt times consistent with dispatched_at.
+      await manager.query(
+        `UPDATE "clinical_escalations"
+            SET "status" = $2, "acknowledged_at" = now(), "acknowledged_by_user_id" = $3,
+                "delivered_at" = COALESCE("delivered_at", now()), "updated_at" = now()
+          WHERE "id" = $1`,
+        [escalation.id, EscalationStatus.ACKNOWLEDGED, actor.id],
+      );
 
       // Save history record
       const history = manager.create(ClinicalEscalationHistory, {
@@ -382,6 +410,7 @@ export class ClinicalEscalationService {
     });
 
     notificationDispatcherService.dispatchNow().catch(() => {});
+    await escalationAlertService.emitState(escalationId, AlertStateChange.ACKNOWLEDGED);
     return result;
   }
 
@@ -487,6 +516,12 @@ export class ClinicalEscalationService {
 
       if (!escalation) {
         throw new NotFoundError('Clinical escalation not found');
+      }
+
+      if (payload.targetStatus === EscalationStatus.ACKNOWLEDGED) {
+        throw new BadRequestError(
+          'Use the acknowledge action; only the alerted doctor can acknowledge an escalation',
+        );
       }
 
       const allowedTransitions = ALLOWED_ESCALATION_TRANSITIONS[escalation.status] || [];
