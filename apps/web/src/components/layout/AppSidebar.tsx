@@ -18,6 +18,7 @@ import {
   Clock,
   Baby,
   FileSpreadsheet,
+  KeyRound,
 } from 'lucide-react';
 import { Badge } from '../ui/badge.js';
 
@@ -104,7 +105,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const sidebarContent = (
     <aside
       className={`flex flex-col h-full bg-slate-900 text-slate-100 transition-all duration-300 ${
-        collapsed ? 'w-16' : 'w-64'
+        collapsed ? 'lg:w-16 w-full' : 'w-full lg:w-64'
       } ${className || ''}`}
     >
       {/* Branding */}
@@ -184,6 +185,17 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         })}
       </nav>
 
+      {isAuthenticated && (
+        <NavLink
+          to="/change-password"
+          onClick={onMobileClose}
+          className="mx-2 mb-2 flex min-h-[44px] items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white sm:hidden"
+        >
+          <KeyRound className="h-4 w-4 shrink-0" aria-hidden="true" />
+          Change password
+        </NavLink>
+      )}
+
       {/* Sidebar Footer info */}
       {!collapsed && (
         <div className="p-3 border-t border-slate-800 text-[10px] text-slate-500 text-center">
@@ -206,7 +218,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             onClick={onMobileClose}
             aria-hidden="true"
           />
-          <div className="relative z-50 flex h-full w-64 flex-col bg-slate-900 shadow-xl">
+          <div className="relative z-50 flex h-full w-72 max-w-[85vw] flex-col bg-slate-900 pt-safe shadow-xl">
             {sidebarContent}
           </div>
         </div>

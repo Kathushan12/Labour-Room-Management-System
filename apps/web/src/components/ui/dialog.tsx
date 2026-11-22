@@ -41,10 +41,57 @@ export const DialogContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => {
   const context = React.useContext(DialogContext);
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  const isOpen = !!context?.open;
+
+  // Move focus into the dialog, keep Tab inside it, and give focus back to the opener on close.
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    const focusables = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null);
+    const first = focusables().find((el) => el.getAttribute('aria-label') !== 'Close dialog');
+    (first ?? panel)?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const firstEl = items[0];
+      const lastEl = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === firstEl) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      opener?.focus?.();
+    };
+  }, [isOpen]);
+
   if (!context || !context.open) return null;
 
+  // Callers size the dialog for desktop (max-w-*, max-h-*); on phones it is always a full-screen sheet.
+  const desktopClassName = className
+    ?.split(/\s+/)
+    .map((c) => (/^(max-[wh]-|rounded-(xl|lg|md)$)/.test(c) ? 'sm:' + c : c))
+    .join(' ');
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 !m-0 flex items-stretch justify-center sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
@@ -53,9 +100,11 @@ export const DialogContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
       />
       {/* Modal Dialog Content */}
       <div
+        ref={panelRef}
+        tabIndex={-1}
         className={cn(
-          'relative z-50 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-xl bg-white p-4 sm:p-6 shadow-xl border border-border animate-in fade-in-0 zoom-in-95',
-          className,
+          'relative z-50 flex h-full w-full outline-none min-w-0 flex-col overflow-y-auto overflow-x-hidden bg-white p-4 pt-safe pb-safe shadow-xl animate-in fade-in-0 [&>form]:flex [&>form]:flex-1 [&>form]:flex-col sm:block sm:[&>form]:block sm:h-auto sm:max-h-[92vh] sm:max-w-lg sm:rounded-xl sm:border sm:border-border sm:p-6 sm:zoom-in-95',
+          desktopClassName,
         )}
         {...props}
       >
@@ -77,7 +126,7 @@ export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <div
-    className={cn('flex flex-col space-y-1.5 text-center sm:text-left mb-4', className)}
+    className={cn('flex flex-col space-y-1.5 pr-10 text-left mb-4', className)}
     {...props}
   />
 );
@@ -102,7 +151,7 @@ export const DialogFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <div
-    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-6', className)}
+    className={cn('sticky bottom-0 z-10 -mx-4 mt-auto flex flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-3 pb-safe sm:static sm:mx-0 sm:mt-6 sm:flex-row sm:justify-end sm:border-0 sm:p-0 [&>button]:w-full sm:[&>button]:w-auto', className)}
     {...props}
   />
 );

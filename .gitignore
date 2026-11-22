@@ -50,3 +50,6 @@ apps/api/dist/
 # Local PostgreSQL Test Cluster
 .pgdata_test/
 
+
+# E2E output
+apps/web/e2e/mobile-screens/
