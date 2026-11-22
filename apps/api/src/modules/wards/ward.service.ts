@@ -28,6 +28,7 @@ import {
   findWardById,
 } from './ward.repository.js';
 import { decryptPatientPii } from '../patients/patient.dto.js';
+import { escalationAlertService } from '../clinical-care/escalation-alert.service.js';
 
 export async function listWards(): Promise<WardDto[]> {
   const wards = await findAllWards();
@@ -141,6 +142,11 @@ export async function updateWard(
       lockedWard.name = input.name;
     }
 
+    const previousAlertTimeoutSeconds = lockedWard.alertTimeoutSeconds;
+    if (input.alertTimeoutSeconds !== undefined) {
+      lockedWard.alertTimeoutSeconds = input.alertTimeoutSeconds;
+    }
+
     lockedWard.updatedAt = new Date();
     await tm.save(lockedWard);
 
@@ -156,6 +162,10 @@ export async function updateWard(
           updatedFields: Object.keys(input),
           totalPhysicalBeds: lockedWard.totalPhysicalBeds,
           isActive: lockedWard.isActive,
+          ...(input.alertTimeoutSeconds !== undefined && {
+            alertTimeoutSeconds: lockedWard.alertTimeoutSeconds,
+            previousAlertTimeoutSeconds,
+          }),
         },
       }),
     );
@@ -310,9 +320,20 @@ export async function getWardBedBoard(
       displayStatus,
       currentAllocation: activeAllocationDto,
       lastCleaning: lastCleaningDto,
+      activeAlert: null,
       createdAt: bed.createdAt.toISOString(),
       updatedAt: bed.updatedAt.toISOString(),
     });
+  }
+
+  const occupiedAdmissionIds = bedDtos
+    .map((b) => b.currentAllocation?.admissionId)
+    .filter((id): id is string => !!id);
+  const alertsByAdmission =
+    await escalationAlertService.getActiveAlertsByAdmission(occupiedAdmissionIds);
+  for (const dto of bedDtos) {
+    const admissionId = dto.currentAllocation?.admissionId;
+    if (admissionId) dto.activeAlert = alertsByAdmission.get(admissionId) ?? null;
   }
 
   return {

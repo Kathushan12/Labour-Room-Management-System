@@ -36,5 +36,11 @@ export const updateWardSchema = z
       .max(200)
       .optional(),
     isActive: z.boolean().optional(),
+    alertTimeoutSeconds: z
+      .number()
+      .int('Alert timeout must be a whole number of seconds')
+      .min(30, 'Alert timeout must be at least 30 seconds')
+      .max(600, 'Alert timeout cannot exceed 600 seconds')
+      .optional(),
   })
   .strict();

@@ -4,6 +4,7 @@ export interface WardDto {
   code: string;
   totalPhysicalBeds: number;
   isActive: boolean;
+  alertTimeoutSeconds: number;
   registeredBedsCount: number;
   createdAt: string;
   updatedAt: string;
@@ -19,6 +20,7 @@ export interface UpdateWardRequest {
   name?: string;
   totalPhysicalBeds?: number;
   isActive?: boolean;
+  alertTimeoutSeconds?: number;
 }
 
 export interface WardSummaryDto {
