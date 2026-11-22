@@ -5,10 +5,18 @@ import {
   Permission,
   ROLE_PERMISSIONS,
   LoginResponse,
-  RefreshResponse,
   ApiResponse,
 } from '@lrms/shared';
 import { env } from '../config/env.js';
+import {
+  establishSession,
+  getAccessToken,
+  getCsrfToken,
+  loginRequest,
+  refreshSession as refreshSharedSession,
+  signOut,
+  subscribeSession,
+} from '../services/auth-session.js';
 
 export interface AuthContextType {
   user: AuthUser | null;
@@ -29,128 +37,53 @@ export interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// In-memory token storage (NEVER in localStorage or sessionStorage)
-let memoryAccessToken: string | null = null;
-let memoryCsrfToken: string | null = null;
-let restoreRequest: Promise<{ ok: boolean; body: unknown }> | null = null;
-let sessionSyncListener: ((data: RefreshResponse | null) => void) | null = null;
-
-export function getMemoryAccessToken(): string | null {
-  return memoryAccessToken;
-}
-
-export function getMemoryCsrfToken(): string | null {
-  if (memoryCsrfToken) return memoryCsrfToken;
-  // After a page reload the in-memory token is gone; the double-submit cookie still holds it.
-  const match = document.cookie.match(/(?:^|;\s*)lrms_csrf=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-export function syncMemoryTokensFromInterceptor(data: RefreshResponse | null): void {
-  if (data) {
-    memoryAccessToken = data.accessToken;
-    memoryCsrfToken = data.csrfToken;
-  } else {
-    memoryAccessToken = null;
-    memoryCsrfToken = null;
-  }
-  if (sessionSyncListener) {
-    sessionSyncListener(data);
-  }
-}
+const RESTORE_RETRY_WINDOW_MS = 30 * 1000;
+const RESTORE_RETRY_DELAY_MS = 2000;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
 
-  const updateTokens = useCallback((newAccessToken: string | null, newCsrfToken: string | null) => {
-    memoryAccessToken = newAccessToken;
-    memoryCsrfToken = newCsrfToken;
-    setAccessToken(newAccessToken);
-    setCsrfToken(newCsrfToken);
-  }, []);
-
-  useEffect(() => {
-    sessionSyncListener = (data) => {
-      if (data) {
-        setUser(data.user);
-        setAccessToken(data.accessToken);
-        setCsrfToken(data.csrfToken);
-      } else {
-        setUser(null);
-        setAccessToken(null);
-        setCsrfToken(null);
-      }
-    };
-    return () => {
-      sessionSyncListener = null;
-    };
-  }, []);
+  useEffect(
+    () =>
+      subscribeSession((snapshot, notice) => {
+        setUser(snapshot.user);
+        setAccessToken(snapshot.accessToken);
+        if (notice) setError(notice);
+      }),
+    [],
+  );
 
   const refreshSession = useCallback(async (): Promise<boolean> => {
-    try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      const csrfToken = getMemoryCsrfToken();
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-      }
+    const outcome = await refreshSharedSession();
+    return outcome.status === 'ok';
+  }, []);
 
-      // Refresh tokens rotate, so parallel refreshes (StrictMode, several tabs of the same
-      // load) would look like token reuse to the server. Share one in-flight request.
-      if (!restoreRequest) {
-        restoreRequest = fetch(`${env.API_BASE_URL}/auth/refresh`, {
-          method: 'POST',
-          headers,
-          credentials: 'include', // Sends HttpOnly refreshToken cookie
-        })
-          .then(async (r) => ({ ok: r.ok, body: r.ok ? await r.json() : null }))
-          .finally(() => {
-            restoreRequest = null;
-          });
-      }
-      const res = await restoreRequest;
-
-      if (!res.ok) {
-        updateTokens(null, null);
-        setUser(null);
-        return false;
-      }
-
-      const body = res.body as ApiResponse<RefreshResponse> | null;
-      if (body?.success && body.data) {
-        setUser(body.data.user);
-        updateTokens(body.data.accessToken, body.data.csrfToken);
-        return true;
-      }
-
-      updateTokens(null, null);
-      setUser(null);
-      return false;
-    } catch {
-      updateTokens(null, null);
-      setUser(null);
-      return false;
-    }
-  }, [updateTokens]);
-
-  // Initial session restoration on application startup
+  // Restore the session on startup; while the API is restarting, keep retrying briefly
+  // instead of treating the user as signed out.
   useEffect(() => {
     let mounted = true;
 
     async function initializeAuth() {
+      const deadline = Date.now() + RESTORE_RETRY_WINDOW_MS;
       try {
-        await refreshSession();
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
+        for (;;) {
+          const outcome = await refreshSharedSession(null);
+          if (outcome.status !== 'unavailable' || !mounted) return;
+          if (Date.now() > deadline) {
+            setError(
+              'Cannot reach the LRMS server. Check that it is running and that this device is online.',
+            );
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, RESTORE_RETRY_DELAY_MS));
         }
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     }
 
@@ -159,36 +92,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       mounted = false;
     };
-  }, [refreshSession]);
+  }, []);
 
   const login = async (username: string, password: string): Promise<void> => {
     setError(null);
-    setIsLoading(true);
-
     try {
-      const res = await fetch(`${env.API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, password }),
-      });
-
-      const body: ApiResponse<LoginResponse> = await res.json();
-
-      if (!res.ok || !body.success || !body.data) {
-        const errorMsg = body.error?.message || 'Login failed. Please verify your credentials.';
-        setError(errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      setUser(body.data.user);
-      updateTokens(body.data.accessToken, body.data.csrfToken);
+      await loginRequest(username, password);
+      setIsLoading(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed';
+      const message = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
       setError(message);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -198,11 +112,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (memoryAccessToken) {
-      headers['Authorization'] = `Bearer ${memoryAccessToken}`;
+    const token = getAccessToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
-    if (memoryCsrfToken) {
-      headers['X-CSRF-Token'] = memoryCsrfToken;
+    const csrf = getCsrfToken();
+    if (csrf) {
+      headers['X-CSRF-Token'] = csrf;
     }
 
     const res = await fetch(`${env.API_BASE_URL}/auth/change-password`, {
@@ -212,36 +128,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify({ currentPassword, newPassword }),
     });
 
-    const body: ApiResponse<LoginResponse> = await res.json();
+    const body = (await res.json().catch(() => null)) as ApiResponse<LoginResponse> | null;
 
-    if (!res.ok || !body.success || !body.data) {
-      const errorMsg = body.error?.message || 'Unable to update password. Please verify inputs.';
+    if (!res.ok || !body?.success || !body.data) {
+      const errorMsg = body?.error?.message || 'Unable to update password. Please verify inputs.';
       setError(errorMsg);
       throw new Error(errorMsg);
     }
 
-    setUser(body.data.user);
-    updateTokens(body.data.accessToken, body.data.csrfToken);
+    establishSession(body.data);
   };
 
   const logout = async (): Promise<void> => {
     setIsLoading(true);
     try {
-      const headers: Record<string, string> = {};
-      if (memoryCsrfToken) {
-        headers['X-CSRF-Token'] = memoryCsrfToken;
-      }
-
-      await fetch(`${env.API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-      });
-    } catch {
-      // Ignore network errors on logout to allow clean client-side exit
+      await signOut('manual');
     } finally {
-      updateTokens(null, null);
-      setUser(null);
       setIsLoading(false);
     }
   };
@@ -262,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
         permissions,
         accessToken,
-        csrfToken,
+        csrfToken: accessToken ? getCsrfToken() : null,
         isAuthenticated,
         mustChangePassword,
         isLoading,

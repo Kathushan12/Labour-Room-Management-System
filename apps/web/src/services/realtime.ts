@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { env } from '../config/env.js';
 import { SocketEvent } from '@lrms/shared';
+import { getAccessToken } from './auth-session.js';
 
 type SocketHandler = (...args: unknown[]) => void;
 
@@ -38,9 +39,8 @@ class RealtimeClient {
 
     this.socket = io(socketUrl, {
       path: '/socket.io',
-      auth: {
-        token: `Bearer ${accessToken}`,
-      },
+      // Evaluated on every (re)connect so a reconnect after an API restart uses the latest token.
+      auth: (cb) => cb({ token: `Bearer ${getAccessToken() ?? accessToken}` }),
       transports: ['websocket', 'polling'],
       withCredentials: true,
       reconnection: true,

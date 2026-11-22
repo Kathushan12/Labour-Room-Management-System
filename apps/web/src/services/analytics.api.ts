@@ -15,7 +15,7 @@ import {
 } from '@lrms/shared';
 import { apiFetch } from './api.js';
 import { env } from '../config/env.js';
-import { getMemoryAccessToken } from '../context/AuthContext.js';
+import { getAccessToken } from './auth-session.js';
 
 export interface AnalyticsQueryParams {
   preset?: AnalyticsDateRangePreset | string;
@@ -110,7 +110,7 @@ export async function exportReport(
   if (options?.endDate) searchParams.set('endDate', options.endDate);
   if (options?.wardId) searchParams.set('wardId', options.wardId);
 
-  const token = getMemoryAccessToken();
+  const token = getAccessToken();
   const headers: Record<string, string> = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
