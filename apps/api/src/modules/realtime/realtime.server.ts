@@ -1,6 +1,6 @@
 import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { env } from '../../config/env.js';
+import { webOriginCors } from '../../common/web-origin.js';
 import { authenticateSocket } from './realtime.auth.js';
 import { handleRoomJoin, handleRoomLeave } from './realtime.rooms.js';
 import { registerAlertHandlers } from './alert-socket.handlers.js';
@@ -14,7 +14,7 @@ export function initRealtimeServer(httpServer: HttpServer): SocketIOServer {
   io = new SocketIOServer(httpServer, {
     path: '/socket.io',
     cors: {
-      origin: env.WEB_ORIGIN,
+      origin: webOriginCors,
       credentials: true,
       methods: ['GET', 'POST'],
     },

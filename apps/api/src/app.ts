@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { pinoHttp } from 'pino-http';
-import { env } from './config/env.js';
+import { webOriginCors } from './common/web-origin.js';
 import { logger } from './common/logging/logger.js';
 import { requestIdMiddleware } from './common/middleware/request-id.js';
 import { errorHandler, notFoundHandler } from './common/middleware/error-handler.js';
@@ -32,7 +32,7 @@ export function createApp(): Express {
   // Strict CORS in development / production
   app.use(
     cors({
-      origin: env.WEB_ORIGIN,
+      origin: webOriginCors,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token'],
