@@ -53,3 +53,11 @@ apps/api/dist/
 
 # E2E output
 apps/web/e2e/mobile-screens/
+
+# Local tooling and working notes
+.vscode/
+CLAUDE.md
+claude-project/
+.claude/
+docs/overnight-report.md
+docs/srs-conformance.md
