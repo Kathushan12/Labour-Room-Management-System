@@ -132,6 +132,14 @@ router.post(
   clinicalCareController.resolveEscalation.bind(clinicalCareController),
 );
 
+// REQ-6.6: doctor-only reversal is enforced in the service.
+router.post(
+  '/admissions/:id/escalations/:escalationId/reverse',
+  ...clinicalGuards,
+  requirePermission(Permission.CARE_PLANS_TRANSITION),
+  clinicalCareController.reverseEscalation.bind(clinicalCareController),
+);
+
 // ===========================================================================
 // 3. EMERGENCY RESPONSES
 // ===========================================================================

@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager, IsNull } from 'typeorm';
 import {
   ClinicalEscalationDto,
   EscalationFeedItemDto,
@@ -7,6 +7,13 @@ import {
   AssignEscalationRequest,
   TransitionEscalationRequest,
   ResolveEscalationRequest,
+  ReverseEscalationRequest,
+  AlreadyEscalatedDetails,
+  AdmissionStatus,
+  CarePlanState,
+  EscalationCategory,
+  EscalationPriority,
+  EscalationReason,
   EscalationStatus,
   ClinicalObservationType,
   NotificationType,
@@ -23,6 +30,7 @@ import {
   Admission,
   AuditLog,
   BedAllocationHistory,
+  CarePlanTransition,
   ClinicalEscalation,
   ClinicalEscalationHistory,
   User,
@@ -38,8 +46,23 @@ import {
   BadRequestError,
   ForbiddenError,
 } from '../../common/errors/auth.errors.js';
-import { toEscalationDto } from './clinical-care.dto.js';
+import { toAlertReceiptState, toEscalationDto } from './clinical-care.dto.js';
 import { applyAdmissionVisibilityScope } from '../admissions/patient-authorization.service.js';
+import { changeCarePlanState } from '../admissions/care-plan-state.service.js';
+
+const REASON_CATEGORY: Record<EscalationReason, EscalationCategory> = {
+  [EscalationReason.FETAL_DISTRESS]: EscalationCategory.FETAL,
+  [EscalationReason.FAILURE_TO_PROGRESS]: EscalationCategory.LABOUR_PROGRESSION,
+  [EscalationReason.MATERNAL_COMPLICATION]: EscalationCategory.MATERNAL,
+  [EscalationReason.OTHER]: EscalationCategory.OBSTETRIC_EMERGENCY,
+};
+
+const REASON_LABEL: Record<EscalationReason, string> = {
+  [EscalationReason.FETAL_DISTRESS]: 'Fetal distress',
+  [EscalationReason.FAILURE_TO_PROGRESS]: 'Failure to progress',
+  [EscalationReason.MATERNAL_COMPLICATION]: 'Maternal complication',
+  [EscalationReason.OTHER]: 'Other',
+};
 
 const ALLOWED_ESCALATION_TRANSITIONS: Record<EscalationStatus, EscalationStatus[]> = {
   [EscalationStatus.OPEN]: [EscalationStatus.ACKNOWLEDGED, EscalationStatus.CANCELLED],
@@ -86,12 +109,33 @@ export class ClinicalEscalationService {
     payload: CreateEscalationRequest,
     actor: RequestUser,
   ): Promise<ClinicalEscalationDto> {
+    const category = payload.category ?? REASON_CATEGORY[payload.reason];
+    const priority = payload.priority ?? EscalationPriority.EMERGENCY;
+    const clinicalReason = payload.clinicalReason?.trim() || REASON_LABEL[payload.reason];
+
+    // REQ-6.4: plan change, reason, user, time and alert are written in one transaction.
     const result = await this.dataSource.transaction(async (manager) => {
       const admission = await manager.findOne(Admission, {
         where: { id: admissionId },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!admission) {
         throw new NotFoundError('Admission episode not found');
+      }
+      if (admission.status !== AdmissionStatus.ADMITTED) {
+        throw new ConflictError('Only an active admission can be escalated', 'ADMISSION_NOT_ACTIVE');
+      }
+      if (admission.currentCarePlan === CarePlanState.EMERGENCY_CESAREAN) {
+        throw await this.alreadyEscalatedError(manager, admission.id);
+      }
+      if (
+        admission.currentCarePlan === CarePlanState.DELIVERED ||
+        admission.currentCarePlan === CarePlanState.DISCHARGED
+      ) {
+        throw new ConflictError(
+          `Cannot escalate an admission whose care plan is ${admission.currentCarePlan}`,
+          'CARE_PLAN_NOT_ESCALATABLE',
+        );
       }
 
       let recipientUserId: string | null = null;
@@ -146,13 +190,24 @@ export class ClinicalEscalationService {
 
       const referenceId = await this.generateEscalationReferenceId();
 
+      const transition = await changeCarePlanState(
+        manager,
+        admission,
+        CarePlanState.EMERGENCY_CESAREAN,
+        actor.id,
+        `Escalated: ${REASON_LABEL[payload.reason]}`,
+        { isEmergency: true },
+      );
+
       const escalation = manager.create(ClinicalEscalation, {
         admissionId,
         escalationReferenceId: referenceId,
-        category: payload.category,
-        priority: payload.priority,
+        category,
+        priority,
         status: EscalationStatus.OPEN,
-        clinicalReason: payload.clinicalReason,
+        reasonCode: payload.reason,
+        carePlanTransitionId: transition.id,
+        clinicalReason,
         sourceObservationType: payload.sourceObservationType || null,
         sourceObservationId: payload.sourceObservationId || null,
         initiatedByUserId: actor.id,
@@ -184,8 +239,10 @@ export class ClinicalEscalationService {
           details: {
             admissionId,
             referenceId,
-            category: payload.category,
-            priority: payload.priority,
+            reason: payload.reason,
+            category,
+            priority,
+            carePlanTransitionId: transition.id,
             sourceObservationType: payload.sourceObservationType,
             sourceObservationId: payload.sourceObservationId,
           },
@@ -199,11 +256,10 @@ export class ClinicalEscalationService {
         aggregateId: savedEscalation.id,
         admissionId,
         payload: {
-          category: payload.category,
-          priority:
-            (payload.priority as unknown as NotificationPriority) || NotificationPriority.URGENT,
+          category,
+          priority: priority as unknown as NotificationPriority,
           referenceId,
-          clinicalReason: payload.clinicalReason,
+          clinicalReason,
           assignedRecipientUserId: recipientUserId,
           initiatedByUserId: actor.id,
           sourceObservationType: payload.sourceObservationType || null,
@@ -285,9 +341,10 @@ export class ClinicalEscalationService {
   async getEscalationById(
     escalationId: string,
     manager = this.dataSource.manager,
+    admissionId?: string,
   ): Promise<ClinicalEscalationDto> {
     const escalation = await manager.findOne(ClinicalEscalation, {
-      where: { id: escalationId },
+      where: admissionId ? { id: escalationId, admissionId } : { id: escalationId },
       relations: [
         'initiatedByUser',
         'assignedRecipientUser',
@@ -415,13 +472,14 @@ export class ClinicalEscalationService {
   }
 
   async assignEscalation(
+    admissionId: string,
     escalationId: string,
     payload: AssignEscalationRequest,
     actor: RequestUser,
   ): Promise<ClinicalEscalationDto> {
     const result = await this.dataSource.transaction(async (manager) => {
       const escalation = await manager.findOne(ClinicalEscalation, {
-        where: { id: escalationId },
+        where: { id: escalationId, admissionId },
         lock: { mode: 'pessimistic_write' },
       });
 
@@ -440,9 +498,13 @@ export class ClinicalEscalationService {
 
       const newRecipient = await manager.findOne(User, {
         where: { id: payload.assignedRecipientUserId },
+        relations: ['role'],
       });
       if (!newRecipient) {
         throw new NotFoundError('Assigned recipient user not found');
+      }
+      if (!newRecipient.isActive || newRecipient.role?.name !== UserRole.DOCTOR) {
+        throw new BadRequestError('Escalation alerts can only be sent to an active doctor');
       }
 
       const previousAssignedUserId = escalation.assignedRecipientUserId;
@@ -504,13 +566,14 @@ export class ClinicalEscalationService {
   }
 
   async transitionEscalation(
+    admissionId: string,
     escalationId: string,
     payload: TransitionEscalationRequest,
     actor: RequestUser,
   ): Promise<ClinicalEscalationDto> {
     const result = await this.dataSource.transaction(async (manager) => {
       const escalation = await manager.findOne(ClinicalEscalation, {
-        where: { id: escalationId },
+        where: { id: escalationId, admissionId },
         lock: { mode: 'pessimistic_write' },
       });
 
@@ -593,13 +656,14 @@ export class ClinicalEscalationService {
   }
 
   async resolveEscalation(
+    admissionId: string,
     escalationId: string,
     payload: ResolveEscalationRequest,
     actor: RequestUser,
   ): Promise<ClinicalEscalationDto> {
     const result = await this.dataSource.transaction(async (manager) => {
       const escalation = await manager.findOne(ClinicalEscalation, {
-        where: { id: escalationId },
+        where: { id: escalationId, admissionId },
         lock: { mode: 'pessimistic_write' },
       });
 
@@ -674,5 +738,120 @@ export class ClinicalEscalationService {
 
     notificationDispatcherService.dispatchNow().catch(() => {});
     return result;
+  }
+
+  /**
+   * REQ-6.6: only a doctor may reverse an emergency escalation, with a reason. The care plan
+   * returns to the state it had before the escalation; the alert record itself is unchanged.
+   */
+  async reverseEscalation(
+    admissionId: string,
+    escalationId: string,
+    payload: ReverseEscalationRequest,
+    actor: RequestUser,
+  ): Promise<ClinicalEscalationDto> {
+    if (actor.role !== UserRole.DOCTOR) {
+      throw new ForbiddenError('Only a doctor can reverse an escalation', 'ROLE_NOT_AUTHORIZED');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const admission = await manager.findOne(Admission, {
+        where: { id: admissionId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!admission) {
+        throw new NotFoundError('Admission episode not found');
+      }
+      const escalation = await manager.findOne(ClinicalEscalation, {
+        where: { id: escalationId, admissionId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!escalation) {
+        throw new NotFoundError('Clinical escalation not found');
+      }
+      if (escalation.reversedAt) {
+        throw new ConflictError('This escalation has already been reversed', 'ALREADY_REVERSED');
+      }
+      if (!escalation.carePlanTransitionId) {
+        throw new ConflictError(
+          'This escalation did not change the care plan, so there is nothing to reverse',
+          'NOT_REVERSIBLE',
+        );
+      }
+      if (admission.currentCarePlan !== CarePlanState.EMERGENCY_CESAREAN) {
+        throw new ConflictError(
+          `Care plan is ${admission.currentCarePlan}, not EMERGENCY_CESAREAN`,
+          'NOT_REVERSIBLE',
+        );
+      }
+
+      const original = await manager.findOneOrFail(CarePlanTransition, {
+        where: { id: escalation.carePlanTransitionId },
+      });
+      await changeCarePlanState(
+        manager,
+        admission,
+        original.previousState,
+        actor.id,
+        `Escalation reversed: ${payload.reason}`,
+      );
+
+      escalation.reversedAt = new Date();
+      escalation.reversedByUserId = actor.id;
+      escalation.reversalReason = payload.reason;
+      await manager.save(ClinicalEscalation, escalation);
+
+      await manager.save(
+        ClinicalEscalationHistory,
+        manager.create(ClinicalEscalationHistory, {
+          escalationId: escalation.id,
+          fromStatus: escalation.status,
+          toStatus: escalation.status,
+          changedByUserId: actor.id,
+          reason: `Escalation reversed: ${payload.reason}`,
+        }),
+      );
+
+      await manager.save(
+        AuditLog,
+        manager.create(AuditLog, {
+          userId: actor.id,
+          action: 'EMERGENCY_ESCALATION_REVERSED',
+          entityName: 'ClinicalEscalation',
+          entityId: escalation.id,
+          details: {
+            admissionId,
+            escalationReferenceId: escalation.escalationReferenceId,
+            restoredCarePlan: original.previousState,
+            reason: payload.reason,
+          },
+        }),
+      );
+
+      return this.getEscalationById(escalation.id, manager);
+    });
+  }
+
+  private async alreadyEscalatedError(
+    manager: EntityManager,
+    admissionId: string,
+  ): Promise<ConflictError> {
+    const current = await manager.findOne(ClinicalEscalation, {
+      where: { admissionId, reversedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+    });
+    const details: AlreadyEscalatedDetails | undefined = current
+      ? {
+          escalationId: current.id,
+          escalationReferenceId: current.escalationReferenceId,
+          alertState: toAlertReceiptState(current),
+          timedOut: Boolean(current.timedOutAt) && !current.acknowledgedAt,
+        }
+      : undefined;
+    return new ConflictError(
+      'This patient is already on EMERGENCY_CESAREAN. See the current alert status.',
+      'ALREADY_ESCALATED',
+      details,
+    );
   }
 }

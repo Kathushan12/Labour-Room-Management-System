@@ -15,6 +15,7 @@ import {
   assignEscalationSchema,
   transitionEscalationSchema,
   resolveEscalationSchema,
+  reverseEscalationSchema,
   createEmergencyResponseSchema,
   acknowledgeEmergencyResponseSchema,
   transitionEmergencyResponseSchema,
@@ -220,7 +221,11 @@ export class ClinicalCareController {
       const actor = req.user!;
       await patientAuthorizationService.assertCanAccessAdmission(actor, admissionId);
 
-      const result = await this.escalationService.getEscalationById(escalationId);
+      const result = await this.escalationService.getEscalationById(
+        escalationId,
+        undefined,
+        admissionId,
+      );
       res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
@@ -258,7 +263,12 @@ export class ClinicalCareController {
       await patientAuthorizationService.assertCanAccessAdmission(actor, admissionId);
 
       const parsed = assignEscalationSchema.parse(req.body);
-      const result = await this.escalationService.assignEscalation(escalationId, parsed, actor);
+      const result = await this.escalationService.assignEscalation(
+        admissionId,
+        escalationId,
+        parsed,
+        actor,
+      );
       res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
@@ -277,7 +287,12 @@ export class ClinicalCareController {
       await patientAuthorizationService.assertCanAccessAdmission(actor, admissionId);
 
       const parsed = transitionEscalationSchema.parse(req.body);
-      const result = await this.escalationService.transitionEscalation(escalationId, parsed, actor);
+      const result = await this.escalationService.transitionEscalation(
+        admissionId,
+        escalationId,
+        parsed,
+        actor,
+      );
       res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
@@ -292,7 +307,32 @@ export class ClinicalCareController {
       await patientAuthorizationService.assertCanAccessAdmission(actor, admissionId);
 
       const parsed = resolveEscalationSchema.parse(req.body);
-      const result = await this.escalationService.resolveEscalation(escalationId, parsed, actor);
+      const result = await this.escalationService.resolveEscalation(
+        admissionId,
+        escalationId,
+        parsed,
+        actor,
+      );
+      res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public async reverseEscalation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const admissionId = req.params.id;
+      const escalationId = req.params.escalationId;
+      const actor = req.user!;
+      await patientAuthorizationService.assertCanAccessAdmission(actor, admissionId);
+
+      const parsed = reverseEscalationSchema.parse(req.body);
+      const result = await this.escalationService.reverseEscalation(
+        admissionId,
+        escalationId,
+        parsed,
+        actor,
+      );
       res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
