@@ -72,7 +72,7 @@ export function toFetalObservationDto(entity: FetalObservation): FetalObservatio
     id: entity.id,
     admissionId: entity.admissionId,
     recordedByUserId: entity.recordedByUserId,
-    fetalHeartRateBpm: Number(entity.fetalHeartRateBpm),
+    fetalHeartRateBpm: entity.fetalHeartRateBpm == null ? null : Number(entity.fetalHeartRateBpm),
     fetalHeartRateUnit: entity.fetalHeartRateUnit || 'BPM',
     variability: entity.variability || null,
     decelerations: entity.decelerations || null,
@@ -87,7 +87,9 @@ export function toFetalObservationDto(entity: FetalObservation): FetalObservatio
     supersededObservation: entity.supersededObservation
       ? toFetalObservationDto(entity.supersededObservation)
       : null,
-    highlights: fetalHighlights({ fetalHeartRateBpm: Number(entity.fetalHeartRateBpm) }),
+    highlights: fetalHighlights({
+      fetalHeartRateBpm: entity.fetalHeartRateBpm == null ? null : Number(entity.fetalHeartRateBpm),
+    }),
   };
 }
 

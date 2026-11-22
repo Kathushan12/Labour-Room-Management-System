@@ -188,7 +188,7 @@ export class ClinicalObservationService {
     const entity = new FetalObservation();
     entity.admissionId = admissionId;
     entity.recordedByUserId = actor.id;
-    entity.fetalHeartRateBpm = validated.fetalHeartRateBpm;
+    entity.fetalHeartRateBpm = validated.fetalHeartRateBpm ?? null;
     entity.fetalHeartRateUnit = validated.fetalHeartRateUnit || 'BPM';
     entity.variability = validated.variability ?? null;
     entity.decelerations = validated.decelerations ?? null;
@@ -529,7 +529,7 @@ export class ClinicalObservationService {
           const newRecord = new FetalObservation();
           newRecord.admissionId = admissionId;
           newRecord.recordedByUserId = actor.id;
-          newRecord.fetalHeartRateBpm = validated.fetalHeartRateBpm;
+          newRecord.fetalHeartRateBpm = validated.fetalHeartRateBpm ?? null;
           newRecord.fetalHeartRateUnit = validated.fetalHeartRateUnit || 'BPM';
           newRecord.variability = validated.variability ?? null;
           newRecord.decelerations = validated.decelerations ?? null;

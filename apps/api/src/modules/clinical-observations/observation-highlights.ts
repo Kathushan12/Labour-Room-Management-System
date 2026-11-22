@@ -14,7 +14,8 @@ export function maternalHighlights(obs: {
   return out;
 }
 
-export function fetalHighlights(obs: { fetalHeartRateBpm: number }): ObservationHighlight[] {
+export function fetalHighlights(obs: { fetalHeartRateBpm: number | null }): ObservationHighlight[] {
+  if (obs.fetalHeartRateBpm == null) return [];
   if (obs.fetalHeartRateBpm < H.fetalHeartRateLow) return ['FHR_LOW'];
   if (obs.fetalHeartRateBpm >= H.fetalHeartRateHigh) return ['FHR_HIGH'];
   return [];

@@ -130,7 +130,8 @@ export const createMaternalObservationSchema = z
     { message: 'Record at least one observation value', path: ['systolicBp'] },
   );
 
-export const createFetalObservationSchema = z.object({
+export const createFetalObservationSchema = z
+  .object({
   fetalHeartRateBpm: z
     .number()
     .int({ message: 'Fetal heart rate must be an integer' })
@@ -139,7 +140,9 @@ export const createFetalObservationSchema = z.object({
     })
     .max(L.fetalHeartRateBpm.max, {
       message: `Fetal heart rate cannot exceed ${L.fetalHeartRateBpm.max} bpm`,
-    }),
+    })
+    .nullable()
+    .optional(),
   fetalHeartRateUnit: z.string().default('BPM').optional(),
   variability: z.string().max(50).nullable().optional(),
   decelerations: z.string().max(50).nullable().optional(),
@@ -150,7 +153,11 @@ export const createFetalObservationSchema = z.object({
     .string()
     .refine(validateNotFutureDate, { message: 'Observation timestamp cannot be in the future' })
     .optional(),
-});
+})
+  .refine((data) => data.fetalHeartRateBpm != null || data.liquorStatus != null, {
+    message: 'Record at least one value: fetal heart rate or amniotic fluid',
+    path: ['fetalHeartRateBpm'],
+  });
 
 export const createLabourAssessmentSchema = z.object({
   cervicalDilationCm: z

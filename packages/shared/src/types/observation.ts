@@ -72,7 +72,7 @@ export interface FetalObservationDto {
   id: string;
   admissionId: string;
   recordedByUserId: string;
-  fetalHeartRateBpm: number;
+  fetalHeartRateBpm: number | null;
   fetalHeartRateUnit: string;
   variability: string | null;
   decelerations: string | null;
@@ -89,7 +89,7 @@ export interface FetalObservationDto {
 }
 
 export interface CreateFetalObservationRequest {
-  fetalHeartRateBpm: number;
+  fetalHeartRateBpm?: number | null;
   fetalHeartRateUnit?: string;
   variability?: string | null;
   decelerations?: string | null;

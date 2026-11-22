@@ -67,6 +67,7 @@ import { Phase13OperationalAnalyticsIndexes1732500000000 } from '../database/mig
 import { Phase14EscalationAlertReceipt1732600000000 } from '../database/migrations/1732600000000-Phase14EscalationAlertReceipt.js';
 import { Phase15SessionLifetimeAndLockout1732700000000 } from '../database/migrations/1732700000000-Phase15SessionLifetimeAndLockout.js';
 import { Phase16SrsConformance1732800000000 } from '../database/migrations/1732800000000-Phase16SrsConformance.js';
+import { Phase17OptionalFetalHeartRate1732900000000 } from '../database/migrations/1732900000000-Phase17OptionalFetalHeartRate.js';
 
 export const entities = [
   Role,
@@ -135,6 +136,7 @@ export const migrations = [
   Phase14EscalationAlertReceipt1732600000000,
   Phase15SessionLifetimeAndLockout1732700000000,
   Phase16SrsConformance1732800000000,
+  Phase17OptionalFetalHeartRate1732900000000,
 ];
 
 export const AppDataSource = new DataSource({

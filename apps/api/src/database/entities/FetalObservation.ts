@@ -23,8 +23,8 @@ export class FetalObservation {
   recordedByUserId!: string;
 
   // Fetal heart rate with explicit unit
-  @Column({ name: 'fetal_heart_rate_bpm', type: 'integer' })
-  fetalHeartRateBpm!: number;
+  @Column({ name: 'fetal_heart_rate_bpm', type: 'integer', nullable: true })
+  fetalHeartRateBpm!: number | null;
 
   @Column({ name: 'fetal_heart_rate_unit', type: 'varchar', length: 20, default: 'BPM' })
   fetalHeartRateUnit!: string;
