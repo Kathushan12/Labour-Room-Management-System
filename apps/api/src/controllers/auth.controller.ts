@@ -61,8 +61,8 @@ const REFRESH_COOKIE_NAME = 'refreshToken';
 const CSRF_COOKIE_NAME = 'lrms_csrf';
 
 function isCookieSecure(): boolean {
-  // Always Secure=true in production; cannot be disabled via environment variables
-  return env.NODE_ENV === 'production' ? true : env.COOKIE_SECURE;
+  // Always Secure=true in production; never Secure in development so plain-http LAN testing works
+  return env.NODE_ENV === 'production';
 }
 
 function getCookieOptions(maxAgeMs?: number) {

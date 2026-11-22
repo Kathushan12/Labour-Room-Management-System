@@ -4,6 +4,12 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Browsers (including phones on the LAN) only reach the web port; the API stays on localhost.
+const proxy = {
+  '/api': { target: 'http://localhost:4000', changeOrigin: false },
+  '/socket.io': { target: 'http://localhost:4000', changeOrigin: false, ws: true },
+};
+
 export default defineConfig({
   plugins: [
     react(),
@@ -49,7 +55,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: '0.0.0.0',
+    host: true,
+    strictPort: true,
+    proxy,
+  },
+  preview: {
+    port: 5173,
+    host: true,
+    strictPort: true,
+    proxy,
   },
   test: {
     globals: true,

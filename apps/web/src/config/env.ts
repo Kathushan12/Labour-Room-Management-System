@@ -1,13 +1,8 @@
-const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
-
-// The API runs on the same machine as the web server, so when the page is opened from another
-// device (phone on the ward Wi-Fi) a localhost URL must follow the host the page was loaded from.
+// Same-origin by default: the dev/preview server proxies /api and /socket.io to the API, so a phone
+// on the ward Wi-Fi only ever talks to the web port. VITE_API_BASE_URL overrides this.
 function resolveApiBaseUrl(): string {
-  const configured = import.meta.env.VITE_API_BASE_URL as string | undefined;
-  const pageHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const url = new URL(configured || `${window.location.protocol}//localhost:4000/api/v1`);
-  if (LOOPBACK.has(url.hostname) && !LOOPBACK.has(pageHost)) url.hostname = pageHost;
-  return url.toString().replace(/\/$/, '');
+  const configured = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+  return (configured || '/api/v1').replace(/\/$/, '');
 }
 
 export const env = {

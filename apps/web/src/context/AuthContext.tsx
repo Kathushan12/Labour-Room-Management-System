@@ -17,6 +17,7 @@ import {
   signOut,
   subscribeSession,
 } from '../services/auth-session.js';
+import { realtimeClient } from '../services/realtime.js';
 
 export interface AuthContextType {
   user: AuthUser | null;
@@ -139,6 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async (): Promise<void> => {
     setIsLoading(true);
+    // Close the socket first so the server-side kick on logout is not read as a revoked session.
+    realtimeClient.disconnect();
     try {
       await signOut('manual');
     } finally {

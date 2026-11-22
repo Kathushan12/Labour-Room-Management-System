@@ -5,6 +5,7 @@ import {
   EmergencyOverrideDto,
   EmergencyResponseDto,
   EmergencyResponseStatus,
+  Permission,
   SurgicalReviewDto,
   UserRole,
 } from '@lrms/shared';
@@ -27,6 +28,7 @@ import { CarePlanCreateDialog } from './CarePlanCreateDialog.js';
 import { ClinicalEscalationPanel } from './ClinicalEscalationPanel.js';
 import { SurgicalReviewCard } from './SurgicalReviewCard.js';
 import { useAlertStateRefresh } from '../../../hooks/useRealtimeNotifications.js';
+import { useAuth } from '../../../hooks/useAuth.js';
 
 interface ClinicalCarePanelProps {
   admissionId: string;
@@ -49,6 +51,10 @@ export const ClinicalCarePanel: React.FC<ClinicalCarePanelProps> = ({ admissionI
   const [emergencyOpen, setEmergencyOpen] = useState(false);
   const [breakGlassOpen, setBreakGlassOpen] = useState(false);
 
+  // The override list is restricted to OVERRIDES_EMERGENCY; nurses would only get a 403.
+  const { permissions } = useAuth();
+  const canSeeOverrides = permissions.includes(Permission.OVERRIDES_EMERGENCY);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -60,7 +66,9 @@ export const ClinicalCarePanel: React.FC<ClinicalCarePanelProps> = ({ admissionI
         clinicalCareApi.getEscalations(admissionId),
         clinicalCareApi.getEmergencyResponses(admissionId),
         clinicalCareApi.getSurgicalReviews(admissionId),
-        clinicalCareApi.getOverridesForAdmission(admissionId),
+        canSeeOverrides
+          ? clinicalCareApi.getOverridesForAdmission(admissionId)
+          : Promise.resolve<EmergencyOverrideDto[]>([]),
       ]);
 
       if (pRes.status === 'fulfilled') {
@@ -81,7 +89,7 @@ export const ClinicalCarePanel: React.FC<ClinicalCarePanelProps> = ({ admissionI
     } finally {
       setLoading(false);
     }
-  }, [admissionId]);
+  }, [admissionId, canSeeOverrides]);
 
   useEffect(() => {
     loadData();
