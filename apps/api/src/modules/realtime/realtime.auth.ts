@@ -15,8 +15,10 @@ export async function authenticateSocket(
     let token: string | undefined;
 
     // 1. Check socket.handshake.auth.token
-    if (socket.handshake.auth?.token) {
-      token = socket.handshake.auth.token;
+    // The web client sends "Bearer <jwt>", so strip the optional scheme prefix.
+    const authToken = socket.handshake.auth?.token;
+    if (typeof authToken === 'string' && authToken.trim()) {
+      token = authToken.trim().replace(/^Bearer\s+/i, '');
     }
 
     // 2. Check Authorization header
