@@ -27,17 +27,21 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
-  let statusCode = err.statusCode || 500;
-  let errorCode = err.code || 'INTERNAL_SERVER_ERROR';
-  let message =
-    statusCode === 500 && process.env.NODE_ENV === 'production'
-      ? 'An unexpected error occurred'
-      : err.message || 'Internal server error';
+  const isZod = err.name === 'ZodError';
+  const statusCode = isZod ? 400 : err.statusCode || 500;
+  // SEC-8: unexpected errors (including database errors) never reach the user verbatim.
+  const isInternal = statusCode >= 500;
+  let errorCode = isInternal ? 'INTERNAL_SERVER_ERROR' : err.code || 'REQUEST_FAILED';
+  let message = isInternal
+    ? 'An unexpected error occurred. Please try again.'
+    : err.message || 'Request failed';
+  let details = isInternal ? undefined : err.details;
 
-  if (err.name === 'ZodError') {
-    statusCode = 400;
+  if (isZod) {
     errorCode = 'VALIDATION_ERROR';
-    message = err.message || 'Validation error';
+    const zodErr = err as unknown as { issues?: { message: string }[]; flatten: () => unknown };
+    message = zodErr.issues?.[0]?.message ?? 'Validation failed';
+    details = zodErr.flatten();
   }
 
   logger.error(
@@ -46,7 +50,7 @@ export function errorHandler(
       method: req.method,
       url: req.originalUrl,
       statusCode,
-      errorCode,
+      errorCode: err.code || errorCode,
       err: err.stack,
     },
     'Request failed with error',
@@ -57,7 +61,7 @@ export function errorHandler(
     error: {
       code: errorCode,
       message,
-      ...(err.details ? { details: err.details } : {}),
+      ...(details ? { details } : {}),
     },
     timestamp: new Date().toISOString(),
   };

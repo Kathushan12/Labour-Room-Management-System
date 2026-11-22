@@ -15,9 +15,11 @@ export class EmergencyOverrideService {
     actor: RequestUser,
     ipAddress: string | null = null,
   ): Promise<EmergencyOverrideDto> {
-    if (actor.role === UserRole.ADMIN) {
+    // REQ-1.8: emergency access to an unassigned patient is a doctor-only action.
+    if (actor.role !== UserRole.DOCTOR) {
       throw new ForbiddenError(
-        'Break-glass emergency access is reserved strictly for clinical staff (Doctors and Nurses). Administrative accounts cannot break glass for identifiable clinical records.',
+        'Emergency access to an unassigned patient is available to doctors only.',
+        'ROLE_NOT_AUTHORIZED',
       );
     }
 

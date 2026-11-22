@@ -1,3 +1,4 @@
+import { IsNull } from 'typeorm';
 import { Socket } from 'socket.io';
 import { RequestUser } from '../../common/middleware/auth.middleware.js';
 import { AppDataSource } from '../../config/database.js';
@@ -75,10 +76,11 @@ export async function authorizeRoomJoin(user: RequestUser, room: string): Promis
       where: {
         admissionId: id,
         staffId: user.id,
+        unassignedAt: IsNull(),
       },
     });
 
-    if (activeAssignment && !activeAssignment.unassignedAt) {
+    if (activeAssignment) {
       return { allowed: true };
     }
 

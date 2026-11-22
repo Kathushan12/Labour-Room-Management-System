@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import argon2, { HashOptions } from 'argon2';
+import { PASSWORD_MIN_LENGTH } from '@lrms/shared';
 
 const UPPERCASE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const LOWERCASE_CHARS = 'abcdefghijkmnopqrstuvwxyz';
@@ -29,7 +30,7 @@ export const ARGON2_OPTIONS: HashOptions = {
 
 /**
  * Validates a plaintext password against the LRMS hospital security policy:
- * - Minimum 10 characters
+ * - Minimum PASSWORD_MIN_LENGTH (15) characters (REQ-1.3)
  * - At least one uppercase letter
  * - At least one lowercase letter
  * - At least one numeric digit
@@ -40,8 +41,11 @@ export function validatePasswordInput(password: string): PasswordPolicyResult {
     return { valid: false, message: 'Password is required' };
   }
 
-  if (password.length < 10) {
-    return { valid: false, message: 'Password must be at least 10 characters long' };
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      valid: false,
+      message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters long`,
+    };
   }
 
   if (password.length > 128) {
@@ -111,8 +115,8 @@ export function needsRehash(hash: string): boolean {
  * Generates a cryptographically random temporary password using crypto.randomInt
  * guaranteed to satisfy hospital password complexity rules.
  */
-export function generateTemporaryPassword(length = 14): string {
-  const effectiveLength = Math.max(length, 12);
+export function generateTemporaryPassword(length = 16): string {
+  const effectiveLength = Math.max(length, PASSWORD_MIN_LENGTH);
   const chars: string[] = [
     UPPERCASE_CHARS[crypto.randomInt(UPPERCASE_CHARS.length)],
     LOWERCASE_CHARS[crypto.randomInt(LOWERCASE_CHARS.length)],

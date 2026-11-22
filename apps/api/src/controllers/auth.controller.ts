@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { AuthUser, UserRole } from '@lrms/shared';
+import { AuthUser, PASSWORD_MIN_LENGTH, UserRole } from '@lrms/shared';
 import { toStaffProfileDto } from '../modules/users/user.dto.js';
 import { AppDataSource } from '../config/database.js';
 import { User, AuditLog, RefreshSession } from '../database/entities/index.js';
@@ -49,7 +49,7 @@ const changePasswordSchema = z
     currentPassword: z.string().min(1, 'Current password is required'),
     newPassword: z
       .string()
-      .min(10, 'New password must be at least 10 characters long')
+      .min(PASSWORD_MIN_LENGTH, `New password must be at least ${PASSWORD_MIN_LENGTH} characters long`)
       .max(128, 'New password cannot exceed 128 characters'),
   })
   .strict();

@@ -61,10 +61,12 @@ export class NotFoundError extends Error implements AppError {
 export class ConflictError extends Error implements AppError {
   statusCode = 409;
   code: string;
+  details?: unknown;
 
-  constructor(message = 'Conflict detected', code = 'CONFLICT') {
+  constructor(message = 'Conflict detected', code = 'CONFLICT', details?: unknown) {
     super(message);
     this.name = 'ConflictError';
     this.code = code;
+    this.details = details;
   }
 }
