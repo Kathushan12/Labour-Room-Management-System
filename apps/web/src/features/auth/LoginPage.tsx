@@ -110,7 +110,7 @@ export const LoginPage: React.FC = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g., admin_hospital or dr_perera"
+                  placeholder="e.g. dr.perera or nurse.silva"
                   className="pl-9 text-xs py-2 h-9"
                   disabled={isSubmitting}
                 />
@@ -135,7 +135,7 @@ export const LoginPage: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Enter your password"
                   className="pl-9 pr-9 text-xs py-2 h-9"
                   disabled={isSubmitting}
                 />
