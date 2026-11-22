@@ -1,4 +1,6 @@
 import {
+  AlertReceiptState,
+  AlertStateChange,
   AnaesthesiaReviewStatus,
   CaesareanDecision,
   CarePlanLifecycleState,
@@ -132,6 +134,12 @@ export interface ClinicalEscalationDto {
   sourceObservationId: string | null;
   initiatedByUserId: string;
   assignedRecipientUserId: string | null;
+  alertState: AlertReceiptState;
+  dispatchedAt: string;
+  deliveredAt: string | null;
+  timedOutAt: string | null;
+  // Only filled while the alert is timed out and not yet acknowledged.
+  recipientContactNumber: string | null;
   acknowledgedAt: string | null;
   acknowledgedByUserId: string | null;
   assessmentAt: string | null;
@@ -151,6 +159,39 @@ export interface ClinicalEscalationDto {
 export interface EscalationFeedItemDto extends ClinicalEscalationDto {
   admissionReferenceId: string;
   bedNumber: string | null;
+}
+
+export interface AlertNewPayload {
+  escalationId: string;
+  admissionId: string;
+  escalationReferenceId: string;
+  admissionReferenceId: string;
+  bedNumber: string | null;
+  riskFlags: string[];
+  category: EscalationCategory;
+  priority: EscalationPriority;
+  clinicalReason: string;
+  dispatchedAt: string;
+}
+
+export interface AlertStatePayload {
+  escalationId: string;
+  admissionId: string;
+  wardId: string;
+  state: AlertStateChange;
+  dispatchedAt: string;
+  deliveredAt: string | null;
+  acknowledgedAt: string | null;
+  timedOutAt: string | null;
+}
+
+export interface AlertReceiptRequest {
+  escalationId: string;
+}
+
+export interface AlertReceiptResponse {
+  status: 'OK' | 'FORBIDDEN' | 'ERROR';
+  reason?: string;
 }
 
 export interface CreateEscalationRequest {

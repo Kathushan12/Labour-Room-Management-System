@@ -103,6 +103,15 @@ export enum AlertReceiptState {
   ACKNOWLEDGED = 'ACKNOWLEDGED',
 }
 
+// Values carried by the alert:state socket event. TIMED_OUT is a warning on top of the
+// receipt state, not a fourth receipt state.
+export enum AlertStateChange {
+  DISPATCHED = 'DISPATCHED',
+  DELIVERED = 'DELIVERED',
+  ACKNOWLEDGED = 'ACKNOWLEDGED',
+  TIMED_OUT = 'TIMED_OUT',
+}
+
 export enum AlertSeverity {
   EMERGENCY = 'EMERGENCY',
   URGENT = 'URGENT',
@@ -438,10 +447,13 @@ export enum SocketEvent {
   ALERT_ESCALATION = 'alert:escalation',
   CONNECTION_READY = 'connection:ready',
   NOTIFICATION_SYNC_REQUIRED = 'notification:sync-required',
+  ALERT_NEW = 'alert:new',
+  ALERT_STATE = 'alert:state',
 
   // Client to server
   JOIN_ROOM = 'room:join',
   LEAVE_ROOM = 'room:leave',
+  ALERT_RECEIPT = 'alert:receipt',
 }
 
 // ==========================================
