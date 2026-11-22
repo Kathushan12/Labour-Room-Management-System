@@ -32,6 +32,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // In-memory token storage (NEVER in localStorage or sessionStorage)
 let memoryAccessToken: string | null = null;
 let memoryCsrfToken: string | null = null;
+let restoreRequest: Promise<{ ok: boolean; body: unknown }> | null = null;
 let sessionSyncListener: ((data: RefreshResponse | null) => void) | null = null;
 
 export function getMemoryAccessToken(): string | null {
@@ -39,7 +40,10 @@ export function getMemoryAccessToken(): string | null {
 }
 
 export function getMemoryCsrfToken(): string | null {
-  return memoryCsrfToken;
+  if (memoryCsrfToken) return memoryCsrfToken;
+  // After a page reload the in-memory token is gone; the double-submit cookie still holds it.
+  const match = document.cookie.match(/(?:^|;\s*)lrms_csrf=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 export function syncMemoryTokensFromInterceptor(data: RefreshResponse | null): void {
@@ -93,15 +97,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
-      if (memoryCsrfToken) {
-        headers['X-CSRF-Token'] = memoryCsrfToken;
+      const csrfToken = getMemoryCsrfToken();
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
       }
 
-      const res = await fetch(`${env.API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers,
-        credentials: 'include', // Sends HttpOnly refreshToken cookie
-      });
+      // Refresh tokens rotate, so parallel refreshes (StrictMode, several tabs of the same
+      // load) would look like token reuse to the server. Share one in-flight request.
+      if (!restoreRequest) {
+        restoreRequest = fetch(`${env.API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers,
+          credentials: 'include', // Sends HttpOnly refreshToken cookie
+        })
+          .then(async (r) => ({ ok: r.ok, body: r.ok ? await r.json() : null }))
+          .finally(() => {
+            restoreRequest = null;
+          });
+      }
+      const res = await restoreRequest;
 
       if (!res.ok) {
         updateTokens(null, null);
@@ -109,8 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      const body: ApiResponse<RefreshResponse> = await res.json();
-      if (body.success && body.data) {
+      const body = res.body as ApiResponse<RefreshResponse> | null;
+      if (body?.success && body.data) {
         setUser(body.data.user);
         updateTokens(body.data.accessToken, body.data.csrfToken);
         return true;
