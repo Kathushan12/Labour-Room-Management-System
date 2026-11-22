@@ -118,7 +118,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
             </div>
 
             {observationType === ClinicalObservationType.MATERNAL && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label
                     htmlFor="amend-systolic-bp"
@@ -225,7 +225,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
             )}
 
             {observationType === ClinicalObservationType.LABOUR_ASSESSMENT && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label
                     htmlFor="amend-cervical-dilation"
@@ -271,7 +271,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
             )}
 
             {observationType === ClinicalObservationType.CONTRACTION && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label
                     htmlFor="amend-contractions-count"

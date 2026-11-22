@@ -41,7 +41,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <div className="flex items-center space-x-3">
         <button
           onClick={onMobileToggle}
-          className="lg:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
+          className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
           aria-label="Toggle navigation menu"
         >
           <Menu className="w-5 h-5" />

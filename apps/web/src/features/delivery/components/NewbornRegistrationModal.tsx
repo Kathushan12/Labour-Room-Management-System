@@ -107,7 +107,7 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Birth Order (1-10) *</Label>
               <Input
@@ -133,7 +133,7 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Birth Timestamp *</Label>
               <Input
@@ -160,7 +160,7 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Infant Sex *</Label>
               <select
@@ -188,7 +188,7 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Gestational Weeks (20-44)</Label>
               <Input

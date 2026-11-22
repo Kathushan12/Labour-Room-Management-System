@@ -148,7 +148,7 @@ export const NewbornCareModal: React.FC<NewbornCareModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Heart Rate (bpm)</Label>
               <Input
@@ -187,7 +187,7 @@ export const NewbornCareModal: React.FC<NewbornCareModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Umbilical Cord Condition *</Label>
               <select
@@ -225,7 +225,7 @@ export const NewbornCareModal: React.FC<NewbornCareModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"

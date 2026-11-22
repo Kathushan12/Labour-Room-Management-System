@@ -162,7 +162,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               end={item.end}
               onClick={onMobileClose}
               className={({ isActive }) =>
-                `flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors group ${
+                `flex items-center px-3 py-3 lg:py-2 min-h-[44px] lg:min-h-0 text-xs font-medium rounded-lg transition-colors group ${
                   isActive
                     ? 'bg-teal-600 text-white shadow-sm font-semibold'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-white'

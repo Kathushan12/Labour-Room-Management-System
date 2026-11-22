@@ -48,7 +48,7 @@ export const TabsList: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   return (
     <div
       className={cn(
-        'inline-flex h-9 items-center justify-center rounded-lg bg-slate-100 p-1 text-slate-500',
+        'inline-flex h-11 sm:h-9 items-center justify-center rounded-lg bg-slate-100 p-1 text-slate-500',
         className,
       )}
       {...props}
@@ -73,7 +73,7 @@ export const TabsTrigger: React.FC<{
       aria-selected={isSelected}
       onClick={() => context.onValueChange(value)}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 min-h-[36px] sm:min-h-0 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
         isSelected ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900',
         className,
       )}

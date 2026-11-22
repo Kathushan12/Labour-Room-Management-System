@@ -54,14 +54,14 @@ export const DialogContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
       {/* Modal Dialog Content */}
       <div
         className={cn(
-          'relative z-50 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl border border-border animate-in fade-in-0 zoom-in-95',
+          'relative z-50 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-xl bg-white p-4 sm:p-6 shadow-xl border border-border animate-in fade-in-0 zoom-in-95',
           className,
         )}
         {...props}
       >
         <button
           onClick={() => context.onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+          className="absolute right-1 top-1 sm:right-4 sm:top-4 h-11 w-11 sm:h-auto sm:w-auto flex items-center justify-center rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
           aria-label="Close dialog"
         >
           <X className="h-4 w-4" />
