@@ -18,8 +18,8 @@ export const shiftsApi = {
   listShifts: async (
     wardId: string,
     filters?: { fromDate?: string; toDate?: string; status?: ShiftStatus },
-  ): Promise<ShiftDto[]> => {
-    const res = await api.get<{ success: boolean; data: ShiftDto[] }>(`/wards/${wardId}/shifts`, {
+  ): Promise<ShiftWithStaffDto[]> => {
+    const res = await api.get<{ success: boolean; data: ShiftWithStaffDto[] }>(`/wards/${wardId}/shifts`, {
       params: filters,
     });
     return res.data.data;
