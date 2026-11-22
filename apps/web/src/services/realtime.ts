@@ -33,7 +33,9 @@ class RealtimeClient {
       this.socket.disconnect();
     }
 
-    const socketUrl = env.API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+    const socketUrl = /^https?:\/\//.test(env.API_BASE_URL)
+      ? env.API_BASE_URL.replace(/\/api\/v1\/?$/, '')
+      : window.location.origin;
 
     this.updateStatus('CONNECTING');
 
