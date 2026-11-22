@@ -8,9 +8,12 @@ import { Link } from 'react-router-dom';
 import { useClinicalDashboardData } from './useClinicalDashboardData.js';
 import { categoryLabel, isPendingAlert, receiptStateOf } from '../alerts/alert-feed.js';
 import { formatColomboTime } from '../../lib/datetime.js';
+import { useAlertStateRefresh } from '../../hooks/useRealtimeNotifications.js';
 
 export const DoctorDashboard: React.FC = () => {
-  const { admissions, alerts, loading, error, reload } = useClinicalDashboardData();
+  const { admissions, alerts, loading, error, wardId, reload, refresh } =
+    useClinicalDashboardData();
+  useAlertStateRefresh(refresh, { wardId });
   const pendingAlerts = alerts.filter(isPendingAlert);
 
   return (

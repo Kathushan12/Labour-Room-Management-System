@@ -20,7 +20,10 @@ export interface ClinicalDashboardData {
   alerts: EscalationFeedItemDto[];
   loading: boolean;
   error: string | null;
+  wardId: string | null;
   reload: () => void;
+  // Reload without the loading state, for live socket-driven updates.
+  refresh: () => void;
 }
 
 // The admissions list is row-scoped by the API to the signed-in clinician's active assignments.
@@ -32,8 +35,8 @@ export function useClinicalDashboardData(): ClinicalDashboardData {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
     setError(null);
     try {
       const [admissionsRes, boardRes, alertsRes] = await Promise.all([
@@ -74,5 +77,17 @@ export function useClinicalDashboardData(): ClinicalDashboardData {
     if (!wardLoading) void load();
   }, [wardLoading, load]);
 
-  return { admissions, bedBoard, alerts, loading, error, reload: load };
+  const reload = useCallback(() => void load(), [load]);
+  const refresh = useCallback(() => void load(true), [load]);
+
+  return {
+    admissions,
+    bedBoard,
+    alerts,
+    loading,
+    error,
+    wardId: ward?.id ?? null,
+    reload,
+    refresh,
+  };
 }

@@ -9,6 +9,7 @@ import {
 } from '@lrms/shared';
 import { BedStatusBadge, RoleBadge } from '../../components/status/Badges.js';
 import { WardDutyStatusBanner } from './components/WardDutyStatusBanner.js';
+import { AlertTimeoutCard } from './components/AlertTimeoutCard.js';
 import { Button } from '../../components/ui/button.js';
 import { Link } from 'react-router-dom';
 import { useActiveWard } from '../../hooks/useActiveWard.js';
@@ -156,6 +157,8 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Administration Navigation & Quick Links */}
         <div className="space-y-6">
+          {ward && <AlertTimeoutCard ward={ward} />}
+
           <SectionCard
             title="Administrative Control"
             description="Shortcuts to configuration modules"

@@ -18,12 +18,25 @@ import { WardDutyStatusBanner } from './components/WardDutyStatusBanner.js';
 import { Button } from '../../components/ui/button.js';
 import { Link } from 'react-router-dom';
 import { useClinicalDashboardData } from './useClinicalDashboardData.js';
-import { categoryLabel, isPendingAlert, receiptStateOf } from '../alerts/alert-feed.js';
+import {
+  categoryLabel,
+  isPendingAlert,
+  isTimedOutAlert,
+  receiptStateOf,
+} from '../alerts/alert-feed.js';
 import { formatColomboTime } from '../../lib/datetime.js';
+import { useAlertStateRefresh } from '../../hooks/useRealtimeNotifications.js';
+import {
+  AlertReceiptStepper,
+  CallDoctorWarning,
+} from '../alerts/components/AlertReceiptStepper.js';
 
 export const NurseDashboard: React.FC = () => {
-  const { admissions, bedBoard, alerts, loading, error, reload } = useClinicalDashboardData();
+  const { admissions, bedBoard, alerts, loading, error, wardId, reload, refresh } =
+    useClinicalDashboardData();
+  useAlertStateRefresh(refresh, { wardId });
   const activeAlerts = alerts.filter(isPendingAlert);
+  const timedOutAlerts = alerts.filter(isTimedOutAlert);
   const beds = bedBoard?.beds ?? [];
   const cleaningBeds = bedBoard?.cleaningBedsCount ?? 0;
   const availableBeds = bedBoard?.availableBedsCount ?? 0;
@@ -71,6 +84,18 @@ export const NurseDashboard: React.FC = () => {
                 {activeAlerts[0].clinicalReason} (Bed: {activeAlerts[0].bedNumber ?? 'Unassigned'},
                 Ref: {activeAlerts[0].admissionReferenceId})
               </p>
+              {timedOutAlerts.map((alert) => (
+                <div key={alert.id} className="mt-2">
+                  <p className="text-[11px] font-semibold text-red-900">
+                    {alert.admissionReferenceId} · Bed {alert.bedNumber ?? '—'}
+                  </p>
+                  <CallDoctorWarning
+                    noDoctor={false}
+                    recipientName={alert.assignedRecipientUser?.fullName}
+                    contactNumber={alert.recipientContactNumber}
+                  />
+                </div>
+              ))}
             </div>
             <Link to="/alerts">
               <Button size="sm" variant="destructive" className="text-xs shrink-0 font-semibold">
@@ -299,9 +324,7 @@ export const NurseDashboard: React.FC = () => {
                   <p className="text-[11px] text-slate-600">
                     {categoryLabel(alert.category)}: {alert.clinicalReason}
                   </p>
-                  <div className="text-[10px] text-slate-400">
-                    Dispatched: {formatColomboTime(alert.createdAt)}
-                  </div>
+                  <AlertReceiptStepper alert={alert} />
                 </div>
               ))}
             </div>
