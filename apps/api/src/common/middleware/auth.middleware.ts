@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { UserRole, Permission, ROLE_PERMISSIONS, StaffProfileDto } from '@lrms/shared';
 import { verifyAccessToken } from '../crypto/jwt.service.js';
 import { AppDataSource } from '../../config/database.js';
-import { User, RefreshSession, AuditLog } from '../../database/entities/index.js';
+import { User, AuditLog } from '../../database/entities/index.js';
+import { isAccessSessionActive } from '../../services/session.service.js';
 import { UnauthorizedError, ForbiddenError } from '../errors/auth.errors.js';
 import { toStaffProfileDto } from '../../modules/users/user.dto.js';
 
@@ -99,13 +100,7 @@ export function createAuthenticateMiddleware(options: AuthenticateOptions = {}) 
         return next(new UnauthorizedError('User account is deactivated', 'USER_DEACTIVATED'));
       }
 
-      // Check if session has been revoked or expired
-      const sessionRepo = AppDataSource.getRepository(RefreshSession);
-      const session = await sessionRepo.findOne({
-        where: { id: payload.sessionId },
-      });
-
-      if (!session || session.isRevoked || new Date() > session.expiresAt) {
+      if (!(await isAccessSessionActive(payload.sessionId))) {
         return next(
           new UnauthorizedError('Session is invalid or has been terminated', 'SESSION_REVOKED'),
         );

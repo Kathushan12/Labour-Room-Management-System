@@ -40,6 +40,9 @@ export class RefreshSession {
   @Column({ name: 'expires_at', type: 'timestamptz' })
   expiresAt!: Date;
 
+  @Column({ name: 'session_started_at', type: 'timestamptz' })
+  sessionStartedAt!: Date;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

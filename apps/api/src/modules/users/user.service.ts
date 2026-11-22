@@ -502,6 +502,8 @@ export async function reissueTemporaryPassword(
     user.passwordHash = passwordHash;
     user.mustChangePassword = true;
     user.temporaryPasswordExpiresAt = tempPasswordExpiresAt;
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
     await tm.save(user);
 
     // Revoke all active sessions so only the newly issued temporary password works

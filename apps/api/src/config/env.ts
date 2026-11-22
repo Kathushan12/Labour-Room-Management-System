@@ -55,12 +55,26 @@ const baseEnvSchema = z
       .refine((val) => !isNaN(val) && val > 0, {
         message: 'JWT_ACCESS_EXPIRATION_SECONDS must be a positive integer',
       }),
-    JWT_REFRESH_EXPIRATION_DAYS: z
+    SESSION_IDLE_TIMEOUT_MINUTES: z
       .string()
-      .default('7')
+      .default('60')
       .transform((val) => parseInt(val, 10))
       .refine((val) => !isNaN(val) && val > 0, {
-        message: 'JWT_REFRESH_EXPIRATION_DAYS must be a positive integer',
+        message: 'SESSION_IDLE_TIMEOUT_MINUTES must be a positive integer',
+      }),
+    SESSION_ABSOLUTE_TIMEOUT_HOURS: z
+      .string()
+      .default('12')
+      .transform((val) => parseInt(val, 10))
+      .refine((val) => !isNaN(val) && val > 0, {
+        message: 'SESSION_ABSOLUTE_TIMEOUT_HOURS must be a positive integer',
+      }),
+    LOGIN_IP_MAX_FAILED_ATTEMPTS: z
+      .string()
+      .optional()
+      .transform((val) => (val === undefined ? undefined : parseInt(val, 10)))
+      .refine((val) => val === undefined || (!isNaN(val) && val > 0), {
+        message: 'LOGIN_IP_MAX_FAILED_ATTEMPTS must be a positive integer',
       }),
     TEMP_PASSWORD_EXPIRATION_HOURS: z
       .string()
@@ -167,6 +181,9 @@ const envSchema = baseEnvSchema.transform((data) => ({
   ...data,
   // Always true in production regardless of raw COOKIE_SECURE input
   COOKIE_SECURE: data.NODE_ENV === 'production' ? true : data.COOKIE_SECURE === 'true',
+  // Every developer and demo device shares 127.0.0.1 in dev, so the per-IP cap is looser there.
+  LOGIN_IP_MAX_FAILED_ATTEMPTS:
+    data.LOGIN_IP_MAX_FAILED_ATTEMPTS ?? (data.NODE_ENV === 'production' ? 20 : 100),
 }));
 
 export type EnvConfig = z.infer<typeof envSchema>;
