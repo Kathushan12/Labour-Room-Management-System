@@ -23,7 +23,6 @@ import { Activity, UserCheck, ArrowRightLeft, UserMinus, Download } from 'lucide
 export const AdmissionAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<AdmissionAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

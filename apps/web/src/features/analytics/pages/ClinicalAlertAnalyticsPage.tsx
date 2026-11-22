@@ -21,7 +21,6 @@ import { BellRing, ShieldCheck, Clock, AlertTriangle, Download, Zap } from 'luci
 export const ClinicalAlertAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<ClinicalAlertAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

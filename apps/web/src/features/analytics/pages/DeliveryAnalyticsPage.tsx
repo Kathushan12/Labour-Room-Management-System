@@ -21,7 +21,6 @@ import { Baby, Scissors, HeartPulse, Download, Activity } from 'lucide-react';
 export const DeliveryAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<DeliveryAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

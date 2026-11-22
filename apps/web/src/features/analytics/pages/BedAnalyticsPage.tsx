@@ -23,7 +23,6 @@ import { Badge } from '../../../components/ui/badge.js';
 export const BedAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<BedUtilizationAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

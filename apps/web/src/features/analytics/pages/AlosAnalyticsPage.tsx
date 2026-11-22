@@ -18,7 +18,6 @@ import { Clock, Baby, HeartPulse, Info, Download } from 'lucide-react';
 export const AlosAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<AlosAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

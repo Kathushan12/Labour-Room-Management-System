@@ -33,7 +33,6 @@ import {
 export const OperationalDashboardPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<OperationalOverviewDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

@@ -21,7 +21,6 @@ import { Users, Stethoscope, Clock, ShieldCheck, Download, CalendarCheck } from 
 export const StaffingAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<StaffingAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

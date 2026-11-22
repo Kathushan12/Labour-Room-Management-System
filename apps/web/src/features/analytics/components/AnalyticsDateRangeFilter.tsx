@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AnalyticsDateRangePreset } from '@lrms/shared';
 import { Calendar, RotateCw, Filter } from 'lucide-react';
 import { Button } from '../../../components/ui/button.js';
+import { useActiveWard } from '../../../hooks/useActiveWard.js';
 
 export interface AnalyticsFilterState {
   preset: AnalyticsDateRangePreset;
@@ -37,6 +38,12 @@ export const AnalyticsDateRangeFilter: React.FC<AnalyticsDateRangeFilterProps> =
   isLoading = false,
   className = '',
 }) => {
+  const { ward } = useActiveWard();
+
+  useEffect(() => {
+    if (ward && !filters.wardId) onChange({ ...filters, wardId: ward.id });
+  }, [ward]);
+
   const handlePresetChange = (newPreset: AnalyticsDateRangePreset) => {
     if (newPreset === AnalyticsDateRangePreset.CUSTOM) {
       const today = new Date().toISOString().split('T')[0];
@@ -111,11 +118,15 @@ export const AnalyticsDateRangeFilter: React.FC<AnalyticsDateRangeFilterProps> =
           <span className="text-slate-500">Ward:</span>
           <select
             aria-label="Ward Filter"
-            value={filters.wardId || 'WARD-18'}
+            value={filters.wardId ?? ward?.id ?? ''}
             onChange={(e) => onChange({ ...filters, wardId: e.target.value })}
             className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
-            <option value="WARD-18">Ward 18 (Labour Room)</option>
+            {ward && (
+              <option value={ward.id}>
+                {ward.name} ({ward.code})
+              </option>
+            )}
           </select>
         </div>
       </div>

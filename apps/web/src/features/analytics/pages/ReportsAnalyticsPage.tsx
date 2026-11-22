@@ -140,7 +140,6 @@ const REPORT_CATALOG: ReportCatalogItem[] = [
 export const ReportsAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [exportingReport, setExportingReport] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{
