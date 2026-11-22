@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   LogOut,
 } from 'lucide-react';
+import { PASSWORD_MIN_LENGTH } from '@lrms/shared';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../../components/ui/button.js';
 import { Input } from '../../components/ui/input.js';
@@ -35,7 +36,7 @@ export const ChangePasswordPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const checks = {
-    length: newPassword.length >= 10 && newPassword.length <= 128,
+    length: newPassword.length >= PASSWORD_MIN_LENGTH && newPassword.length <= 128,
     upper: /[A-Z]/.test(newPassword),
     lower: /[a-z]/.test(newPassword),
     digit: /[0-9]/.test(newPassword),
@@ -147,7 +148,7 @@ export const ChangePasswordPage: React.FC = () => {
                 {mustChangePassword ? 'Current / Temporary Password' : 'Current Password'}
               </Label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -164,7 +165,7 @@ export const ChangePasswordPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowCurrent(!showCurrent)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-600"
                   aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
                   tabIndex={-1}
                 >
@@ -178,7 +179,7 @@ export const ChangePasswordPage: React.FC = () => {
                 New Permanent Password
               </Label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -195,7 +196,7 @@ export const ChangePasswordPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowNew(!showNew)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-600"
                   aria-label={showNew ? 'Hide new password' : 'Show new password'}
                   tabIndex={-1}
                 >
@@ -209,7 +210,7 @@ export const ChangePasswordPage: React.FC = () => {
                 Confirm New Password
               </Label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -226,7 +227,7 @@ export const ChangePasswordPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-600"
                   aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
                   tabIndex={-1}
                 >
@@ -239,7 +240,7 @@ export const ChangePasswordPage: React.FC = () => {
             <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] space-y-1">
               <p className="font-semibold text-slate-700 mb-1">Hospital Password Policy</p>
               <div className={checks.length ? 'text-emerald-700 font-medium' : 'text-slate-500'}>
-                {checks.length ? '✔' : '•'} At least 10 characters
+                {checks.length ? '✔' : '•'} At least {PASSWORD_MIN_LENGTH} characters
               </div>
               <div
                 className={
@@ -289,7 +290,7 @@ export const ChangePasswordPage: React.FC = () => {
                 Back to Dashboard
               </Button>
             ) : (
-              <span className="text-[11px] text-slate-400">Session restricted until updated</span>
+              <span className="text-[11px] text-slate-500">Session restricted until updated</span>
             )}
 
             <Button

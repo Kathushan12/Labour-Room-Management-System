@@ -47,7 +47,7 @@ export const AnalyticsDonutChart: React.FC<AnalyticsDonutChartProps> = ({
   if (!data || data.length === 0 || total === 0) {
     return (
       <div
-        className={`flex items-center justify-center text-xs text-slate-400 italic p-6 rounded-lg border border-dashed border-slate-200 ${className}`}
+        className={`flex items-center justify-center text-xs text-slate-500 italic p-6 rounded-lg border border-dashed border-slate-200 ${className}`}
         style={{ minHeight: size }}
         data-testid={testId}
       >
@@ -157,7 +157,7 @@ export const AnalyticsDonutChart: React.FC<AnalyticsDonutChartProps> = ({
                   <span className="font-bold text-slate-900 font-sans">
                     {item.value.toLocaleString()} {unit}
                   </span>
-                  <span className="text-[11px] text-slate-400 font-medium w-9 text-right font-sans">
+                  <span className="text-[11px] text-slate-500 font-medium w-9 text-right font-sans">
                     {percent}%
                   </span>
                 </div>

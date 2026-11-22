@@ -5,7 +5,19 @@ import {
   BedDisplayStatus,
   AdmissionCategory,
   CarePlanState,
+  AlertReceiptState,
 } from '../enums/index.js';
+
+// Doctor alert summary for the ward board. No patient identifiers beyond the ref IDs.
+export interface BedActiveAlertDto {
+  escalationId: string;
+  escalationReferenceId: string;
+  alertState: AlertReceiptState;
+  dispatchedAt: string;
+  timedOutAt: string | null;
+  recipientName: string | null;
+  recipientContactNumber: string | null;
+}
 
 export interface BedActiveAllocationDto {
   id: string;
@@ -49,6 +61,8 @@ export interface BedDto {
   displayStatus: BedDisplayStatus;
   currentAllocation: BedActiveAllocationDto | null;
   lastCleaning: BedCleaningRecordDto | null;
+  // Only populated by the ward bed board endpoint.
+  activeAlert?: BedActiveAlertDto | null;
   createdAt: string;
   updatedAt: string;
 }

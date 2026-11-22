@@ -3,6 +3,7 @@ import { EmergencyResponseDto, EmergencyResponseStatus } from '@lrms/shared';
 import { AlertTriangle, CheckCircle2, Siren, Users } from 'lucide-react';
 import { Button } from '../../../components/ui/button.js';
 import { Badge } from '../../../components/ui/badge.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface EmergencyResponseBannerProps {
   responses: EmergencyResponseDto[];
@@ -47,7 +48,7 @@ export const EmergencyResponseBanner: React.FC<EmergencyResponseBannerProps> = (
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="destructive" className="font-semibold tracking-wide uppercase">
-                    {emergency.category.replace(/_/g, ' ')}
+                    {humanizeEnum(emergency.category)}
                   </Badge>
                   <Badge
                     variant="outline"
@@ -56,7 +57,7 @@ export const EmergencyResponseBanner: React.FC<EmergencyResponseBannerProps> = (
                     Ref: {emergency.responseReferenceId}
                   </Badge>
                   <Badge className="bg-amber-600 hover:bg-amber-700 text-white">
-                    Status: {emergency.status.replace(/_/g, ' ')}
+                    Status: {humanizeEnum(emergency.status)}
                   </Badge>
                 </div>
                 <p className="mt-1 font-medium text-red-900 dark:text-red-200">
@@ -74,7 +75,7 @@ export const EmergencyResponseBanner: React.FC<EmergencyResponseBannerProps> = (
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 self-end md:self-center">
+            <div className="flex flex-wrap gap-2 self-stretch md:self-center [&>button]:w-full md:[&>button]:w-auto">
               {isInitiated && (
                 <Button
                   size="sm"

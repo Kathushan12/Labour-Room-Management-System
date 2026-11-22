@@ -13,6 +13,7 @@ import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, FileEdit, History } from 'lucide-react';
 import { ClinicalCarePlanDto } from '@lrms/shared';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { colomboInputToIso, toColomboInput } from '../../../lib/datetime.js';
 
 interface CarePlanAmendDialogProps {
   admissionId: string;
@@ -38,7 +39,7 @@ export const CarePlanAmendDialog: React.FC<CarePlanAmendDialogProps> = ({
   const [plannedActions, setPlannedActions] = useState(currentVer?.plannedActions || '');
   const [changeReason, setChangeReason] = useState('');
   const [plannedReviewAt, setPlannedReviewAt] = useState(
-    plan.plannedReviewAt ? new Date(plan.plannedReviewAt).toISOString().slice(0, 16) : '',
+    plan.plannedReviewAt ? toColomboInput(plan.plannedReviewAt) : '',
   );
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export const CarePlanAmendDialog: React.FC<CarePlanAmendDialogProps> = ({
         objectives: objectives.trim(),
         plannedActions: plannedActions.trim(),
         changeReason: changeReason.trim(),
-        plannedReviewAt: plannedReviewAt ? new Date(plannedReviewAt).toISOString() : undefined,
+        plannedReviewAt: plannedReviewAt ? colomboInputToIso(plannedReviewAt) : undefined,
       });
       onAmended();
       onClose();

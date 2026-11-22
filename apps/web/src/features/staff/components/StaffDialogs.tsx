@@ -30,6 +30,7 @@ import {
   UserCheck,
   UserX,
 } from 'lucide-react';
+import { formatColomboDateTime } from '../../../lib/datetime.js';
 
 export interface EphemeralCredentialPayload {
   username: string;
@@ -96,10 +97,10 @@ export const TemporaryCredentialDialog: React.FC<TemporaryCredentialDialogProps>
           </div>
 
           <div className="p-3.5 rounded-lg bg-slate-900 text-slate-100 border border-slate-700 space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-slate-400">
+            <div className="flex items-center justify-between text-[11px] text-slate-500">
               <span>Temporary Password (One-Time)</span>
               <Badge variant="outline" className="text-[10px] border-teal-500/40 text-teal-300">
-                Expires {new Date(credential.temporaryPasswordExpiresAt).toLocaleString()}
+                Expires {formatColomboDateTime(credential.temporaryPasswordExpiresAt)}
               </Badge>
             </div>
             <div className="flex items-center justify-between gap-2 bg-slate-950/60 px-3 py-2 rounded border border-slate-800">
@@ -233,8 +234,8 @@ export const ProvisionStaffDialog: React.FC<ProvisionStaffDialogProps> = ({
             <span>Provision New Staff Account</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-600">
-            Creates a hospital staff account with an Argon2id-hashed random temporary password
-            requiring change on first login.
+            Creates a hospital staff account with a temporary password that must be changed on first
+            sign-in.
           </DialogDescription>
         </DialogHeader>
 

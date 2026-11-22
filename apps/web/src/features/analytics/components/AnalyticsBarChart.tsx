@@ -44,7 +44,7 @@ export const AnalyticsBarChart: React.FC<AnalyticsBarChartProps> = ({
   if (!data || data.length === 0) {
     return (
       <div
-        className={`flex items-center justify-center text-xs text-slate-400 italic p-6 rounded-lg border border-dashed border-slate-200 ${className}`}
+        className={`flex items-center justify-center text-xs text-slate-500 italic p-6 rounded-lg border border-dashed border-slate-200 ${className}`}
         style={{ height }}
         data-testid={testId}
       >
@@ -88,7 +88,7 @@ export const AnalyticsBarChart: React.FC<AnalyticsBarChartProps> = ({
                       {item.value.toLocaleString()} {unit}
                     </span>
                     {item.sublabel && (
-                      <span className="text-[11px] text-slate-400">({item.sublabel})</span>
+                      <span className="text-[11px] text-slate-500">({item.sublabel})</span>
                     )}
                   </div>
                 </div>

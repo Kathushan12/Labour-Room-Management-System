@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BirthOutcome, NewbornSex, RegisterNewbornInput } from '@lrms/shared';
 import {
   Dialog,
@@ -11,13 +11,17 @@ import {
 import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
+import { FieldError, errorProps } from '../../../components/ui/field-error.js';
 import { AlertCircle, Baby, Loader2 } from 'lucide-react';
+import { StaffSelect, StaffOption } from './StaffSelect.js';
+import { colomboInputToIso, toColomboInput } from '../../../lib/datetime.js';
 
 interface NewbornRegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   nextBirthOrder: number;
   deliveryReferenceId: string;
+  clinicians: StaffOption[];
   defaultDeliveredByUserId: string;
   onSubmit: (input: RegisterNewbornInput) => Promise<void>;
 }
@@ -27,47 +31,73 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
   onOpenChange,
   nextBirthOrder,
   deliveryReferenceId,
+  clinicians,
   defaultDeliveredByUserId,
   onSubmit,
 }) => {
   const [birthOrder, setBirthOrder] = useState<number>(nextBirthOrder);
-  const [birthTimestamp, setBirthTimestamp] = useState<string>(
-    new Date().toISOString().slice(0, 16),
-  );
+  const [birthTimestamp, setBirthTimestamp] = useState<string>(toColomboInput());
   const [outcome, setOutcome] = useState<BirthOutcome>(BirthOutcome.LIVE_BIRTH);
   const [sex, setSex] = useState<NewbornSex>(NewbornSex.FEMALE);
-  const [birthWeightGrams, setBirthWeightGrams] = useState<string>('3100');
-  const [gestationalAgeWeeks, setGestationalAgeWeeks] = useState<string>('39');
-  const [gestationalAgeDays, setGestationalAgeDays] = useState<string>('2');
+  const [birthWeightGrams, setBirthWeightGrams] = useState<string>('');
+  const [gestationalAgeWeeks, setGestationalAgeWeeks] = useState<string>('');
+  const [gestationalAgeDays, setGestationalAgeDays] = useState<string>('');
   const [deliveredByUserId, setDeliveredByUserId] = useState<string>(defaultDeliveredByUserId);
   const [provisionalName, setProvisionalName] = useState<string>(`Baby #${nextBirthOrder}`);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [weightError, setWeightError] = useState<string | null>(null);
+  const [deliveredError, setDeliveredError] = useState<string | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setBirthOrder(nextBirthOrder);
+    setProvisionalName(`Baby #${nextBirthOrder}`);
+    setDeliveredByUserId(defaultDeliveredByUserId);
+    setBirthTimestamp(toColomboInput());
+    setBirthWeightGrams('');
+    setGestationalAgeWeeks('');
+    setGestationalAgeDays('');
+    setErrorMsg(null);
+    setWeightError(null);
+    setDeliveredError(null);
+    setTimeError(null);
+  }, [open, nextBirthOrder, defaultDeliveredByUserId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+    setErrorMsg(null);
+
+    const weight = parseInt(birthWeightGrams, 10);
+    const weightProblem =
+      birthWeightGrams.trim() === ''
+        ? 'Enter the birth weight in grams.'
+        : isNaN(weight) || weight < 300 || weight > 7000
+          ? 'Birth weight must be from 300 to 7,000 grams. Check the unit is grams, not kilograms.'
+          : null;
+    const deliveredProblem = deliveredByUserId ? null : 'Select who delivered the baby.';
+    const timeProblem = !birthTimestamp
+      ? 'Enter the birth date and time.'
+      : new Date(colomboInputToIso(birthTimestamp)) > new Date()
+        ? 'The birth time cannot be in the future.'
+        : null;
+    setWeightError(weightProblem);
+    setDeliveredError(deliveredProblem);
+    setTimeError(timeProblem);
+    if (weightProblem || deliveredProblem || timeProblem) return;
+
     try {
       setSubmitting(true);
-      setErrorMsg(null);
-
-      const weight = parseInt(birthWeightGrams, 10);
-      if (isNaN(weight) || weight < 300 || weight > 7000) {
-        setErrorMsg('Birth weight must be between 300g and 7,000g.');
-        return;
-      }
-
-      if (!deliveredByUserId) {
-        setErrorMsg('Delivering clinician identifier is required.');
-        return;
-      }
 
       const weeks = gestationalAgeWeeks ? parseInt(gestationalAgeWeeks, 10) : undefined;
       const days = gestationalAgeDays ? parseInt(gestationalAgeDays, 10) : undefined;
 
       await onSubmit({
         birthOrder,
-        birthTimestamp: new Date(birthTimestamp).toISOString(),
+        birthTimestamp: colomboInputToIso(birthTimestamp),
         outcome,
         sex,
         birthWeightGrams: weight,
@@ -106,18 +136,19 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-2 gap-4">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Birth Order (1-10) *</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="1"
                 max="10"
                 value={birthOrder}
                 onChange={(e) => setBirthOrder(parseInt(e.target.value, 10))}
                 required
-                className="h-8 text-xs font-mono"
+                className="text-xs font-mono"
               />
             </div>
 
@@ -133,16 +164,18 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Birth Timestamp *</Label>
               <Input
+                id="newborn-birth-time"
                 type="datetime-local"
                 value={birthTimestamp}
                 onChange={(e) => setBirthTimestamp(e.target.value)}
-                required
-                className="h-8 text-xs"
+                className="text-xs"
+                {...errorProps('newborn-birth-time', timeError)}
               />
+              <FieldError id="newborn-birth-time-error" message={timeError} />
             </div>
 
             <div className="space-y-1.5">
@@ -160,7 +193,7 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Infant Sex *</Label>
               <select
@@ -177,27 +210,32 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
             <div className="space-y-1.5">
               <Label className="text-xs">Birth Weight (Grams) *</Label>
               <Input
+                id="newborn-weight"
                 type="number"
+                inputMode="numeric"
                 min="300"
                 max="7000"
                 value={birthWeightGrams}
                 onChange={(e) => setBirthWeightGrams(e.target.value)}
-                required
-                className="h-8 text-xs font-mono"
+                placeholder="e.g. 3100"
+                className="text-xs font-mono"
+                {...errorProps('newborn-weight', weightError)}
               />
+              <FieldError id="newborn-weight-error" message={weightError} />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Gestational Weeks (20-44)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="20"
                 max="44"
                 value={gestationalAgeWeeks}
                 onChange={(e) => setGestationalAgeWeeks(e.target.value)}
-                className="h-8 text-xs font-mono"
+                className="text-xs font-mono"
               />
             </div>
 
@@ -205,25 +243,25 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
               <Label className="text-xs">Gestational Days (0-6)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="0"
                 max="6"
                 value={gestationalAgeDays}
                 onChange={(e) => setGestationalAgeDays(e.target.value)}
-                className="h-8 text-xs font-mono"
+                className="text-xs font-mono"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Delivering Clinician UUID *</Label>
-            <Input
-              type="text"
+            <Label className="text-xs">Delivered By *</Label>
+            <StaffSelect
               value={deliveredByUserId}
-              onChange={(e) => setDeliveredByUserId(e.target.value)}
-              placeholder="Doctor or Midwife User UUID"
-              required
-              className="h-8 text-xs font-mono"
+              onChange={setDeliveredByUserId}
+              options={clinicians}
+              placeholder="Select doctor or midwife"
             />
+            <FieldError id="newborn-delivered-error" message={deliveredError} />
           </div>
 
           <DialogFooter className="pt-2">

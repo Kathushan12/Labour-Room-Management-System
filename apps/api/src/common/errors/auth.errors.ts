@@ -22,6 +22,18 @@ export class ForbiddenError extends Error implements AppError {
   }
 }
 
+export class AccountLockedError extends Error implements AppError {
+  statusCode = 423;
+  code = 'ACCOUNT_LOCKED';
+  details: { retryAfterSeconds: number };
+
+  constructor(message: string, retryAfterSeconds: number) {
+    super(message);
+    this.name = 'AccountLockedError';
+    this.details = { retryAfterSeconds };
+  }
+}
+
 export class BadRequestError extends Error implements AppError {
   statusCode = 400;
   code: string;
@@ -49,10 +61,12 @@ export class NotFoundError extends Error implements AppError {
 export class ConflictError extends Error implements AppError {
   statusCode = 409;
   code: string;
+  details?: unknown;
 
-  constructor(message = 'Conflict detected', code = 'CONFLICT') {
+  constructor(message = 'Conflict detected', code = 'CONFLICT', details?: unknown) {
     super(message);
     this.name = 'ConflictError';
     this.code = code;
+    this.details = details;
   }
 }

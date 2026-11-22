@@ -2,12 +2,20 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import {
   NotificationDto,
   NotificationPriority,
+  NotificationType,
   NotificationUnreadCountResponse,
   SocketEvent,
+  UserRole,
 } from '@lrms/shared';
 import { notificationsApi } from '../../services/notifications.api.js';
 import { realtimeClient, ConnectionStatus } from '../../services/realtime.js';
 import { useAuth } from '../../hooks/useAuth.js';
+import { playAlertTone } from '../../lib/alert-sound.js';
+
+const DOCTOR_OVERLAY_NOTIFICATION_TYPES: NotificationType[] = [
+  NotificationType.CLINICAL_ESCALATION_CREATED,
+  NotificationType.CLINICAL_ESCALATION_ASSIGNED,
+];
 
 interface NotificationContextType {
   notifications: NotificationDto[];
@@ -26,7 +34,7 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { user, accessToken } = useAuth();
+  const { user, role, accessToken } = useAuth();
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<NotificationUnreadCountResponse>({
     unreadCount: 0,
@@ -41,33 +49,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Play subtle audio alert for emergency/urgent notifications
   const playAlertSound = useCallback((priority: NotificationPriority) => {
-    try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = priority === NotificationPriority.EMERGENCY ? 'sawtooth' : 'sine';
-      osc.frequency.setValueAtTime(
-        priority === NotificationPriority.EMERGENCY ? 880 : 587.33,
-        ctx.currentTime,
-      );
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.4);
-    } catch {
-      // Audio autoplay may be blocked until user gesture; ignore safely
-    }
+    playAlertTone(priority === NotificationPriority.EMERGENCY);
   }, []);
+
+  // Doctors get escalation alerts through the full-screen DoctorAlertOverlay instead.
+  const isOverlayAlert = useCallback(
+    (n: NotificationDto) =>
+      role === UserRole.DOCTOR && DOCTOR_OVERLAY_NOTIFICATION_TYPES.includes(n.notificationType),
+    [role],
+  );
 
   // Fetch initial notifications and unread counts from REST API
   const refreshNotifications = useCallback(async () => {
@@ -83,7 +74,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       // Check for unread emergency in initial load to display banner
       const pendingEmergency = listRes.items?.find(
-        (n) => n.priority === NotificationPriority.EMERGENCY && !n.readAt,
+        (n) => n.priority === NotificationPriority.EMERGENCY && !n.readAt && !isOverlayAlert(n),
       );
       if (pendingEmergency) {
         setActiveEmergency(pendingEmergency);
@@ -93,7 +84,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isOverlayAlert]);
 
   // Connect socket when user is authenticated with access token
   useEffect(() => {
@@ -135,6 +126,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           data.priority === NotificationPriority.URGENT ? prev.urgentCount + 1 : prev.urgentCount,
       }));
 
+      if (isOverlayAlert(data)) return;
+
       playAlertSound(data.priority);
 
       // Set emergency banner if priority is EMERGENCY
@@ -160,7 +153,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       socket.off(SocketEvent.NOTIFICATION_NEW, handleNewNotification);
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     };
-  }, [user, accessToken, refreshNotifications, playAlertSound]);
+  }, [user, accessToken, refreshNotifications, playAlertSound, isOverlayAlert]);
 
   // Mark notification as read
   const markAsRead = useCallback(

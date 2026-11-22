@@ -13,6 +13,7 @@ import { useAuth } from '../../../hooks/useAuth.js';
 import { OnDutyStatusBadge } from '../../../components/status/Badges.js';
 import { Button } from '../../../components/ui/button.js';
 import { AlertCircle, Calendar, HeartPulse, Stethoscope, Users, ArrowRight } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const WardDutyStatusBanner: React.FC = () => {
   const { user } = useAuth();
@@ -86,7 +87,8 @@ export const WardDutyStatusBanner: React.FC = () => {
                 </span>
               ) : currentUserDuty ? (
                 <span>
-                  Active on {currentUserDuty.shiftType} Shift ({currentUserDuty.shiftName})
+                  Active on {humanizeEnum(currentUserDuty.shiftType)} shift (
+                  {currentUserDuty.shiftName})
                 </span>
               ) : (
                 <span className="text-slate-600 font-normal">

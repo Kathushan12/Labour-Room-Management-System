@@ -1,120 +1,94 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { PageHeader, StatCard, SectionCard } from '../../components/shared/HeadersAndCards.js';
 import { FilterBar } from '../../components/shared/FilterBar.js';
 import { EmptyState } from '../../components/shared/FeedbackStates.js';
-import { UserRole } from '@lrms/shared';
+import { AuditLogEntryDto } from '@lrms/shared';
 import { RoleBadge } from '../../components/status/Badges.js';
 import { Button } from '../../components/ui/button.js';
 import { ShieldCheck, Lock, AlertTriangle, Download } from 'lucide-react';
+import { fetchAuditLogs } from '../../services/audit.api.js';
+import { formatColomboDateTime } from '../../lib/datetime.js';
 
-interface AuditLogEntry {
-  id: string;
-  timestamp: string;
-  actorName: string;
-  actorRole: UserRole;
-  action: string;
-  entityType: string;
-  entityId: string;
-  ipAddress: string;
-  status: 'SUCCESS' | 'WARNING' | 'DENIED';
+// REQ-9.6 filters over the action names written by the API.
+const ACTION_GROUPS: Record<string, (action: string) => boolean> = {
+  LOGIN: (a) => a.startsWith('LOGIN') || a.startsWith('LOGOUT'),
+  ACCOUNT: (a) => a.startsWith('USER_') && a !== 'USER_ACCESS_DENIED',
+  EMERGENCY: (a) => a.startsWith('EMERGENCY_OVERRIDE'),
+  PLAN: (a) => a === 'CARE_PLAN_STATE_CHANGED' || a.startsWith('EMERGENCY_ESCALATION'),
+  ALERT: (a) => a.startsWith('CLINICAL_ESCALATION') || a.startsWith('ALERT_'),
+  DISCHARGE: (a) => a.includes('DISCHARGE'),
+};
+
+function isWarning(action: string): boolean {
+  return /DENIED|FAILED|LOCKED/.test(action);
 }
 
-const PREVIEW_AUDIT_LOGS: AuditLogEntry[] = [
-  {
-    id: 'aud-001',
-    timestamp: '2026-11-11T09:12:02Z',
-    actorName: 'Dr. K. Jayawardena',
-    actorRole: UserRole.DOCTOR,
-    action: 'ALERT_DELIVERY_ACKNOWLEDGED',
-    entityType: 'EmergencyAlert',
-    entityId: 'alt-001',
-    ipAddress: '192.168.18.42 (Ward Terminal)',
-    status: 'SUCCESS',
-  },
-  {
-    id: 'aud-002',
-    timestamp: '2026-11-11T09:10:00Z',
-    actorName: 'Staff Midwife Silva',
-    actorRole: UserRole.NURSE_STAFF,
-    action: 'EMERGENCY_ALERT_DISPATCHED',
-    entityType: 'EmergencyAlert',
-    entityId: 'alt-001',
-    ipAddress: '192.168.18.15 (Nurse Station)',
-    status: 'SUCCESS',
-  },
-  {
-    id: 'aud-003',
-    timestamp: '2026-11-11T08:48:30Z',
-    actorName: 'Dr. K. Jayawardena',
-    actorRole: UserRole.DOCTOR,
-    action: 'PII_DECRYPT_ACCESSED',
-    entityType: 'Patient',
-    entityId: 'pat-4082',
-    ipAddress: '192.168.18.42 (Ward Terminal)',
-    status: 'SUCCESS',
-  },
-  {
-    id: 'aud-004',
-    timestamp: '2026-11-11T08:45:00Z',
-    actorName: 'Staff Midwife Silva',
-    actorRole: UserRole.NURSE_STAFF,
-    action: 'PATIENT_ADMISSION_CREATED',
-    entityType: 'Admission',
-    entityId: 'ADM-2026-0003',
-    ipAddress: '192.168.18.15 (Nurse Station)',
-    status: 'SUCCESS',
-  },
-  {
-    id: 'aud-005',
-    timestamp: '2026-11-11T08:46:10Z',
-    actorName: 'Staff Midwife Silva',
-    actorRole: UserRole.NURSE_STAFF,
-    action: 'BED_ALLOCATION_ASSIGNED',
-    entityType: 'BedAllocation',
-    entityId: 'bed-3',
-    ipAddress: '192.168.18.15 (Nurse Station)',
-    status: 'SUCCESS',
-  },
-  {
-    id: 'aud-006',
-    timestamp: '2026-11-11T07:15:00Z',
-    actorName: 'System Administrator',
-    actorRole: UserRole.ADMIN,
-    action: 'USER_ROLE_VERIFIED',
-    entityType: 'User',
-    entityId: 'usr-002',
-    ipAddress: '192.168.18.1 (Admin Console)',
-    status: 'SUCCESS',
-  },
-];
+function toCsv(rows: AuditLogEntryDto[]): string {
+  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const header = ['Time (Asia/Colombo)', 'User', 'Role', 'Action', 'Entity', 'Entity ID', 'IP'];
+  const lines = rows.map((r) =>
+    [
+      formatColomboDateTime(r.createdAt),
+      r.actorUsername ?? 'system',
+      r.actorRole ?? '',
+      r.action,
+      r.entityName,
+      r.entityId ?? '',
+      r.ipAddress ?? '',
+    ]
+      .map(esc)
+      .join(','),
+  );
+  return [header.map(esc).join(','), ...lines].join('\r\n');
+}
 
 export const AuditLogsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('ALL');
+  const [logs, setLogs] = useState<AuditLogEntryDto[]>([]);
+  const [total, setTotal] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetchAuditLogs().then((res) => {
+      if (res.success && res.data) {
+        setLogs(res.data.items);
+        setTotal(res.data.pagination.total);
+      } else {
+        setError(res.error?.message ?? 'Could not load audit logs.');
+      }
+    });
+  }, []);
 
   const filteredLogs = useMemo(() => {
-    return PREVIEW_AUDIT_LOGS.filter((log) => {
+    const needle = search.trim().toLowerCase();
+    return logs.filter((log) => {
       const matchesSearch =
-        search.trim() === '' ||
-        log.actorName.toLowerCase().includes(search.toLowerCase()) ||
-        log.action.toLowerCase().includes(search.toLowerCase()) ||
-        log.entityId.toLowerCase().includes(search.toLowerCase()) ||
-        log.entityType.toLowerCase().includes(search.toLowerCase());
-
-      let matchesAction = true;
-      if (actionFilter === 'PII') matchesAction = log.action.includes('PII');
-      else if (actionFilter === 'ALERT') matchesAction = log.action.includes('ALERT');
-      else if (actionFilter === 'ADMISSION') matchesAction = log.action.includes('ADMISSION');
-
-      return matchesSearch && matchesAction;
+        needle === '' ||
+        (log.actorUsername ?? '').toLowerCase().includes(needle) ||
+        log.action.toLowerCase().includes(needle) ||
+        (log.entityId ?? '').toLowerCase().includes(needle) ||
+        log.entityName.toLowerCase().includes(needle);
+      const group = ACTION_GROUPS[actionFilter];
+      return matchesSearch && (!group || group(log.action));
     });
-  }, [search, actionFilter]);
+  }, [logs, search, actionFilter]);
+
+  const handleExport = () => {
+    const blob = new Blob([toCsv(filteredLogs)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'lrms-audit-log.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
-        title="Forensic Security & Clinical Audit Trail"
-        description="Immutable audit trail of authentication events, patient admissions, PII decryption requests, and doctor escalations."
+        title="Security & Clinical Audit Log"
+        description="Record of sign-ins, patient admissions, identity detail access, and doctor escalations."
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Audit Logs', active: true },
@@ -126,9 +100,9 @@ export const AuditLogsPage: React.FC = () => {
           </span>
         }
         action={
-          <Button variant="outline" size="sm" className="text-xs">
+          <Button variant="outline" size="sm" className="text-xs" onClick={handleExport}>
             <Download className="w-3.5 h-3.5 mr-1.5 text-slate-600" />
-            Export Forensic Audit Log
+            Export Audit Log
           </Button>
         }
       />
@@ -137,20 +111,20 @@ export const AuditLogsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="Recorded Audit Events"
-          value={PREVIEW_AUDIT_LOGS.length}
-          subtitle="All transactions sealed"
+          value={total}
+          subtitle="Cannot be edited or deleted"
           icon={<ShieldCheck className="w-5 h-5 text-teal-700" />}
         />
         <StatCard
-          title="Decrypted PII Accesses"
-          value={PREVIEW_AUDIT_LOGS.filter((l) => l.action.includes('PII')).length}
-          subtitle="Audited doctor accesses"
+          title="Emergency Access"
+          value={logs.filter((l) => ACTION_GROUPS.EMERGENCY(l.action)).length}
+          subtitle="Doctor emergency access (latest 100)"
           icon={<Lock className="w-5 h-5 text-blue-600" />}
         />
         <StatCard
-          title="Emergency Escalations"
-          value={PREVIEW_AUDIT_LOGS.filter((l) => l.action.includes('ALERT')).length}
-          subtitle="Notification events logged"
+          title="Alert Updates"
+          value={logs.filter((l) => ACTION_GROUPS.ALERT(l.action)).length}
+          subtitle="Escalation and alert events (latest 100)"
           icon={<AlertTriangle className="w-5 h-5 text-amber-600" />}
         />
       </div>
@@ -166,9 +140,12 @@ export const AuditLogsPage: React.FC = () => {
             searchPlaceholder="Search actor, action, or entity ID..."
             filterOptions={[
               { label: 'All Events', value: 'ALL' },
-              { label: 'PII Decryption Access', value: 'PII' },
-              { label: 'Emergency Alerts', value: 'ALERT' },
-              { label: 'Patient Admissions', value: 'ADMISSION' },
+              { label: 'Logins', value: 'LOGIN' },
+              { label: 'Account Changes', value: 'ACCOUNT' },
+              { label: 'Emergency Access', value: 'EMERGENCY' },
+              { label: 'Care Plan Changes', value: 'PLAN' },
+              { label: 'Alert Updates', value: 'ALERT' },
+              { label: 'Discharges', value: 'DISCHARGE' },
             ]}
             selectedFilter={actionFilter}
             onFilterChange={setActionFilter}
@@ -178,6 +155,11 @@ export const AuditLogsPage: React.FC = () => {
             }}
           />
 
+          {error && (
+            <p role="alert" className="text-xs text-red-700">
+              {error}
+            </p>
+          )}
           {filteredLogs.length === 0 ? (
             <EmptyState
               title="No audit events found"
@@ -185,7 +167,7 @@ export const AuditLogsPage: React.FC = () => {
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="stack-table w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                     <th className="pb-3">Timestamp</th>
@@ -199,30 +181,46 @@ export const AuditLogsPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {filteredLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 font-mono text-slate-600">
-                        {new Date(log.timestamp).toLocaleString()}
+                      <td data-label="Timestamp" className="py-3 font-mono text-slate-600">
+                        {formatColomboDateTime(log.createdAt)}
                       </td>
-                      <td className="py-3">
-                        <div className="font-semibold text-slate-900">{log.actorName}</div>
-                        <div className="mt-0.5">
-                          <RoleBadge role={log.actorRole} />
+                      <td data-label="Actor / Role" className="py-3">
+                        <div className="font-semibold text-slate-900">
+                          {log.actorFullName ?? log.actorUsername ?? 'System'}
                         </div>
+                        {log.actorRole && (
+                          <div className="mt-0.5">
+                            <RoleBadge role={log.actorRole} />
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3">
+                      <td data-label="Action Event" className="py-3">
                         <span className="font-mono font-bold text-teal-800 text-[11px] bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                           {log.action}
                         </span>
                       </td>
-                      <td className="py-3 text-slate-700">
-                        <span className="font-semibold">{log.entityType}</span>
+                      <td data-label="Target Entity" className="py-3 text-slate-700">
+                        <span className="font-semibold">{log.entityName}</span>
                         <div className="text-[11px] font-mono text-slate-500">{log.entityId}</div>
                       </td>
-                      <td className="py-3 text-[11px] text-slate-500 font-mono">{log.ipAddress}</td>
-                      <td className="py-3 text-right">
-                        <span className="inline-flex items-center text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                          <ShieldCheck className="w-3 h-3 mr-1 text-emerald-600" />
-                          SEALED
-                        </span>
+                      <td
+                        data-label="Terminal Origin"
+                        className="py-3 text-[11px] text-slate-500 font-mono"
+                      >
+                        {log.ipAddress}
+                      </td>
+                      <td data-label="Integrity Status" className="py-3 text-right">
+                        {isWarning(log.action) ? (
+                          <span className="inline-flex items-center text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
+                            <AlertTriangle className="w-3 h-3 mr-1 text-amber-700" />
+                            WARNING
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            <ShieldCheck className="w-3 h-3 mr-1 text-emerald-600" />
+                            SEALED
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

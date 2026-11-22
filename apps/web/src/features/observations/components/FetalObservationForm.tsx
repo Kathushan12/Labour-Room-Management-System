@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { FetalObservationDto } from '@lrms/shared';
+import { AmnioticFluid, FetalObservationDto, OBSERVATION_LIMITS as L } from '@lrms/shared';
 import { observationsApi } from '../../../services/observations.api.js';
 import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
+import { FieldError, errorProps } from '../../../components/ui/field-error.js';
+import { FormActions } from '../../../components/shared/FormActions.js';
+import { colomboInputToIso } from '../../../lib/datetime.js';
 import { Activity, AlertCircle, Loader2 } from 'lucide-react';
 
 interface FetalObservationFormProps {
@@ -11,6 +14,9 @@ interface FetalObservationFormProps {
   onSuccess?: (obs: FetalObservationDto) => void;
   onCancel?: () => void;
 }
+
+const SELECT_CLASS =
+  'w-full mt-1 border border-slate-300 rounded-md px-3 py-2 text-base sm:text-sm bg-white min-h-[44px] sm:min-h-0';
 
 export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
   admissionId,
@@ -21,34 +27,48 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
   const [variability, setVariability] = useState<string>('NORMAL');
   const [decelerations, setDecelerations] = useState<string>('NONE');
   const [accelerations, setAccelerations] = useState<string>('PRESENT');
-  const [liquorStatus, setLiquorStatus] = useState<string>('CLEAR');
+  const [liquorStatus, setLiquorStatus] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [observationTime, setObservationTime] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fhrError, setFhrError] = useState<string | null>(null);
+
+  const hasFhr = fhrBpm.trim() !== '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
 
     const fhr = Number(fhrBpm);
-    if (!fhrBpm || isNaN(fhr) || fhr < 40 || fhr > 260) {
-      setError('FHR must be between 40 and 260 bpm');
-      return;
+    let problem: string | null = null;
+    if (
+      hasFhr &&
+      (isNaN(fhr) ||
+        !Number.isInteger(fhr) ||
+        fhr < L.fetalHeartRateBpm.min ||
+        fhr > L.fetalHeartRateBpm.max)
+    ) {
+      problem = `Fetal heart rate must be a whole number from ${L.fetalHeartRateBpm.min} to ${L.fetalHeartRateBpm.max} bpm.`;
+    } else if (!hasFhr && !liquorStatus) {
+      problem = 'Enter a fetal heart rate or choose an amniotic fluid status. One value is enough.';
     }
+    setFhrError(problem);
+    if (problem) return;
 
     setLoading(true);
     try {
       const payload = {
-        fetalHeartRateBpm: fhr,
+        fetalHeartRateBpm: hasFhr ? fhr : null,
         fetalHeartRateUnit: 'BPM',
-        variability: variability || null,
-        decelerations: decelerations || null,
-        accelerations: accelerations || null,
+        variability: hasFhr ? variability || null : null,
+        decelerations: hasFhr ? decelerations || null : null,
+        accelerations: hasFhr ? accelerations || null : null,
         liquorStatus: liquorStatus || null,
         clinicalNotes: notes.trim() || null,
-        observationTimestamp: observationTime ? new Date(observationTime).toISOString() : undefined,
+        observationTimestamp: observationTime ? colomboInputToIso(observationTime) : undefined,
       };
 
       const result = await observationsApi.recordFetalObservation(admissionId, payload);
@@ -56,7 +76,8 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
         onSuccess(result);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to record fetal observation';
+      const msg =
+        err instanceof Error ? err.message : 'Could not save. Check the connection and try again.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -66,107 +87,115 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
   return (
     <form noValidate onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs flex items-center space-x-2">
+        <div
+          role="alert"
+          className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs flex items-center space-x-2"
+        >
           <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* FHR & Liquor Status */}
+      <p className="text-xs text-slate-600">
+        Enter at least one value: fetal heart rate or amniotic fluid.
+      </p>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <Label htmlFor="fetal-heart-rate" className="text-xs font-semibold text-slate-700">
-            Fetal Heart Rate (bpm) *
+            Fetal Heart Rate (bpm)
           </Label>
           <Input
             id="fetal-heart-rate"
             type="number"
-            min="40"
-            max="260"
-            placeholder="e.g. 140 (Normal: 110–160)"
+            inputMode="numeric"
+            min={L.fetalHeartRateBpm.min}
+            max={L.fetalHeartRateBpm.max}
+            placeholder="e.g. 140"
             value={fhrBpm}
             onChange={(e) => setFhrBpm(e.target.value)}
-            required
             className="text-sm mt-1"
+            {...errorProps('fetal-heart-rate', fhrError)}
           />
-          <p className="text-[11px] text-slate-500 mt-1">Normal baseline: 110–160 bpm</p>
+          <FieldError id="fetal-heart-rate-error" message={fhrError} />
+          <p className="text-[11px] text-slate-600 mt-1">Normal baseline: 110–160 bpm</p>
         </div>
 
         <div>
           <Label htmlFor="fetal-liquor-status" className="text-xs font-semibold text-slate-700">
-            Liquor Status
+            Amniotic Fluid
           </Label>
           <select
             id="fetal-liquor-status"
             value={liquorStatus}
             onChange={(e) => setLiquorStatus(e.target.value)}
-            className="w-full mt-1 border border-slate-300 rounded-md px-3 py-2 text-sm bg-white"
+            className={SELECT_CLASS}
           >
-            <option value="INTACT">Intact Membranes (I)</option>
-            <option value="CLEAR">Clear Liquor (C)</option>
-            <option value="MECONIUM_STAINED">Meconium-Stained (M)</option>
-            <option value="BLOOD_STAINED">Blood-Stained (B)</option>
-            <option value="ABSENT">Absent Liquor (A)</option>
+            <option value="">Not recorded</option>
+            <option value={AmnioticFluid.INTACT}>Intact Membranes (I)</option>
+            <option value={AmnioticFluid.CLEAR}>Clear Liquor (C)</option>
+            <option value={AmnioticFluid.MECONIUM}>Meconium (M)</option>
+            <option value={AmnioticFluid.BLOOD}>Blood-Stained (B)</option>
           </select>
         </div>
       </div>
 
-      {/* CTG / Auscultation details */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
-          <Label htmlFor="fetal-variability" className="text-xs font-semibold text-slate-700">
-            Variability
-          </Label>
-          <select
-            id="fetal-variability"
-            value={variability}
-            onChange={(e) => setVariability(e.target.value)}
-            className="w-full mt-1 border border-slate-300 rounded-md px-3 py-2 text-sm bg-white"
-          >
-            <option value="NORMAL">Normal (5–25 bpm)</option>
-            <option value="REDUCED">Reduced (&lt; 5 bpm)</option>
-            <option value="INCREASED">Increased (&gt; 25 bpm)</option>
-          </select>
-        </div>
+      {hasFhr && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <Label htmlFor="fetal-variability" className="text-xs font-semibold text-slate-700">
+              Variability
+            </Label>
+            <select
+              id="fetal-variability"
+              value={variability}
+              onChange={(e) => setVariability(e.target.value)}
+              className={SELECT_CLASS}
+            >
+              <option value="NORMAL">Normal (5–25 bpm)</option>
+              <option value="REDUCED">Reduced (&lt; 5 bpm)</option>
+              <option value="INCREASED">Increased (&gt; 25 bpm)</option>
+            </select>
+          </div>
 
-        <div>
-          <Label htmlFor="fetal-decelerations" className="text-xs font-semibold text-slate-700">
-            Decelerations
-          </Label>
-          <select
-            id="fetal-decelerations"
-            value={decelerations}
-            onChange={(e) => setDecelerations(e.target.value)}
-            className="w-full mt-1 border border-slate-300 rounded-md px-3 py-2 text-sm bg-white"
-          >
-            <option value="NONE">None</option>
-            <option value="EARLY">Early (Benign)</option>
-            <option value="VARIABLE">Variable</option>
-            <option value="LATE">Late (Pathological)</option>
-          </select>
-        </div>
+          <div>
+            <Label htmlFor="fetal-decelerations" className="text-xs font-semibold text-slate-700">
+              Decelerations
+            </Label>
+            <select
+              id="fetal-decelerations"
+              value={decelerations}
+              onChange={(e) => setDecelerations(e.target.value)}
+              className={SELECT_CLASS}
+            >
+              <option value="NONE">None</option>
+              <option value="EARLY">Early (Benign)</option>
+              <option value="VARIABLE">Variable</option>
+              <option value="LATE">Late (Pathological)</option>
+            </select>
+          </div>
 
-        <div>
-          <Label htmlFor="fetal-accelerations" className="text-xs font-semibold text-slate-700">
-            Accelerations
-          </Label>
-          <select
-            id="fetal-accelerations"
-            value={accelerations}
-            onChange={(e) => setAccelerations(e.target.value)}
-            className="w-full mt-1 border border-slate-300 rounded-md px-3 py-2 text-sm bg-white"
-          >
-            <option value="PRESENT">Present</option>
-            <option value="ABSENT">Absent</option>
-          </select>
+          <div>
+            <Label htmlFor="fetal-accelerations" className="text-xs font-semibold text-slate-700">
+              Accelerations
+            </Label>
+            <select
+              id="fetal-accelerations"
+              value={accelerations}
+              onChange={(e) => setAccelerations(e.target.value)}
+              className={SELECT_CLASS}
+            >
+              <option value="PRESENT">Present</option>
+              <option value="ABSENT">Absent</option>
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Observation Time & Notes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <Label htmlFor="fetal-observation-time" className="text-xs font-semibold text-slate-700">
-            Observation Timestamp (Optional - defaults to now)
+            Observation time (Colombo, 24 h). Leave empty for now.
           </Label>
           <Input
             id="fetal-observation-time"
@@ -191,7 +220,7 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+      <FormActions>
         {onCancel && (
           <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={loading}>
             Cancel
@@ -206,7 +235,7 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
           {loading ? (
             <>
               <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              Recording...
+              Saving...
             </>
           ) : (
             <>
@@ -215,7 +244,7 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
             </>
           )}
         </Button>
-      </div>
+      </FormActions>
     </form>
   );
 };

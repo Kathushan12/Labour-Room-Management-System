@@ -1,7 +1,8 @@
 import { Socket } from 'socket.io';
 import { verifyAccessToken } from '../../common/crypto/jwt.service.js';
 import { AppDataSource } from '../../config/database.js';
-import { User, RefreshSession, AuditLog } from '../../database/entities/index.js';
+import { User, AuditLog } from '../../database/entities/index.js';
+import { isAccessSessionActive } from '../../services/session.service.js';
 import { UserRole, Permission, ROLE_PERMISSIONS } from '@lrms/shared';
 import { RequestUser } from '../../common/middleware/auth.middleware.js';
 import { toStaffProfileDto } from '../users/user.dto.js';
@@ -15,8 +16,10 @@ export async function authenticateSocket(
     let token: string | undefined;
 
     // 1. Check socket.handshake.auth.token
-    if (socket.handshake.auth?.token) {
-      token = socket.handshake.auth.token;
+    // The web client sends "Bearer <jwt>", so strip the optional scheme prefix.
+    const authToken = socket.handshake.auth?.token;
+    if (typeof authToken === 'string' && authToken.trim()) {
+      token = authToken.trim().replace(/^Bearer\s+/i, '');
     }
 
     // 2. Check Authorization header
@@ -93,12 +96,7 @@ export async function authenticateSocket(
     }
 
     // Verify session in database (revocation check)
-    const sessionRepo = AppDataSource.getRepository(RefreshSession);
-    const session = await sessionRepo.findOne({
-      where: { id: payload.sessionId },
-    });
-
-    if (!session || session.isRevoked || new Date() > session.expiresAt) {
+    if (!(await isAccessSessionActive(payload.sessionId))) {
       await logSocketAuthAudit(
         socket,
         user.id,

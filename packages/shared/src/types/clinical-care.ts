@@ -1,4 +1,6 @@
 import {
+  AlertReceiptState,
+  AlertStateChange,
   AnaesthesiaReviewStatus,
   CaesareanDecision,
   CarePlanLifecycleState,
@@ -8,6 +10,7 @@ import {
   EmergencyResponseStatus,
   EscalationCategory,
   EscalationPriority,
+  EscalationReason,
   EscalationStatus,
   SurgicalReviewStatus,
   TheatreReadinessStatus,
@@ -127,11 +130,21 @@ export interface ClinicalEscalationDto {
   category: EscalationCategory;
   priority: EscalationPriority;
   status: EscalationStatus;
+  reason: EscalationReason | null;
   clinicalReason: string;
   sourceObservationType: ClinicalObservationType | null;
   sourceObservationId: string | null;
   initiatedByUserId: string;
   assignedRecipientUserId: string | null;
+  reversedAt: string | null;
+  reversedByUserId: string | null;
+  reversalReason: string | null;
+  alertState: AlertReceiptState;
+  dispatchedAt: string;
+  deliveredAt: string | null;
+  timedOutAt: string | null;
+  // Only filled while the alert is timed out and not yet acknowledged.
+  recipientContactNumber: string | null;
   acknowledgedAt: string | null;
   acknowledgedByUserId: string | null;
   assessmentAt: string | null;
@@ -148,10 +161,49 @@ export interface ClinicalEscalationDto {
   history?: ClinicalEscalationHistoryDto[];
 }
 
-export interface CreateEscalationRequest {
+export interface EscalationFeedItemDto extends ClinicalEscalationDto {
+  admissionReferenceId: string;
+  bedNumber: string | null;
+}
+
+export interface AlertNewPayload {
+  escalationId: string;
+  admissionId: string;
+  escalationReferenceId: string;
+  admissionReferenceId: string;
+  bedNumber: string | null;
+  riskFlags: string[];
   category: EscalationCategory;
   priority: EscalationPriority;
   clinicalReason: string;
+  dispatchedAt: string;
+}
+
+export interface AlertStatePayload {
+  escalationId: string;
+  admissionId: string;
+  wardId: string;
+  state: AlertStateChange;
+  dispatchedAt: string;
+  deliveredAt: string | null;
+  acknowledgedAt: string | null;
+  timedOutAt: string | null;
+}
+
+export interface AlertReceiptRequest {
+  escalationId: string;
+}
+
+export interface AlertReceiptResponse {
+  status: 'OK' | 'FORBIDDEN' | 'ERROR';
+  reason?: string;
+}
+
+export interface CreateEscalationRequest {
+  reason: EscalationReason;
+  category?: EscalationCategory;
+  priority?: EscalationPriority;
+  clinicalReason?: string | null;
   sourceObservationType?: ClinicalObservationType | null;
   sourceObservationId?: string | null;
   assignedRecipientUserId?: string | null;
@@ -289,4 +341,16 @@ export interface EmergencyOverrideDto {
 export interface CreateEmergencyOverrideRequest {
   reason: string;
   overrideDurationMinutes?: number | null;
+}
+
+export interface ReverseEscalationRequest {
+  reason: string;
+}
+
+// Returned in error.details when an emergency escalation already exists (REQ-6.5).
+export interface AlreadyEscalatedDetails {
+  escalationId: string;
+  escalationReferenceId: string;
+  alertState: AlertReceiptState;
+  timedOut: boolean;
 }

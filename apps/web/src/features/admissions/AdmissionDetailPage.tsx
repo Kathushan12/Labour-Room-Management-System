@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   AdmissionDto,
   AdmissionStatus,
@@ -30,6 +30,7 @@ import { PostpartumDeliveryTab } from '../delivery/components/PostpartumDelivery
 import { useAuth } from '../../hooks/useAuth.js';
 import { PermissionGuard } from '../../components/auth/PermissionGuard.js';
 import { PageHeader, SectionCard, StatCard } from '../../components/shared/HeadersAndCards.js';
+import { PatientHeader } from '../../components/shared/PatientHeader.js';
 import { EmptyState } from '../../components/shared/FeedbackStates.js';
 import { AdmissionCategoryBadge, BedStatusBadge } from '../../components/status/Badges.js';
 import { Button } from '../../components/ui/button.js';
@@ -61,20 +62,26 @@ import {
   UserCheck,
   UserPlus,
 } from 'lucide-react';
+import { formatColomboDate, formatColomboDateTime } from '../../lib/datetime.js';
+import { humanizeEnum } from '../../lib/labels.js';
+import { useToast } from '../../components/ui/toast.js';
 
 const CORE_RISK_KEYS: RiskFlagKey[] = [
   RiskFlagKey.HYPERTENSION,
   RiskFlagKey.GESTATIONAL_DIABETES,
-  RiskFlagKey.PREVIOUS_CESAREAN,
-  RiskFlagKey.OBSERVATION_20_PLUS_WEEKS,
+  RiskFlagKey.PRIOR_CESAREAN,
+  RiskFlagKey.OBSERVATION_20PLUS,
 ];
 
 export const AdmissionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { role } = useAuth();
+  const toast = useToast();
 
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const [clinicalTab, setClinicalTab] = useState<'care-plan' | 'observations' | 'delivery'>(
-    'care-plan',
+    tabParam === 'observations' || tabParam === 'delivery' ? tabParam : 'care-plan',
   );
   const [admission, setAdmission] = useState<AdmissionDto | null>(null);
   const [bedHistory, setBedHistory] = useState<BedAllocationHistoryDto[]>([]);
@@ -193,6 +200,7 @@ export const AdmissionDetailPage: React.FC = () => {
         return;
       }
       setAllocateOpen(false);
+      toast.success(`Bed allocated to ${admission.admissionReferenceId}.`);
       await loadBedHistory(admission.id);
     } catch {
       setBedActionError('Network error executing bed allocation.');
@@ -225,6 +233,7 @@ export const AdmissionDetailPage: React.FC = () => {
         return;
       }
       setTransferOpen(false);
+      toast.success('Patient moved to the new bed.');
       if (admission) await loadBedHistory(admission.id);
     } catch {
       setBedActionError('Network error executing bed transfer.');
@@ -251,6 +260,7 @@ export const AdmissionDetailPage: React.FC = () => {
         return;
       }
       setReleaseOpen(false);
+      toast.success('Bed released and sent for cleaning.');
       if (admission) await loadBedHistory(admission.id);
     } catch {
       setBedActionError('Network error executing bed release.');
@@ -293,6 +303,7 @@ export const AdmissionDetailPage: React.FC = () => {
 
       setAdmission(res.data);
       setFlagsOpen(false);
+      toast.success('Risk flags updated.');
     } catch {
       setFlagError('Network error updating clinical risk flags.');
     } finally {
@@ -327,10 +338,16 @@ export const AdmissionDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6 p-4 pt-0 sm:p-6 sm:pt-0 lg:p-8 lg:pt-0">
+      <PatientHeader
+        refId={admission.admissionReferenceId}
+        bedNumber={activeBedAllocation?.bedNumber}
+      >
+        <AdmissionCategoryBadge category={admission.admissionCategory} />
+      </PatientHeader>
       <PageHeader
         title={`Admission Record: ${admission.admissionReferenceId}`}
-        description="Server-generated admission reference, physical bed assignment, triage risk flags, intake metadata, and linked patient master file."
+        description="Admission reference, bed assignment, triage risk flags, intake details, and linked patient record."
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Admissions', href: '/admissions' },
@@ -362,19 +379,19 @@ export const AdmissionDetailPage: React.FC = () => {
       />
 
       {/* Core Metadata Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Reference ID"
           value={admission.admissionReferenceId}
-          subtitle="Unique PostgreSQL sequence"
+          subtitle="Admission reference"
           icon={<FileText className="w-5 h-5 text-teal-600" />}
         />
         <StatCard
           title="Admission Status"
-          value={admission.status}
+          value={humanizeEnum(admission.status)}
           subtitle={
             admission.dischargedAt
-              ? `Closed ${new Date(admission.dischargedAt).toLocaleDateString()}`
+              ? `Closed ${formatColomboDate(admission.dischargedAt)}`
               : 'Active intake record'
           }
           icon={<Clock className="w-5 h-5 text-emerald-600" />}
@@ -465,7 +482,7 @@ export const AdmissionDetailPage: React.FC = () => {
                     <div>
                       <span className="text-teal-700">Allocated At: </span>
                       <span className="font-mono font-medium">
-                        {new Date(activeBedAllocation.assignedAt).toLocaleString()}
+                        {formatColomboDateTime(activeBedAllocation.assignedAt)}
                       </span>
                     </div>
                     <div>
@@ -495,7 +512,7 @@ export const AdmissionDetailPage: React.FC = () => {
                     <span>Admission Bed Stay History</span>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
+                    <table className="stack-table w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-slate-200 text-slate-500 font-semibold">
                           <th className="pb-1.5">Bed Number</th>
@@ -508,19 +525,25 @@ export const AdmissionDetailPage: React.FC = () => {
                       <tbody className="divide-y divide-slate-100">
                         {bedHistory.map((bh) => (
                           <tr key={bh.id} className="hover:bg-slate-50">
-                            <td className="py-1.5 font-bold">{bh.bedNumber}</td>
-                            <td className="py-1.5 font-mono text-[11px]">
-                              {new Date(bh.assignedAt).toLocaleString()}
+                            <td data-label="Bed Number" className="py-1.5 font-bold">
+                              {bh.bedNumber}
                             </td>
-                            <td className="py-1.5 font-mono text-[11px]">
+                            <td data-label="Assigned At" className="py-1.5 font-mono text-[11px]">
+                              {formatColomboDateTime(bh.assignedAt)}
+                            </td>
+                            <td data-label="Released At" className="py-1.5 font-mono text-[11px]">
                               {bh.releasedAt ? (
-                                new Date(bh.releasedAt).toLocaleString()
+                                formatColomboDateTime(bh.releasedAt)
                               ) : (
                                 <span className="text-emerald-700 font-bold">Active Current</span>
                               )}
                             </td>
-                            <td className="py-1.5 text-slate-600">{bh.releaseReason || '—'}</td>
-                            <td className="py-1.5 text-slate-600">{bh.assignedByUserName}</td>
+                            <td data-label="Release Reason" className="py-1.5 text-slate-600">
+                              {bh.releaseReason || '—'}
+                            </td>
+                            <td data-label="Assigned By" className="py-1.5 text-slate-600">
+                              {bh.assignedByUserName}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -565,7 +588,7 @@ export const AdmissionDetailPage: React.FC = () => {
                       </div>
                       <span className="text-[11px] text-amber-800">
                         Recorded by {flag.flaggedByFullName || flag.flaggedByUsername || 'Staff'} ·{' '}
-                        {new Date(flag.createdAt).toLocaleString()}
+                        {formatColomboDateTime(flag.createdAt)}
                       </span>
                     </div>
                   ))}
@@ -593,7 +616,7 @@ export const AdmissionDetailPage: React.FC = () => {
                         <span className="line-through">{flag.label}</span>
                         <span className="text-[11px]">
                           Removed{' '}
-                          {flag.deactivatedAt ? new Date(flag.deactivatedAt).toLocaleString() : ''}
+                          {flag.deactivatedAt ? formatColomboDateTime(flag.deactivatedAt) : ''}
                         </span>
                       </div>
                     ))}
@@ -606,32 +629,26 @@ export const AdmissionDetailPage: React.FC = () => {
         <div className="space-y-6">
           <SectionCard
             title="Intake & Patient Reference"
-            description="Non-identifying admission metadata (PII guarded on Patient Master File)"
+            description="Non-identifying admission details (identity details are kept on the patient record)"
           >
             <div className="space-y-3 text-xs">
               <div className="flex justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-500">Patient Reference:</span>
-                <span className="font-mono font-semibold text-slate-800">
-                  {admission.patientId ? `PT-${admission.patientId.slice(0, 8)}` : '—'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-500">Encrypted PII on File:</span>
+                <span className="text-slate-500">Identity details:</span>
                 <Badge variant="outline" className="text-[10px]">
-                  {admission.hasPii ? 'Yes (AES-256-GCM)' : 'Not Entered'}
+                  {admission.hasPii ? 'Recorded' : 'Not yet recorded'}
                 </Badge>
               </div>
               <div className="flex justify-between py-1.5 border-b border-slate-100">
                 <span className="text-slate-500">Admitted At:</span>
                 <span className="font-mono text-slate-800">
-                  {new Date(admission.admittedAt).toLocaleString()}
+                  {formatColomboDateTime(admission.admittedAt)}
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-slate-500">Screening Completed:</span>
                 <span className="font-mono text-slate-800">
                   {admission.riskAssessmentCompletedAt
-                    ? new Date(admission.riskAssessmentCompletedAt).toLocaleString()
+                    ? formatColomboDateTime(admission.riskAssessmentCompletedAt)
                     : '—'}
                 </span>
               </div>
@@ -644,13 +661,16 @@ export const AdmissionDetailPage: React.FC = () => {
 
       {/* Clinical Subsystems: Surveillance, Partograph, Care Plans & Escalations */}
       <div className="mt-8 space-y-6">
-        <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-6">
+        <div
+          role="tablist"
+          className="-mx-4 flex gap-5 overflow-x-auto border-b border-slate-200 px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+        >
           <button
             type="button"
             role="tab"
             aria-selected={clinicalTab === 'care-plan'}
             onClick={() => setClinicalTab('care-plan')}
-            className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`min-h-[44px] shrink-0 whitespace-nowrap pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
               clinicalTab === 'care-plan'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -664,7 +684,7 @@ export const AdmissionDetailPage: React.FC = () => {
             role="tab"
             aria-selected={clinicalTab === 'observations'}
             onClick={() => setClinicalTab('observations')}
-            className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`min-h-[44px] shrink-0 whitespace-nowrap pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
               clinicalTab === 'observations'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -678,7 +698,7 @@ export const AdmissionDetailPage: React.FC = () => {
             role="tab"
             aria-selected={clinicalTab === 'delivery'}
             onClick={() => setClinicalTab('delivery')}
-            className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`min-h-[44px] shrink-0 whitespace-nowrap pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
               clinicalTab === 'delivery'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -696,7 +716,13 @@ export const AdmissionDetailPage: React.FC = () => {
         {clinicalTab === 'observations' && <ClinicalObservationPanel admissionId={admission.id} />}
 
         {clinicalTab === 'delivery' && (
-          <PostpartumDeliveryTab admissionId={admission.id} userRole={role || undefined} />
+          <PostpartumDeliveryTab
+            admissionId={admission.id}
+            wardId={admission.wardId}
+            admissionReferenceId={admission.admissionReferenceId}
+            bedNumber={activeBedAllocation?.bedNumber}
+            userRole={role || undefined}
+          />
         )}
       </div>
 

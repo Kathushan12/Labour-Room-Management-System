@@ -3,6 +3,7 @@ import {
   BirthOutcome,
   DeliveryMode,
   DeliveryStatus,
+  DischargeDestination,
   DischargedEntityType,
   LochiaAmount,
   LochiaType,
@@ -262,7 +263,7 @@ export interface PostpartumDischargeAuthorizationDto {
 
 export interface AuthorizeMaternalDischargeInput {
   dischargedAt?: string;
-  dischargeDestination: string;
+  dischargeDestination: DischargeDestination;
   maternalCondition: string;
   dischargeSummary: string;
   followUpInstructions: string;

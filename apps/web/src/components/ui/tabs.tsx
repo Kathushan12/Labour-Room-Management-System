@@ -48,7 +48,7 @@ export const TabsList: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   return (
     <div
       className={cn(
-        'inline-flex h-9 items-center justify-center rounded-lg bg-slate-100 p-1 text-slate-500',
+        'flex w-full max-w-full overflow-x-auto sm:inline-flex sm:w-auto h-11 sm:h-9 items-center justify-start sm:justify-center gap-1 rounded-lg bg-slate-100 p-1 text-slate-500 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         className,
       )}
       {...props}
@@ -70,10 +70,13 @@ export const TabsTrigger: React.FC<{
     <button
       type="button"
       role="tab"
+      ref={(el) => {
+        if (el && isSelected) el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+      }}
       aria-selected={isSelected}
       onClick={() => context.onValueChange(value)}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md px-3 py-1 min-h-[36px] sm:min-h-0 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
         isSelected ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900',
         className,
       )}
@@ -97,7 +100,7 @@ export const TabsContent: React.FC<{
     <div
       role="tabpanel"
       className={cn(
-        'mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 animate-in fade-in-50',
+        'mt-2 min-w-0 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 animate-in fade-in-50',
         className,
       )}
     >

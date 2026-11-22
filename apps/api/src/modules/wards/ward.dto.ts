@@ -8,6 +8,7 @@ export function toWardDto(ward: Ward, registeredBedsCount = 0): WardDto {
     code: ward.code,
     totalPhysicalBeds: ward.totalPhysicalBeds,
     isActive: ward.isActive,
+    alertTimeoutSeconds: ward.alertTimeoutSeconds,
     registeredBedsCount,
     createdAt: ward.createdAt.toISOString(),
     updatedAt: ward.updatedAt.toISOString(),

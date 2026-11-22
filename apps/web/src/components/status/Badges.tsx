@@ -22,7 +22,11 @@ import {
   AlertTriangle,
   Clock,
   Sparkles,
+  Baby,
+  CalendarClock,
+  Eye,
 } from 'lucide-react';
+import { humanizeEnum } from '../../lib/labels.js';
 
 export const RoleBadge: React.FC<{ role: UserRole | string; className?: string }> = ({
   role,
@@ -63,6 +67,13 @@ export const RoleBadge: React.FC<{ role: UserRole | string; className?: string }
   }
 };
 
+export const RiskFlagChip: React.FC<{ label: string }> = ({ label }) => (
+  <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">
+    <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
+    {label}
+  </span>
+);
+
 export const AdmissionCategoryBadge: React.FC<{
   category: AdmissionCategory | string;
   className?: string;
@@ -71,25 +82,28 @@ export const AdmissionCategoryBadge: React.FC<{
     case AdmissionCategory.NORMAL_DELIVERY:
       return (
         <Badge variant="success" className={className}>
+          <Baby className="w-3 h-3 mr-1" aria-hidden="true" />
           Normal Delivery
         </Badge>
       );
-    case AdmissionCategory.SCHEDULED_CESAREAN:
+    case AdmissionCategory.PLANNED_CESAREAN:
       return (
         <Badge variant="secondary" className={className}>
-          Scheduled Cesarean
+          <CalendarClock className="w-3 h-3 mr-1" aria-hidden="true" />
+          Planned Cesarean
         </Badge>
       );
-    case AdmissionCategory.OBSERVATION_20_PLUS_WEEKS:
+    case AdmissionCategory.OBSERVATION_20PLUS:
       return (
         <Badge variant="warning" className={className}>
+          <Eye className="w-3 h-3 mr-1" aria-hidden="true" />
           Observation (&ge;20 Wks)
         </Badge>
       );
     default:
       return (
         <Badge variant="outline" className={className}>
-          {category}
+          {humanizeEnum(category)}
         </Badge>
       );
   }
@@ -182,7 +196,7 @@ export const AlertReceiptBadge: React.FC<{
     default:
       return (
         <Badge variant="outline" className={className}>
-          {state}
+          {humanizeEnum(state)}
         </Badge>
       );
   }

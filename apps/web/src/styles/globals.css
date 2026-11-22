@@ -45,6 +45,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-variant-numeric: tabular-nums;
     margin: 0;
     min-height: 100vh;
   }
@@ -54,4 +55,115 @@
 :focus-visible {
   outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
+}
+
+/* Mobile: readable text, no iOS/Android focus-zoom, safe areas for the installed app. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+.pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  .text-xs {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  .text-\[11px\] {
+    font-size: 0.8125rem;
+  }
+  .text-\[10px\],
+  .text-\[9px\] {
+    font-size: 0.75rem;
+  }
+  select,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']) {
+    min-height: 44px;
+  }
+  /* SRS 3.1: touch targets of at least 44 x 44 px, even where a component asks for a smaller button. */
+  button,
+  [role='button'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  h1,
+  h2,
+  h3,
+  p,
+  td,
+  th,
+  li {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Tables with the stack-table class become one card per row on phones; cells show their column name. */
+@media (max-width: 767px) {
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tr,
+  .stack-table td {
+    display: block;
+    width: 100%;
+  }
+  .stack-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .stack-table tbody tr {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    background: #ffffff;
+  }
+  .stack-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.375rem 0 !important;
+    border: 0;
+    text-align: right;
+    white-space: normal !important;
+  }
+  .stack-table tbody td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    max-width: 45%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #475569;
+  }
+  .stack-table tbody td[colspan] {
+    display: block;
+    text-align: left;
+  }
+  .stack-table tbody td[colspan]::before {
+    content: none;
+  }
 }

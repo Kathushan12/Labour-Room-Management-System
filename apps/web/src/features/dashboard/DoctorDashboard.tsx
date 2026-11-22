@@ -1,14 +1,25 @@
 import React from 'react';
 import { PageHeader, StatCard, SectionCard } from '../../components/shared/HeadersAndCards.js';
 import { Stethoscope, BellRing, HeartPulse, Baby, AlertTriangle } from 'lucide-react';
-import { PREVIEW_ADMISSIONS, PREVIEW_ALERTS } from '../../mocks/ui-preview/preview-data.js';
-import { AdmissionCategoryBadge, AlertReceiptBadge } from '../../components/status/Badges.js';
+import {
+  AdmissionCategoryBadge,
+  AlertReceiptBadge,
+  RiskFlagChip,
+} from '../../components/status/Badges.js';
 import { WardDutyStatusBanner } from './components/WardDutyStatusBanner.js';
 import { Button } from '../../components/ui/button.js';
 import { Link } from 'react-router-dom';
+import { useClinicalDashboardData } from './useClinicalDashboardData.js';
+import { categoryLabel, isPendingAlert, receiptStateOf } from '../alerts/alert-feed.js';
+import { formatColomboTime } from '../../lib/datetime.js';
+import { useAlertStateRefresh } from '../../hooks/useRealtimeNotifications.js';
+import { humanizeEnum } from '../../lib/labels.js';
 
 export const DoctorDashboard: React.FC = () => {
-  const activeAlerts = PREVIEW_ALERTS.filter((a) => a.acknowledgedAt === null);
+  const { admissions, alerts, loading, error, wardId, reload, refresh } =
+    useClinicalDashboardData();
+  useAlertStateRefresh(refresh, { wardId });
+  const pendingAlerts = alerts.filter(isPendingAlert);
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -19,36 +30,46 @@ export const DoctorDashboard: React.FC = () => {
           { label: 'Home', href: '/' },
           { label: 'Doctor Dashboard', active: true },
         ]}
-        badge={
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-teal-50 text-teal-800 border border-teal-200">
-            DOCTOR VIEW (UI PREVIEW)
-          </span>
-        }
       />
 
-      {/* Critical Alerts Banner (High Visual Priority) */}
-      {activeAlerts.length > 0 && (
+      {error && (
+        <div
+          role="alert"
+          className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700"
+        >
+          <span>{error}</span>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={reload}>
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {pendingAlerts.length > 0 && (
         <div className="rounded-xl border border-red-300 bg-red-50/70 p-4 shadow-sm animate-in fade-in-50">
-          <div className="flex items-start space-x-3">
+          <div className="flex flex-wrap items-start gap-3">
             <div className="rounded-full bg-red-100 p-2 text-red-600 shrink-0">
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div className="flex-1">
               <div className="flex items-center space-x-2">
                 <h3 className="text-sm font-bold text-red-900">
-                  Active Emergency Alert ({activeAlerts.length} Unacknowledged)
+                  Active Emergency Alert ({pendingAlerts.length} Unacknowledged)
                 </h3>
                 <span className="text-xs bg-red-200 text-red-900 font-semibold px-2 py-0.5 rounded-full">
                   Immediate Action Required
                 </span>
               </div>
               <p className="text-xs text-red-800 mt-1">
-                {activeAlerts[0].message} (Bed: {activeAlerts[0].bedNumber}, Ref:{' '}
-                {activeAlerts[0].admissionRef})
+                {pendingAlerts[0].clinicalReason} (Bed: {pendingAlerts[0].bedNumber ?? 'Unassigned'}
+                , Ref: {pendingAlerts[0].admissionReferenceId})
               </p>
             </div>
-            <Link to="/alerts">
-              <Button size="sm" variant="destructive" className="text-xs shrink-0 font-semibold">
+            <Link to="/alerts" className="w-full sm:w-auto">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="w-full text-xs shrink-0 font-semibold sm:w-auto"
+              >
                 Review & Acknowledge
               </Button>
             </Link>
@@ -56,43 +77,40 @@ export const DoctorDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Real-time Ward Duty & Responsibility Status */}
       <WardDutyStatusBanner />
 
-      {/* Doctor KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Assigned Patients"
-          value={PREVIEW_ADMISSIONS.length}
+          value={loading ? '…' : admissions.length}
           subtitle="Direct clinical responsibility"
           icon={<Stethoscope className="w-5 h-5 text-teal-600" />}
         />
         <StatCard
           title="Emergency Alerts"
-          value={activeAlerts.length}
+          value={loading ? '…' : pendingAlerts.length}
           subtitle="Pending acknowledgement"
           icon={<BellRing className="w-5 h-5 text-red-600" />}
         />
         <StatCard
           title="Maternal Observations"
-          value="Up to date"
-          subtitle="Regular vitals logged"
+          value="Review"
+          subtitle="Open an admission to see vitals"
           icon={<HeartPulse className="w-5 h-5 text-blue-600" />}
         />
         <StatCard
           title="Fetal Monitoring"
-          value="3 Active"
-          subtitle="Partogram recordings active"
+          value="Review"
+          subtitle="Open an admission to see partogram"
           icon={<Baby className="w-5 h-5 text-purple-600" />}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Assigned Patients List */}
         <div className="lg:col-span-2">
           <SectionCard
             title="My Assigned Patient Admissions"
-            description="Patients under active obstetric care in Ward 18"
+            description="Active admissions where you are the responsible doctor"
             action={
               <Link to="/admissions">
                 <Button variant="outline" size="sm" className="text-xs">
@@ -102,46 +120,41 @@ export const DoctorDashboard: React.FC = () => {
             }
           >
             <div className="space-y-3">
-              {PREVIEW_ADMISSIONS.map((admission) => (
+              {!loading && admissions.length === 0 && !error && (
+                <p className="text-xs text-slate-500">No active admissions are assigned to you.</p>
+              )}
+              {admissions.map((admission) => (
                 <div
                   key={admission.id}
                   className="p-4 rounded-lg border border-slate-200 bg-white hover:border-teal-300 transition-colors shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-sm text-slate-900">
-                        {admission.referenceId}
+                        {admission.admissionReferenceId}
                       </span>
                       <span className="text-xs bg-slate-100 text-slate-700 font-medium px-2 py-0.5 rounded">
                         {admission.bedNumber || 'No Bed Assigned'}
                       </span>
-                      <AdmissionCategoryBadge category={admission.category} />
+                      <AdmissionCategoryBadge category={admission.admissionCategory} />
                     </div>
                     <p className="text-xs text-slate-600">
-                      {admission.patientPlaceholder} &bull; Primary Midwife:{' '}
-                      {admission.assignedNurse}
+                      Admitted {formatColomboTime(admission.admittedAt)} &bull;{' '}
+                      {humanizeEnum(admission.currentCarePlan)}
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {admission.riskFlags.map((flag, idx) => (
-                        <span
-                          key={idx}
-                          className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-medium"
-                        >
-                          {flag}
-                        </span>
-                      ))}
+                      {admission.riskFlags
+                        .filter((f) => f.isActive)
+                        .map((flag) => (
+                          <RiskFlagChip key={flag.id} label={flag.label} />
+                        ))}
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-2 shrink-0">
-                    <Link to="/observations/maternal">
-                      <Button variant="outline" size="sm" className="text-xs">
-                        Review Vitals
-                      </Button>
-                    </Link>
-                    <Link to="/admissions">
+                    <Link to={`/admissions/${admission.id}`}>
                       <Button variant="default" size="sm" className="text-xs">
-                        Care Plan
+                        Open Admission
                       </Button>
                     </Link>
                   </div>
@@ -151,7 +164,6 @@ export const DoctorDashboard: React.FC = () => {
           </SectionCard>
         </div>
 
-        {/* Clinical Quick Navigation */}
         <div className="space-y-6">
           <SectionCard
             title="Observation Review Shortlinks"
@@ -181,16 +193,23 @@ export const DoctorDashboard: React.FC = () => {
 
           <SectionCard title="Recent Alert Dispatch Log" description="Proof-of-receipt tracking">
             <div className="space-y-2.5">
-              {PREVIEW_ALERTS.map((alert) => (
+              {!loading && alerts.length === 0 && (
+                <p className="text-xs text-slate-500">No alerts for your patients.</p>
+              )}
+              {alerts.slice(0, 5).map((alert) => (
                 <div
                   key={alert.id}
                   className="p-2.5 rounded border border-slate-100 bg-slate-50 text-xs space-y-1"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-800">{alert.bedNumber}</span>
-                    <AlertReceiptBadge state={alert.receiptState} />
+                    <span className="font-semibold text-slate-800">
+                      {alert.bedNumber ?? alert.admissionReferenceId}
+                    </span>
+                    <AlertReceiptBadge state={receiptStateOf(alert)} />
                   </div>
-                  <p className="text-[11px] text-slate-600 truncate">{alert.alertType}</p>
+                  <p className="text-[11px] text-slate-600 truncate">
+                    {categoryLabel(alert.category)}
+                  </p>
                 </div>
               ))}
             </div>

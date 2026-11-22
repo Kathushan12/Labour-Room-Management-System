@@ -13,6 +13,7 @@ import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, CheckSquare, Stethoscope } from 'lucide-react';
 import { CarePlanReviewOutcome } from '@lrms/shared';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { colomboInputToIso } from '../../../lib/datetime.js';
 
 interface CarePlanReviewDialogProps {
   admissionId: string;
@@ -51,7 +52,7 @@ export const CarePlanReviewDialog: React.FC<CarePlanReviewDialogProps> = ({
       await clinicalCareApi.recordCarePlanReview(admissionId, carePlanId, {
         reviewOutcome,
         reviewNotes: reviewNotes.trim(),
-        nextReviewAt: nextReviewAt ? new Date(nextReviewAt).toISOString() : undefined,
+        nextReviewAt: nextReviewAt ? colomboInputToIso(nextReviewAt) : undefined,
       });
       onReviewed();
       onClose();

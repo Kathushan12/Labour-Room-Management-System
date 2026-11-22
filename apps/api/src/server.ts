@@ -5,6 +5,7 @@ import { logger } from './common/logging/logger.js';
 import { initializeDatabase, AppDataSource } from './config/database.js';
 import { initRealtimeServer } from './modules/realtime/realtime.server.js';
 import { notificationDispatcherService } from './modules/realtime/notification-dispatcher.service.js';
+import { escalationAlertService } from './modules/clinical-care/escalation-alert.service.js';
 
 const app = createApp();
 const httpServer = http.createServer(app);
@@ -27,6 +28,9 @@ async function startServer() {
     // Start Transactional Outbox dispatcher background worker
     notificationDispatcherService.start(1000);
 
+    // Alert timeout sweep and 15 s resend of undelivered doctor alerts
+    escalationAlertService.start(1000);
+
     const server = httpServer.listen(env.PORT, () => {
       logger.info(
         {
@@ -46,6 +50,7 @@ async function startServer() {
         'Received shutdown signal, closing real-time dispatcher, HTTP server and database pool...',
       );
       notificationDispatcherService.stop();
+      escalationAlertService.stop();
       server.close(async () => {
         logger.info('HTTP server closed');
         if (AppDataSource.isInitialized) {

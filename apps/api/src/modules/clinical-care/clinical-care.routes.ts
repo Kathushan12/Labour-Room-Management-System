@@ -84,6 +84,13 @@ router.post(
 );
 
 router.get(
+  '/escalations',
+  ...clinicalGuards,
+  requirePermission(Permission.ESCALATIONS_VIEW),
+  clinicalCareController.listVisibleEscalations.bind(clinicalCareController),
+);
+
+router.get(
   '/admissions/:id/escalations',
   ...clinicalGuards,
   requirePermission(Permission.ESCALATIONS_VIEW),
@@ -123,6 +130,14 @@ router.post(
   ...clinicalGuards,
   requirePermission(Permission.ESCALATIONS_RESOLVE),
   clinicalCareController.resolveEscalation.bind(clinicalCareController),
+);
+
+// REQ-6.6: doctor-only reversal is enforced in the service.
+router.post(
+  '/admissions/:id/escalations/:escalationId/reverse',
+  ...clinicalGuards,
+  requirePermission(Permission.CARE_PLANS_TRANSITION),
+  clinicalCareController.reverseEscalation.bind(clinicalCareController),
 );
 
 // ===========================================================================

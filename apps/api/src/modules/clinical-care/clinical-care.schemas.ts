@@ -9,6 +9,7 @@ import {
   EmergencyResponseStatus,
   EscalationCategory,
   EscalationPriority,
+  EscalationReason,
   EscalationStatus,
   SurgicalReviewStatus,
   TheatreReadinessStatus,
@@ -63,13 +64,22 @@ export const recordCarePlanReviewSchema = z.object({
 // ============================================================================
 
 export const createEscalationSchema = z.object({
-  category: z.nativeEnum(EscalationCategory, {
-    errorMap: () => ({ message: 'Invalid escalation category' }),
+  reason: z.nativeEnum(EscalationReason, {
+    errorMap: () => ({
+      message: 'Reason must be FETAL_DISTRESS, FAILURE_TO_PROGRESS, MATERNAL_COMPLICATION or OTHER',
+    }),
   }),
-  priority: z.nativeEnum(EscalationPriority, {
-    errorMap: () => ({ message: 'Invalid escalation priority' }),
-  }),
-  clinicalReason: z.string().min(10, 'Clinical reason must be at least 10 characters'),
+  category: z
+    .nativeEnum(EscalationCategory, {
+      errorMap: () => ({ message: 'Invalid escalation category' }),
+    })
+    .optional(),
+  priority: z
+    .nativeEnum(EscalationPriority, {
+      errorMap: () => ({ message: 'Invalid escalation priority' }),
+    })
+    .optional(),
+  clinicalReason: z.string().trim().max(2000).nullable().optional(),
   sourceObservationType: z.nativeEnum(ClinicalObservationType).nullable().optional(),
   sourceObservationId: z.string().uuid('Invalid source observation ID').nullable().optional(),
   assignedRecipientUserId: z.string().uuid('Invalid recipient user ID').nullable().optional(),
@@ -163,4 +173,8 @@ export const createEmergencyOverrideSchema = z.object({
     .min(5, 'Minimum duration is 5 minutes')
     .max(480, 'Maximum duration is 480 minutes (8 hours)')
     .optional(),
+});
+
+export const reverseEscalationSchema = z.object({
+  reason: z.string().trim().min(5, 'Reversal reason must be at least 5 characters').max(2000),
 });

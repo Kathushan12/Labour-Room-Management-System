@@ -20,6 +20,11 @@ import { Badge } from '../../../components/ui/badge.js';
 import { EscalationDetailModal } from './EscalationDetailModal.js';
 import { EscalationCreateDialog } from './EscalationCreateDialog.js';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { useAuth } from '../../../hooks/useAuth.js';
+import { formatColomboTime } from '../../../lib/datetime.js';
+import { AlertReceiptStepper } from '../../alerts/components/AlertReceiptStepper.js';
+import { humanizeEnum } from '../../../lib/labels.js';
+import { useToast } from '../../../components/ui/toast.js';
 
 interface ClinicalEscalationPanelProps {
   admissionId: string;
@@ -32,6 +37,8 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
   escalations,
   onRefresh,
 }) => {
+  const { user } = useAuth();
+  const toast = useToast();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedEscalation, setSelectedEscalation] = useState<ClinicalEscalationDto | null>(null);
   const [ackingId, setAckingId] = useState<string | null>(null);
@@ -42,9 +49,10 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
       await clinicalCareApi.acknowledgeEscalation(admissionId, escId, {
         notes: 'Quick acknowledged from bedside panel',
       });
+      toast.success('Alert acknowledged.');
       onRefresh();
     } catch {
-      // Handled via refresh or modal
+      toast.error('Could not acknowledge. Check the connection and try again.');
     } finally {
       setAckingId(null);
     }
@@ -135,7 +143,7 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
                     {getPriorityBadge(esc.priority)}
                     {getStatusBadge(esc.status)}
                     <Badge variant="outline" className="text-[11px]">
-                      {esc.category.replace(/_/g, ' ')}
+                      {humanizeEnum(esc.category)}
                     </Badge>
                     {esc.sourceObservationId && (
                       <Badge
@@ -152,20 +160,17 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
                   <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground pt-1">
                     <span>Initiated by: {esc.initiatedByUser?.fullName}</span>
                     <span>
-                      Assignee:{' '}
-                      <strong>{esc.assignedRecipientUser?.fullName || 'On-call Doctor'}</strong>
+                      Doctor:{' '}
+                      <strong>{esc.assignedRecipientUser?.fullName || 'No doctor assigned'}</strong>
                     </span>
-                    <span>
-                      {new Date(esc.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                    <span>{formatColomboTime(esc.createdAt)}</span>
                   </div>
+
+                  <AlertReceiptStepper alert={esc} className="pt-2 max-w-md" />
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-center">
-                  {isOpen && (
+                  {isOpen && esc.assignedRecipientUserId === user?.id && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -201,7 +206,10 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
           admissionId={admissionId}
           isOpen={createOpen}
           onClose={() => setCreateOpen(false)}
-          onCreated={onRefresh}
+          onCreated={() => {
+            toast.success('Escalation sent. The attending doctor has been alerted.');
+            onRefresh();
+          }}
         />
       )}
 

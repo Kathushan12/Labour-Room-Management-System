@@ -44,10 +44,7 @@ jobs:
           node-version: 24
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 12.18.0
-          run_install: false
+        run: npm install -g pnpm@12.18.0
 
       - name: Get pnpm store directory
         shell: bash
@@ -70,6 +67,9 @@ jobs:
 
       - name: ESLint Check
         run: pnpm run lint
+
+      - name: Build Shared Package
+        run: pnpm --filter @lrms/shared build
 
       - name: TypeScript Typecheck
         run: pnpm run typecheck

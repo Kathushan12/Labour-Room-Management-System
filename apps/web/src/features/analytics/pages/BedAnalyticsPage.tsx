@@ -3,6 +3,7 @@ import {
   AnalyticsDateRangePreset,
   BedUtilizationAnalyticsDto,
   OperationalReportType,
+  Permission,
 } from '@lrms/shared';
 import { analyticsApi } from '../../../services/analytics.api.js';
 import { PageHeader, SectionCard } from '../../../components/shared/HeadersAndCards.js';
@@ -16,14 +17,15 @@ import { AnalyticsBarChart } from '../components/AnalyticsBarChart.js';
 import { AnalyticsDonutChart } from '../components/AnalyticsDonutChart.js';
 import { AnalyticsDataTable, ColumnDef } from '../components/AnalyticsDataTable.js';
 import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/AnalyticsStates.js';
+import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { BedDouble, Sparkles, CheckCircle2, Clock, Download } from 'lucide-react';
 import { Badge } from '../../../components/ui/badge.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const BedAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<BedUtilizationAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -76,7 +78,7 @@ export const BedAnalyticsPage: React.FC = () => {
                 : 'bg-slate-100 text-slate-800';
         return (
           <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${color}`}>
-            {row.currentStatus}
+            {humanizeEnum(row.currentStatus)}
           </span>
         );
       },
@@ -118,14 +120,16 @@ export const BedAnalyticsPage: React.FC = () => {
           { label: 'Bed Utilization', active: true },
         ]}
         action={
-          <Button
-            size="sm"
-            onClick={() => setIsExportOpen(true)}
-            className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export Bed Report
-          </Button>
+          <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+            <Button
+              size="sm"
+              onClick={() => setIsExportOpen(true)}
+              className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export Bed Report
+            </Button>
+          </PermissionGuard>
         }
       />
 
@@ -142,7 +146,7 @@ export const BedAnalyticsPage: React.FC = () => {
       {!isLoading && data && (
         <div className="space-y-6 animate-fadeIn">
           {/* Top KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <AnalyticsKpiCard
               title="Physical Beds"
               value={data.totalInstalledBeds}
@@ -264,13 +268,15 @@ export const BedAnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      <ReportExportDialog
-        isOpen={isExportOpen}
-        onClose={() => setIsExportOpen(false)}
-        defaultReportType={OperationalReportType.BED_UTILIZATION}
-        defaultPreset={filters.preset}
-        defaultWardId={filters.wardId}
-      />
+      <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+        <ReportExportDialog
+          isOpen={isExportOpen}
+          onClose={() => setIsExportOpen(false)}
+          defaultReportType={OperationalReportType.BED_UTILIZATION}
+          defaultPreset={filters.preset}
+          defaultWardId={filters.wardId}
+        />
+      </PermissionGuard>
     </div>
   );
 };

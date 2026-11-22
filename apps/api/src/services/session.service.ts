@@ -10,6 +10,23 @@ export interface SessionResult {
   rawRefreshToken: string;
 }
 
+export interface RotationResult {
+  session: RefreshSession;
+  /** Null when a concurrent refresh already rotated the token; the cookie must be left as is. */
+  rawRefreshToken: string | null;
+}
+
+export interface SessionWindow {
+  sessionStartedAt: Date;
+  expiresAt: Date;
+}
+
+const MINUTE_MS = 60 * 1000;
+
+// A rotated token presented again within this window is a concurrent refresh from another
+// tab or a retried request, not a replay, so it gets the current session instead of revocation.
+export const REFRESH_REUSE_GRACE_MS = 30 * 1000;
+
 /**
  * Hashes an opaque refresh token using SHA-256 for secure database storage.
  */
@@ -24,6 +41,25 @@ export function generateRawRefreshToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
+export function getAbsoluteExpiry(sessionStartedAt: Date): Date {
+  return new Date(sessionStartedAt.getTime() + env.SESSION_ABSOLUTE_TIMEOUT_HOURS * 60 * MINUTE_MS);
+}
+
+/**
+ * Each refresh extends the idle deadline (REQ-1.5: 60 min) but never past the absolute
+ * limit measured from login (REQ-1.5: 12 h).
+ */
+export function buildSessionWindow(sessionStartedAt: Date = new Date()): SessionWindow {
+  const idleExpiry = Date.now() + env.SESSION_IDLE_TIMEOUT_MINUTES * MINUTE_MS;
+  const absoluteExpiry = getAbsoluteExpiry(sessionStartedAt).getTime();
+  return { sessionStartedAt, expiresAt: new Date(Math.min(idleExpiry, absoluteExpiry)) };
+}
+
+/** Refresh cookie lives until the absolute limit; the idle limit is enforced server-side. */
+export function getRefreshCookieMaxAgeMs(session: RefreshSession): number {
+  return Math.max(getAbsoluteExpiry(session.sessionStartedAt).getTime() - Date.now(), 1000);
+}
+
 /**
  * Creates a new refresh session and token family for a user.
  */
@@ -34,15 +70,12 @@ export async function createSession(userId: string, familyId?: string): Promise<
   const tokenHash = hashRefreshToken(rawRefreshToken);
   const actualFamilyId = familyId || crypto.randomUUID();
 
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + env.JWT_REFRESH_EXPIRATION_DAYS);
-
   const session = sessionRepo.create({
     userId,
     tokenHash,
     familyId: actualFamilyId,
     isRevoked: false,
-    expiresAt,
+    ...buildSessionWindow(),
   });
 
   await sessionRepo.save(session);
@@ -52,12 +85,12 @@ export async function createSession(userId: string, familyId?: string): Promise<
 
 /**
  * Rotates an existing refresh token with atomic pessimistic locking and reuse detection.
- * If a revoked token is presented, the entire token family is revoked immediately to prevent replay attacks.
+ * A rotated token replayed after the grace window revokes the whole token family.
  */
 export async function rotateSession(
   rawRefreshToken: string,
   ipAddress?: string,
-): Promise<SessionResult> {
+): Promise<RotationResult> {
   if (!rawRefreshToken || typeof rawRefreshToken !== 'string') {
     throw new UnauthorizedError('Invalid refresh token provided', 'INVALID_REFRESH_TOKEN');
   }
@@ -65,7 +98,6 @@ export async function rotateSession(
   const incomingHash = hashRefreshToken(rawRefreshToken);
 
   const transactionResult = await AppDataSource.transaction(async (transactionManager) => {
-    // 1. Lock and fetch the session record
     const session = await transactionManager.findOne(RefreshSession, {
       where: { tokenHash: incomingHash },
       lock: { mode: 'pessimistic_write' },
@@ -75,8 +107,26 @@ export async function rotateSession(
       return { kind: 'NOT_FOUND' as const };
     }
 
-    // 2. Reuse Detection: If already revoked, malicious replay is suspected
+    const now = new Date();
+
     if (session.isRevoked) {
+      // Logout, password change or admin revocation: the session simply ended.
+      if (!session.replacedBySessionId) {
+        return { kind: 'REVOKED' as const };
+      }
+
+      const rotatedAgoMs = now.getTime() - (session.revokedAt ?? now).getTime();
+      if (rotatedAgoMs <= REFRESH_REUSE_GRACE_MS) {
+        const current = await transactionManager.findOne(RefreshSession, {
+          where: { familyId: session.familyId, isRevoked: false },
+          order: { createdAt: 'DESC' },
+        });
+        if (current && current.expiresAt > now) {
+          return { kind: 'GRACE' as const, session: current };
+        }
+        return { kind: 'REVOKED' as const };
+      }
+
       logger.warn(
         {
           sessionId: session.id,
@@ -87,18 +137,13 @@ export async function rotateSession(
         'CRITICAL: Refresh token reuse detected! Invalidating complete token family.',
       );
 
-      // Invalidate all sessions in this family
       await transactionManager
         .createQueryBuilder()
         .update(RefreshSession)
-        .set({
-          isRevoked: true,
-          revokedAt: new Date(),
-        })
-        .where('family_id = :familyId', { familyId: session.familyId })
+        .set({ isRevoked: true, revokedAt: now })
+        .where('family_id = :familyId AND is_revoked = false', { familyId: session.familyId })
         .execute();
 
-      // Record high-priority security audit log
       const auditLog = transactionManager.create(AuditLog, {
         userId: session.userId,
         action: 'REFRESH_TOKEN_REUSE_DETECTED',
@@ -107,42 +152,35 @@ export async function rotateSession(
         ipAddress: ipAddress || null,
         details: {
           familyId: session.familyId,
-          securityIncident: 'Replay attempt on previously rotated or revoked refresh token',
+          securityIncident: 'Replay attempt on previously rotated refresh token',
         },
       });
       await transactionManager.save(auditLog);
 
-      return { kind: 'REUSE_DETECTED' as const, session };
+      return { kind: 'REUSE_DETECTED' as const };
     }
 
-    // 3. Expiration Check
-    if (new Date() > session.expiresAt) {
+    const absoluteReached = now >= getAbsoluteExpiry(session.sessionStartedAt);
+    if (absoluteReached || now > session.expiresAt) {
       session.isRevoked = true;
-      session.revokedAt = new Date();
+      session.revokedAt = now;
       await transactionManager.save(session);
-      return { kind: 'EXPIRED' as const };
+      return { kind: absoluteReached ? ('ABSOLUTE_TIMEOUT' as const) : ('IDLE_TIMEOUT' as const) };
     }
 
-    // 4. Issue new token and session in the same family
     const newRawToken = generateRawRefreshToken();
-    const newHash = hashRefreshToken(newRawToken);
-
-    const newExpiresAt = new Date();
-    newExpiresAt.setDate(newExpiresAt.getDate() + env.JWT_REFRESH_EXPIRATION_DAYS);
-
     const newSession = transactionManager.create(RefreshSession, {
       userId: session.userId,
-      tokenHash: newHash,
+      tokenHash: hashRefreshToken(newRawToken),
       familyId: session.familyId,
       isRevoked: false,
-      expiresAt: newExpiresAt,
+      ...buildSessionWindow(session.sessionStartedAt),
     });
 
     await transactionManager.save(newSession);
 
-    // 5. Invalidate old session and link replacement
     session.isRevoked = true;
-    session.revokedAt = new Date();
+    session.revokedAt = now;
     session.replacedBySessionId = newSession.id;
     await transactionManager.save(session);
 
@@ -153,25 +191,57 @@ export async function rotateSession(
     };
   });
 
-  if (transactionResult.kind === 'NOT_FOUND') {
-    throw new UnauthorizedError('Refresh token not found', 'INVALID_REFRESH_TOKEN');
+  switch (transactionResult.kind) {
+    case 'NOT_FOUND':
+      throw new UnauthorizedError('Refresh token not found', 'INVALID_REFRESH_TOKEN');
+    case 'REVOKED':
+      throw new UnauthorizedError('This session has been signed out', 'SESSION_REVOKED');
+    case 'REUSE_DETECTED':
+      throw new UnauthorizedError(
+        'Refresh token reuse detected. All active sessions in this family have been terminated.',
+        'REFRESH_TOKEN_REUSE_DETECTED',
+      );
+    case 'IDLE_TIMEOUT':
+      throw new UnauthorizedError(
+        `Signed out after ${env.SESSION_IDLE_TIMEOUT_MINUTES} minutes of inactivity`,
+        'SESSION_IDLE_TIMEOUT',
+      );
+    case 'ABSOLUTE_TIMEOUT':
+      throw new UnauthorizedError(
+        `Your ${env.SESSION_ABSOLUTE_TIMEOUT_HOURS}-hour session has ended`,
+        'SESSION_ABSOLUTE_TIMEOUT',
+      );
+    case 'GRACE':
+      return { session: transactionResult.session, rawRefreshToken: null };
+    case 'SUCCESS':
+      return {
+        session: transactionResult.session,
+        rawRefreshToken: transactionResult.rawRefreshToken,
+      };
   }
+}
 
-  if (transactionResult.kind === 'REUSE_DETECTED') {
-    throw new UnauthorizedError(
-      'Refresh token reuse detected. All active sessions in this family have been terminated.',
-      'REFRESH_TOKEN_REUSE_DETECTED',
-    );
-  }
+/**
+ * Whether an access token bound to this session row may still be used. Rotation revokes the
+ * row but keeps the family alive, so tokens issued before another tab refreshed stay valid
+ * until they expire; logout, reuse detection and timeouts end the whole family.
+ */
+export async function isAccessSessionActive(sessionId: string): Promise<boolean> {
+  const sessionRepo = AppDataSource.getRepository(RefreshSession);
+  const session = await sessionRepo.findOne({ where: { id: sessionId } });
+  if (!session) return false;
 
-  if (transactionResult.kind === 'EXPIRED') {
-    throw new UnauthorizedError('Refresh token has expired', 'REFRESH_TOKEN_EXPIRED');
-  }
+  const now = new Date();
+  if (!session.isRevoked) return session.expiresAt > now;
+  if (!session.replacedBySessionId) return false;
 
-  return {
-    session: transactionResult.session,
-    rawRefreshToken: transactionResult.rawRefreshToken,
-  };
+  const activeCount = await sessionRepo
+    .createQueryBuilder('s')
+    .where('s.family_id = :familyId', { familyId: session.familyId })
+    .andWhere('s.is_revoked = false')
+    .andWhere('s.expires_at > :now', { now })
+    .getCount();
+  return activeCount > 0;
 }
 
 /**
@@ -187,7 +257,10 @@ export async function revokeSession(sessionId: string): Promise<void> {
  */
 export async function revokeFamily(familyId: string): Promise<void> {
   const sessionRepo = AppDataSource.getRepository(RefreshSession);
-  await sessionRepo.update({ familyId }, { isRevoked: true, revokedAt: new Date() });
+  await sessionRepo.update(
+    { familyId, isRevoked: false },
+    { isRevoked: true, revokedAt: new Date() },
+  );
 }
 
 /**

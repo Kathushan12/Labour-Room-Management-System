@@ -10,6 +10,10 @@ import {
   UserRole,
 } from '../enums/index.js';
 
+// REQ-5.4 out-of-range markers, computed by the API from OBSERVATION_HIGHLIGHT.
+export type ObservationHighlight =
+  'SYSTOLIC_HIGH' | 'DIASTOLIC_HIGH' | 'PULSE_LOW' | 'PULSE_HIGH' | 'FHR_LOW' | 'FHR_HIGH';
+
 export interface UserSummaryDto {
   id: string;
   username: string;
@@ -40,6 +44,7 @@ export interface MaternalObservationDto {
   createdAt: string;
   recordedByUser?: UserSummaryDto;
   supersededObservation?: MaternalObservationDto | null;
+  highlights: ObservationHighlight[];
 }
 
 export interface CreateMaternalObservationRequest {
@@ -62,7 +67,7 @@ export interface FetalObservationDto {
   id: string;
   admissionId: string;
   recordedByUserId: string;
-  fetalHeartRateBpm: number;
+  fetalHeartRateBpm: number | null;
   fetalHeartRateUnit: string;
   variability: string | null;
   decelerations: string | null;
@@ -75,10 +80,11 @@ export interface FetalObservationDto {
   createdAt: string;
   recordedByUser?: UserSummaryDto;
   supersededObservation?: FetalObservationDto | null;
+  highlights: ObservationHighlight[];
 }
 
 export interface CreateFetalObservationRequest {
-  fetalHeartRateBpm: number;
+  fetalHeartRateBpm?: number | null;
   fetalHeartRateUnit?: string;
   variability?: string | null;
   decelerations?: string | null;
@@ -189,6 +195,8 @@ export interface AdmissionObservationsSummaryDto {
   contractionCount: number;
   totalObservationsCount: number;
   latestObservationTimestamp: string | null;
+  lastFetalHeartRateAt: string | null;
+  fhrObservationDue: boolean;
   maternalObservations: MaternalObservationDto[];
   fetalObservations: FetalObservationDto[];
   labourAssessments: LabourAssessmentDto[];

@@ -46,9 +46,9 @@ export function useNetworkStatus(pollIntervalMs = 20000) {
 
       let error: string | null = null;
       if (!apiOk) {
-        error = liveRes.error?.message || 'Backend API service is unreachable';
+        error = liveRes.error?.message || 'The system is unreachable';
       } else if (!dbOk) {
-        error = readyRes.error?.message || 'PostgreSQL database dependency is not ready';
+        error = readyRes.error?.message || 'The system is not ready yet';
       }
 
       setState({

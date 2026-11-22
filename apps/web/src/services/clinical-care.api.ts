@@ -14,9 +14,11 @@ import {
   CreateSurgicalReviewRequest,
   EmergencyOverrideDto,
   EmergencyResponseDto,
+  EscalationFeedItemDto,
   RecordCarePlanReviewRequest,
   RecordSurgicalDecisionRequest,
   ResolveEscalationRequest,
+  ReverseEscalationRequest,
   SurgicalReviewDto,
   TransitionCarePlanRequest,
   TransitionEmergencyResponseRequest,
@@ -125,6 +127,11 @@ export const clinicalCareApi = {
     return res.data.data;
   },
 
+  getVisibleEscalations: async (): Promise<EscalationFeedItemDto[]> => {
+    const res = await api.get<{ success: boolean; data: EscalationFeedItemDto[] }>('/escalations');
+    return res.data.data;
+  },
+
   getEscalations: async (admissionId: string): Promise<ClinicalEscalationDto[]> => {
     const res = await api.get<{ success: boolean; data: ClinicalEscalationDto[] }>(
       `/admissions/${admissionId}/escalations`,
@@ -173,6 +180,18 @@ export const clinicalCareApi = {
   ): Promise<ClinicalEscalationDto> => {
     const res = await api.post<{ success: boolean; data: ClinicalEscalationDto }>(
       `/admissions/${admissionId}/escalations/${escalationId}/transition`,
+      payload,
+    );
+    return res.data.data;
+  },
+
+  reverseEscalation: async (
+    admissionId: string,
+    escalationId: string,
+    payload: ReverseEscalationRequest,
+  ): Promise<ClinicalEscalationDto> => {
+    const res = await api.post<{ success: boolean; data: ClinicalEscalationDto }>(
+      `/admissions/${admissionId}/escalations/${escalationId}/reverse`,
       payload,
     );
     return res.data.data;

@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { AnalyticsDateRangePreset, AlosAnalyticsDto, OperationalReportType } from '@lrms/shared';
+import {
+  AnalyticsDateRangePreset,
+  AlosAnalyticsDto,
+  OperationalReportType,
+  Permission,
+} from '@lrms/shared';
 import { analyticsApi } from '../../../services/analytics.api.js';
 import { PageHeader, SectionCard } from '../../../components/shared/HeadersAndCards.js';
 import { Button } from '../../../components/ui/button.js';
@@ -12,13 +17,14 @@ import { AnalyticsBarChart } from '../components/AnalyticsBarChart.js';
 import { AnalyticsTrendLine } from '../components/AnalyticsTrendLine.js';
 import { AnalyticsDataTable, ColumnDef } from '../components/AnalyticsDataTable.js';
 import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/AnalyticsStates.js';
+import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { Clock, Baby, HeartPulse, Info, Download } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const AlosAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<AlosAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -77,14 +83,16 @@ export const AlosAnalyticsPage: React.FC = () => {
           { label: 'ALOS Analysis', active: true },
         ]}
         action={
-          <Button
-            size="sm"
-            onClick={() => setIsExportOpen(true)}
-            className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export ALOS Report
-          </Button>
+          <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+            <Button
+              size="sm"
+              onClick={() => setIsExportOpen(true)}
+              className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export ALOS Report
+            </Button>
+          </PermissionGuard>
         }
       />
 
@@ -96,7 +104,7 @@ export const AlosAnalyticsPage: React.FC = () => {
             Clinical Methodology: Strict ALOS Independence
           </h4>
           <p className="mt-1 leading-relaxed text-teal-800">
-            In compliance with Sri Lanka Ministry of Health maternity guidelines and Caldicott
+            In line with Sri Lanka Ministry of Health maternity guidelines and patient-privacy
             principles,
             <strong> maternal length of stay</strong> (admission to postpartum discharge) and
             <strong> newborn length of stay</strong> (birth timestamp to neonatal release) are
@@ -119,7 +127,7 @@ export const AlosAnalyticsPage: React.FC = () => {
       {!isLoading && data && (
         <div className="space-y-6 animate-fadeIn">
           {/* Top KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <AnalyticsKpiCard
               title="Maternal Mean ALOS"
               value={data.maternalAlosDays !== null ? `${data.maternalAlosDays}d` : '—'}
@@ -158,7 +166,7 @@ export const AlosAnalyticsPage: React.FC = () => {
             <AnalyticsBarChart
               data={data.maternalAlosByCategory.map(
                 (cp: { category: string; count: number; alosDays: number | null }) => ({
-                  label: cp.category.replace(/_/g, ' '),
+                  label: humanizeEnum(cp.category),
                   value: cp.alosDays ?? 0,
                   sublabel: `${cp.count} pts`,
                 }),
@@ -207,13 +215,15 @@ export const AlosAnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      <ReportExportDialog
-        isOpen={isExportOpen}
-        onClose={() => setIsExportOpen(false)}
-        defaultReportType={OperationalReportType.MATERNAL_ALOS}
-        defaultPreset={filters.preset}
-        defaultWardId={filters.wardId}
-      />
+      <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+        <ReportExportDialog
+          isOpen={isExportOpen}
+          onClose={() => setIsExportOpen(false)}
+          defaultReportType={OperationalReportType.MATERNAL_ALOS}
+          defaultPreset={filters.preset}
+          defaultWardId={filters.wardId}
+        />
+      </PermissionGuard>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import {
   AnalyticsDateRangePreset,
   AdmissionAnalyticsDto,
   OperationalReportType,
+  Permission,
 } from '@lrms/shared';
 import { analyticsApi } from '../../../services/analytics.api.js';
 import { PageHeader, SectionCard } from '../../../components/shared/HeadersAndCards.js';
@@ -17,13 +18,14 @@ import { AnalyticsDonutChart } from '../components/AnalyticsDonutChart.js';
 import { AnalyticsTrendLine } from '../components/AnalyticsTrendLine.js';
 import { AnalyticsDataTable, ColumnDef } from '../components/AnalyticsDataTable.js';
 import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/AnalyticsStates.js';
+import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { Activity, UserCheck, ArrowRightLeft, UserMinus, Download } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const AdmissionAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<AdmissionAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -64,14 +66,16 @@ export const AdmissionAnalyticsPage: React.FC = () => {
           { label: 'Admissions', active: true },
         ]}
         action={
-          <Button
-            size="sm"
-            onClick={() => setIsExportOpen(true)}
-            className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export Admission Data
-          </Button>
+          <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+            <Button
+              size="sm"
+              onClick={() => setIsExportOpen(true)}
+              className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export Admission Data
+            </Button>
+          </PermissionGuard>
         }
       />
 
@@ -88,7 +92,7 @@ export const AdmissionAnalyticsPage: React.FC = () => {
       {!isLoading && data && (
         <div className="space-y-6 animate-fadeIn">
           {/* Top KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <AnalyticsKpiCard
               title="Total Admissions"
               value={data.totalAdmissions}
@@ -128,7 +132,7 @@ export const AdmissionAnalyticsPage: React.FC = () => {
               <AnalyticsBarChart
                 data={data.admissionsByCategory.map(
                   (c: { category: string; count: number; percentage: number }) => ({
-                    label: c.category.replace(/_/g, ' '),
+                    label: humanizeEnum(c.category),
                     value: c.count,
                     sublabel: `${c.percentage}%`,
                   }),
@@ -143,7 +147,7 @@ export const AdmissionAnalyticsPage: React.FC = () => {
             >
               <AnalyticsDonutChart
                 data={data.admissionsByStatus.map((s: { status: string; count: number }) => ({
-                  label: s.status.replace(/_/g, ' '),
+                  label: humanizeEnum(s.status),
                   value: s.count,
                 }))}
                 totalLabel="Total"
@@ -188,13 +192,15 @@ export const AdmissionAnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      <ReportExportDialog
-        isOpen={isExportOpen}
-        onClose={() => setIsExportOpen(false)}
-        defaultReportType={OperationalReportType.ADMISSION_STATISTICS}
-        defaultPreset={filters.preset}
-        defaultWardId={filters.wardId}
-      />
+      <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+        <ReportExportDialog
+          isOpen={isExportOpen}
+          onClose={() => setIsExportOpen(false)}
+          defaultReportType={OperationalReportType.ADMISSION_STATISTICS}
+          defaultPreset={filters.preset}
+          defaultWardId={filters.wardId}
+        />
+      </PermissionGuard>
     </div>
   );
 };

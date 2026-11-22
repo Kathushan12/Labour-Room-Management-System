@@ -36,6 +36,7 @@ export function toAdmissionSummaryDto(admission: Admission): AdmissionSummaryDto
     hasPii,
     admissionCategory: admission.admissionCategory,
     currentCarePlan: admission.currentCarePlan,
+    gestationWeeks: admission.gestationWeeks ?? null,
     status: admission.status,
     admittedAt: admission.admittedAt.toISOString(),
     dischargedAt: admission.dischargedAt ? admission.dischargedAt.toISOString() : null,

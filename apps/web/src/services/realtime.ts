@@ -1,6 +1,9 @@
 import { io, Socket } from 'socket.io-client';
 import { env } from '../config/env.js';
 import { SocketEvent } from '@lrms/shared';
+import { getAccessToken, refreshSession } from './auth-session.js';
+
+type SocketHandler = (...args: unknown[]) => void;
 
 export type ConnectionStatus = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING';
 
@@ -15,6 +18,8 @@ class RealtimeClient {
   private currentStatus: ConnectionStatus = 'DISCONNECTED';
   private statusListeners: Set<(status: ConnectionStatus) => void> = new Set();
   private joinedRooms: Set<string> = new Set();
+  // Kept across socket instances so listeners exist before the first server event arrives.
+  private eventHandlers: Map<string, Set<SocketHandler>> = new Map();
 
   /**
    * Initializes the WebSocket connection using an access token.
@@ -34,9 +39,8 @@ class RealtimeClient {
 
     this.socket = io(socketUrl, {
       path: '/socket.io',
-      auth: {
-        token: `Bearer ${accessToken}`,
-      },
+      // Evaluated on every (re)connect so a reconnect after an API restart uses the latest token.
+      auth: (cb) => cb({ token: `Bearer ${getAccessToken() ?? accessToken}` }),
       transports: ['websocket', 'polling'],
       withCredentials: true,
       reconnection: true,
@@ -45,6 +49,10 @@ class RealtimeClient {
       reconnectionDelayMax: 10000,
       timeout: 10000,
     });
+
+    for (const [event, handlers] of this.eventHandlers) {
+      for (const handler of handlers) this.socket.on(event, handler);
+    }
 
     this.socket.on('connect', () => {
       this.updateStatus('CONNECTED');
@@ -58,6 +66,8 @@ class RealtimeClient {
       if (reason === 'io server disconnect') {
         // Server revoked session or kicked client - do not reconnect automatically
         this.updateStatus('DISCONNECTED');
+        // REQ-1.9: a deactivated or revoked account is signed out here and in every tab.
+        void refreshSession(getAccessToken());
       } else {
         this.updateStatus('RECONNECTING');
       }
@@ -87,16 +97,51 @@ class RealtimeClient {
    */
   joinRoom(room: string): Promise<RoomSubscriptionResponse> {
     return new Promise((resolve) => {
+      // Remember the room so it is joined on (re)connect even if requested before connecting.
+      this.joinedRooms.add(room);
       if (!this.socket?.connected) {
-        resolve({ status: 'DENIED', reason: 'Socket not connected' });
+        resolve({ status: 'DENIED', reason: 'Socket not connected; will join on connect' });
         return;
       }
 
       this.socket.emit(SocketEvent.JOIN_ROOM, { room }, (response: RoomSubscriptionResponse) => {
-        if (response?.status === 'JOINED') {
-          this.joinedRooms.add(room);
+        if (response?.status !== 'JOINED') {
+          this.joinedRooms.delete(room);
         }
         resolve(response);
+      });
+    });
+  }
+
+  /**
+   * Subscribes to a server event on the current and any future socket.
+   */
+  on<T>(event: SocketEvent, handler: (payload: T) => void): () => void {
+    let handlers = this.eventHandlers.get(event);
+    if (!handlers) {
+      handlers = new Set();
+      this.eventHandlers.set(event, handlers);
+    }
+    const listener = handler as SocketHandler;
+    handlers.add(listener);
+    this.socket?.on(event, listener);
+    return () => {
+      handlers.delete(listener);
+      this.socket?.off(event, listener);
+    };
+  }
+
+  /**
+   * Emits an event and waits for the server's acknowledgement (null on timeout or offline).
+   */
+  emitWithAck<T>(event: SocketEvent, payload: unknown, timeoutMs = 5000): Promise<T | null> {
+    return new Promise((resolve) => {
+      if (!this.socket?.connected) {
+        resolve(null);
+        return;
+      }
+      this.socket.timeout(timeoutMs).emit(event, payload, (err: Error | null, response: T) => {
+        resolve(err ? null : response);
       });
     });
   }
@@ -106,6 +151,7 @@ class RealtimeClient {
    */
   leaveRoom(room: string): Promise<RoomSubscriptionResponse> {
     return new Promise((resolve) => {
+      this.joinedRooms.delete(room);
       if (!this.socket?.connected) {
         resolve({ status: 'LEFT', room });
         return;

@@ -97,7 +97,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose 
           className={`px-3 py-2 font-medium rounded-t-lg transition-colors border-b-2 ${
             activeTab === 'ALL'
               ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900'
-              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-500'
           }`}
         >
           All ({notifications.length})
@@ -107,7 +107,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose 
           className={`px-3 py-2 font-medium rounded-t-lg transition-colors border-b-2 flex items-center gap-1 ${
             activeTab === 'UNREAD'
               ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900'
-              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-500'
           }`}
         >
           Unread
@@ -122,7 +122,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose 
           className={`px-3 py-2 font-medium rounded-t-lg transition-colors border-b-2 flex items-center gap-1 ${
             activeTab === 'EMERGENCY'
               ? 'border-rose-600 text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-900'
-              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-500'
           }`}
         >
           Emergency
@@ -137,7 +137,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose 
           className={`px-3 py-2 font-medium rounded-t-lg transition-colors border-b-2 flex items-center gap-1 ${
             activeTab === 'URGENT'
               ? 'border-amber-600 text-amber-600 dark:text-amber-400 bg-white dark:bg-slate-900'
-              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-500'
           }`}
         >
           Urgent
@@ -152,7 +152,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose 
           className={`px-3 py-2 font-medium rounded-t-lg transition-colors border-b-2 ${
             activeTab === 'ROUTINE'
               ? 'border-slate-600 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-900'
-              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-500'
           }`}
         >
           Routine
@@ -163,11 +163,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose 
       <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
         {filteredNotifications.length === 0 ? (
           <div className="p-8 text-center">
-            <BellOff className="w-8 h-8 mx-auto text-slate-400 dark:text-slate-600 mb-2" />
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            <BellOff className="w-8 h-8 mx-auto text-slate-500 dark:text-slate-600 mb-2" />
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-500">
               No notifications in this view
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
               Clinical alerts and escalation notices will appear here in real-time.
             </p>
           </div>
@@ -184,7 +184,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose 
       </div>
 
       {/* Footer Notice */}
-      <div className="p-2.5 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 text-center leading-tight">
+      <div className="p-2.5 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-500 text-center leading-tight">
         <span>
           Marking alerts as read does not acknowledge clinical escalation or emergency status.
         </span>

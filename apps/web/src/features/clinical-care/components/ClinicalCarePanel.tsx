@@ -26,6 +26,7 @@ import { ClinicalCarePlanCard } from './ClinicalCarePlanCard.js';
 import { CarePlanCreateDialog } from './CarePlanCreateDialog.js';
 import { ClinicalEscalationPanel } from './ClinicalEscalationPanel.js';
 import { SurgicalReviewCard } from './SurgicalReviewCard.js';
+import { useAlertStateRefresh } from '../../../hooks/useRealtimeNotifications.js';
 
 interface ClinicalCarePanelProps {
   admissionId: string;
@@ -85,6 +86,15 @@ export const ClinicalCarePanel: React.FC<ClinicalCarePanelProps> = ({ admissionI
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Live alert stepper: refetch only escalations so the panel does not flash a loading state.
+  const refreshEscalations = useCallback(() => {
+    clinicalCareApi
+      .getEscalations(admissionId)
+      .then(setEscalations)
+      .catch(() => {});
+  }, [admissionId]);
+  useAlertStateRefresh(refreshEscalations, { admissionId });
 
   // Emergency banner actions
   const handleAcknowledgeEmergency = async (id: string) => {

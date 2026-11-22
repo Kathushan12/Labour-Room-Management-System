@@ -128,7 +128,7 @@ export class AnalyticsRepository {
         `SELECT 
            COUNT(id)::int as total_beds,
            COUNT(id) FILTER (WHERE functioning_status = 'FUNCTIONING')::int as functioning_beds,
-           COUNT(id) FILTER (WHERE functioning_status = 'OUT_OF_SERVICE' OR occupancy_status = 'MAINTENANCE')::int as maintenance_beds,
+           COUNT(id) FILTER (WHERE functioning_status = 'OUT_OF_SERVICE')::int as maintenance_beds,
            COUNT(id) FILTER (WHERE functioning_status = 'FUNCTIONING' AND occupancy_status = 'OCCUPIED')::int as occupied_beds,
            COUNT(id) FILTER (WHERE functioning_status = 'FUNCTIONING' AND occupancy_status = 'AVAILABLE')::int as available_beds,
            COUNT(id) FILTER (WHERE functioning_status = 'FUNCTIONING' AND (occupancy_status = 'CLEANING' OR cleaning_status != 'CLEAN'))::int as cleaning_beds
@@ -508,9 +508,9 @@ export class AnalyticsRepository {
       const dailyRes = await qRunner.query(
         `SELECT 
            TO_CHAR(d.delivery_timestamp AT TIME ZONE 'Asia/Colombo', 'YYYY-MM-DD') as day,
-           COUNT(d.id) FILTER (WHERE d.delivery_mode IN ('SPONTANEOUS_VAGINAL', 'VAGINAL_BREECH'))::int as vaginal,
-           COUNT(d.id) FILTER (WHERE d.delivery_mode IN ('ELECTIVE_CESAREAN', 'EMERGENCY_CESAREAN'))::int as cesarean,
-           COUNT(d.id) FILTER (WHERE d.delivery_mode IN ('ASSISTED_VACUUM', 'ASSISTED_FORCEPS'))::int as assisted
+           COUNT(d.id) FILTER (WHERE d.delivery_mode = 'NORMAL')::int as vaginal,
+           COUNT(d.id) FILTER (WHERE d.delivery_mode = 'CESAREAN')::int as cesarean,
+           COUNT(d.id) FILTER (WHERE d.delivery_mode = 'ASSISTED')::int as assisted
          FROM deliveries d
          JOIN admissions a ON d.admission_id = a.id
          WHERE d.status = 'FINALIZED'
@@ -1412,18 +1412,21 @@ export class AnalyticsRepository {
       );
       const totalSurgicalReviews = srRes[0]?.count ?? 0;
 
-      // Acknowledged latencies and proof-of-receipt
+      // Acknowledged latencies from the doctor alert receipts (REQ-7.x / REQ-9.3)
       const ackStatsRes = await qRunner.query(
-        `SELECT 
-           COUNT(ar.id)::int as ack_count,
-           AVG(EXTRACT(EPOCH FROM (ar.acknowledged_at - ar.dispatched_at)))::numeric(10,1) as avg_latency,
-           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (EXTRACT(EPOCH FROM (ar.acknowledged_at - ar.dispatched_at))))::numeric(10,1) as median_latency,
-           COUNT(ar.id) FILTER (WHERE EXTRACT(EPOCH FROM (ar.acknowledged_at - ar.dispatched_at)) <= 180)::int as under_3_min_count
-         FROM alert_recipients ar
-         WHERE ar.receipt_state = 'ACKNOWLEDGED'
-           AND ar.acknowledged_at >= $1 AND ar.acknowledged_at < $2
-           AND ar.acknowledged_at >= ar.dispatched_at`,
-        [current.startDate, current.endDate],
+        `SELECT
+           COUNT(ce.id)::int as ack_count,
+           AVG(EXTRACT(EPOCH FROM (ce.acknowledged_at - ce.dispatched_at)))::numeric(10,1) as avg_latency,
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (EXTRACT(EPOCH FROM (ce.acknowledged_at - ce.dispatched_at))))::numeric(10,1) as median_latency,
+           COUNT(ce.id) FILTER (WHERE EXTRACT(EPOCH FROM (ce.acknowledged_at - ce.dispatched_at)) <= 180)::int as under_3_min_count
+         FROM clinical_escalations ce
+         JOIN admissions a ON ce.admission_id = a.id
+         WHERE ce.acknowledged_at IS NOT NULL
+           AND ce.dispatched_at >= $1 AND ce.dispatched_at < $2
+           ${wardId ? 'AND a.ward_id = $3' : ''}`,
+        wardId
+          ? [current.startDate, current.endDate, wardId]
+          : [current.startDate, current.endDate],
       );
       const ackData = ackStatsRes[0] || {};
       const acknowledgedAlertsCount = ackData.ack_count ?? 0;
@@ -1435,6 +1438,67 @@ export class AnalyticsRepository {
         acknowledgedAlertsCount > 0
           ? Math.round(((ackData.under_3_min_count ?? 0) / acknowledgedAlertsCount) * 1000) / 10
           : null;
+
+      const receiptRows: Array<{
+        escalation_reference_id: string;
+        admission_reference_id: string;
+        bed_number: string | null;
+        reason_code: string | null;
+        dispatched_at: Date;
+        delivered_at: Date | null;
+        acknowledged_at: Date | null;
+        timed_out_at: Date | null;
+        to_delivered: string | null;
+        to_ack: string | null;
+      }> = await qRunner.query(
+        `SELECT ce.escalation_reference_id, a.admission_reference_id, bed.bed_number,
+                ce.reason_code::text AS reason_code,
+                ce.dispatched_at, ce.delivered_at, ce.acknowledged_at, ce.timed_out_at,
+                EXTRACT(EPOCH FROM (ce.delivered_at - ce.dispatched_at))::numeric(10,1) AS to_delivered,
+                EXTRACT(EPOCH FROM (ce.acknowledged_at - ce.dispatched_at))::numeric(10,1) AS to_ack
+         FROM clinical_escalations ce
+         JOIN admissions a ON ce.admission_id = a.id
+         LEFT JOIN LATERAL (
+           SELECT b.bed_number FROM bed_allocation_history h
+           JOIN beds b ON b.id = h.bed_id
+           WHERE h.admission_id = a.id AND h.assigned_at <= ce.dispatched_at
+           ORDER BY h.assigned_at DESC LIMIT 1
+         ) bed ON true
+         WHERE ce.dispatched_at >= $1 AND ce.dispatched_at < $2
+           ${wardId ? 'AND a.ward_id = $3' : ''}
+         ORDER BY ce.dispatched_at DESC`,
+        wardId
+          ? [current.startDate, current.endDate, wardId]
+          : [current.startDate, current.endDate],
+      );
+      const toNum = (v: string | null) => (v == null ? null : Number(v));
+      const avg = (vals: Array<number | null>) => {
+        const present = vals.filter((v): v is number => v != null);
+        return present.length > 0
+          ? Math.round((present.reduce((a, b) => a + b, 0) / present.length) * 10) / 10
+          : null;
+      };
+      const receiptAlerts = receiptRows.map((row) => ({
+        escalationReferenceId: row.escalation_reference_id,
+        admissionReferenceId: row.admission_reference_id,
+        bedNumber: row.bed_number,
+        reason: row.reason_code,
+        dispatchedAt: new Date(row.dispatched_at).toISOString(),
+        deliveredAt: row.delivered_at ? new Date(row.delivered_at).toISOString() : null,
+        acknowledgedAt: row.acknowledged_at ? new Date(row.acknowledged_at).toISOString() : null,
+        timedOutAt: row.timed_out_at ? new Date(row.timed_out_at).toISOString() : null,
+        secondsToDelivered: toNum(row.to_delivered),
+        secondsToAcknowledged: toNum(row.to_ack),
+      }));
+      const alertReceipts = {
+        totalAlerts: receiptAlerts.length,
+        deliveredCount: receiptAlerts.filter((a) => a.deliveredAt).length,
+        acknowledgedCount: receiptAlerts.filter((a) => a.acknowledgedAt).length,
+        timedOutCount: receiptAlerts.filter((a) => a.timedOutAt).length,
+        averageSecondsToDelivered: avg(receiptAlerts.map((a) => a.secondsToDelivered)),
+        averageSecondsToAcknowledged: avg(receiptAlerts.map((a) => a.secondsToAcknowledged)),
+        alerts: receiptAlerts,
+      };
 
       // Notification Outbox Stats
       const outboxRes = await qRunner.query(
@@ -1471,6 +1535,7 @@ export class AnalyticsRepository {
         averageAcknowledgementLatencySeconds,
         medianAcknowledgementLatencySeconds,
         slaUnder3MinutesPercentage,
+        alertReceipts,
         notificationOutboxStats,
       };
     } finally {

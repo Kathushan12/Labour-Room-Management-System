@@ -141,7 +141,7 @@ export class NotificationRecipientService {
   /**
    * Resolves clinicians currently assigned to a ward who are scheduled on an active shift.
    */
-  private async resolveOnDutyWardStaff(wardId: string): Promise<string[]> {
+  async resolveOnDutyWardStaff(wardId: string): Promise<string[]> {
     try {
       // Get all active ward assignments
       const wardAssignments = await this.dataSource.getRepository(StaffWardAssignment).find({

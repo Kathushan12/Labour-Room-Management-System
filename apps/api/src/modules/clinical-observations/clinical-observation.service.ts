@@ -1,5 +1,9 @@
 import {
   AdmissionObservationsSummaryDto,
+  AdmissionStatus,
+  CarePlanState,
+  FHR_OBSERVATION_DUE_MINUTES,
+  UserRole,
   ClinicalObservationAmendmentDto,
   ClinicalObservationType,
   ContractionObservationDto,
@@ -38,6 +42,23 @@ import {
   toMaternalObservationDto,
 } from './observation.dto.js';
 
+const ACTIVE_LABOUR_PLANS = new Set<CarePlanState>([
+  CarePlanState.NORMAL_DELIVERY,
+  CarePlanState.EMERGENCY_CESAREAN,
+]);
+
+// REQ-5.8: reminder only; it never raises an alert (REQ-5.5).
+function isFhrObservationDue(admission: Admission, lastFhrAt: string | null): boolean {
+  if (admission.status !== AdmissionStatus.ADMITTED) return false;
+  if (!ACTIVE_LABOUR_PLANS.has(admission.currentCarePlan)) return false;
+  const since = lastFhrAt ? new Date(lastFhrAt) : admission.admittedAt;
+  return Date.now() - since.getTime() >= FHR_OBSERVATION_DUE_MINUTES * 60 * 1000;
+}
+
+function toNumberOrNull(value: unknown): number | null {
+  return value === null || value === undefined ? null : Number(value);
+}
+
 export class ClinicalObservationService {
   /**
    * Helper to verify patient authorization and admission status
@@ -57,7 +78,7 @@ export class ClinicalObservationService {
       throw new NotFoundError('Admission not found');
     }
 
-    if (requireActiveAdmission && admission.status === 'DISCHARGED') {
+    if (requireActiveAdmission && admission.status !== AdmissionStatus.ADMITTED) {
       throw new ConflictError(
         'Cannot record or amend clinical observations on a discharged admission',
         'ADMISSION_ALREADY_DISCHARGED',
@@ -167,7 +188,7 @@ export class ClinicalObservationService {
     const entity = new FetalObservation();
     entity.admissionId = admissionId;
     entity.recordedByUserId = actor.id;
-    entity.fetalHeartRateBpm = validated.fetalHeartRateBpm;
+    entity.fetalHeartRateBpm = validated.fetalHeartRateBpm ?? null;
     entity.fetalHeartRateUnit = validated.fetalHeartRateUnit || 'BPM';
     entity.variability = validated.variability ?? null;
     entity.decelerations = validated.decelerations ?? null;
@@ -395,7 +416,8 @@ export class ClinicalObservationService {
       | LabourAssessmentDto
       | ContractionObservationDto;
   }> {
-    await this.assertAdmissionAccessible(actor, admissionId, true);
+    // REQ-8.4: closed admissions are read-only except for doctor corrections.
+    await this.assertAdmissionAccessible(actor, admissionId, actor.role !== UserRole.DOCTOR);
 
     if (!amendmentReason || amendmentReason.trim().length < 10) {
       throw new BadRequestError('Amendment reason must contain at least 10 characters');
@@ -431,9 +453,10 @@ export class ClinicalObservationService {
           previousValues = {
             systolicBp: original.systolicBp,
             diastolicBp: original.diastolicBp,
-            bloodGlucoseValue: original.bloodGlucoseValue,
+            // NUMERIC columns come back from pg as strings.
+            bloodGlucoseValue: toNumberOrNull(original.bloodGlucoseValue),
             bloodGlucoseUnit: original.bloodGlucoseUnit,
-            temperatureCelsius: original.temperatureCelsius,
+            temperatureCelsius: toNumberOrNull(original.temperatureCelsius),
             pulseRateBpm: original.pulseRateBpm,
             respiratoryRate: original.respiratoryRate,
             oxygenSaturationPercent: original.oxygenSaturationPercent,
@@ -506,7 +529,7 @@ export class ClinicalObservationService {
           const newRecord = new FetalObservation();
           newRecord.admissionId = admissionId;
           newRecord.recordedByUserId = actor.id;
-          newRecord.fetalHeartRateBpm = validated.fetalHeartRateBpm;
+          newRecord.fetalHeartRateBpm = validated.fetalHeartRateBpm ?? null;
           newRecord.fetalHeartRateUnit = validated.fetalHeartRateUnit || 'BPM';
           newRecord.variability = validated.variability ?? null;
           newRecord.decelerations = validated.decelerations ?? null;
@@ -545,7 +568,7 @@ export class ClinicalObservationService {
           }
 
           previousValues = {
-            cervicalDilationCm: original.cervicalDilationCm,
+            cervicalDilationCm: toNumberOrNull(original.cervicalDilationCm),
             cervicalEffacementPercent: original.cervicalEffacementPercent,
             fetalStation: original.fetalStation,
             fetalDescentFifths: original.fetalDescentFifths,
@@ -741,6 +764,18 @@ export class ClinicalObservationService {
     const latestObservationTimestamp =
       allTimestamps.length > 0 ? new Date(Math.max(...allTimestamps)).toISOString() : null;
 
+    const admission = await AppDataSource.getRepository(Admission).findOneOrFail({
+      where: { id: admissionId },
+    });
+    const lastFhr = fetal.length > 0 ? fetal[fetal.length - 1].observationTimestamp : null;
+    const fhrObservationDue = isFhrObservationDue(admission, lastFhr);
+
+    // REQ-5.7: newest entries first.
+    maternal.reverse();
+    fetal.reverse();
+    labour.reverse();
+    contractions.reverse();
+
     return {
       admissionId,
       maternalCount: maternal.length,
@@ -749,6 +784,8 @@ export class ClinicalObservationService {
       contractionCount: contractions.length,
       totalObservationsCount: maternal.length + fetal.length + labour.length + contractions.length,
       latestObservationTimestamp,
+      lastFetalHeartRateAt: lastFhr,
+      fhrObservationDue,
       maternalObservations: maternal,
       fetalObservations: fetal,
       labourAssessments: labour,

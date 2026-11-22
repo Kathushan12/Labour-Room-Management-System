@@ -23,7 +23,8 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="pl-9 pr-8 text-xs h-9 bg-white"
+        aria-label={placeholder || 'Search'}
+        className="pl-9 pr-8 text-xs h-11 sm:h-9 bg-white"
       />
       {value && (
         <button
@@ -75,9 +76,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       <div className="flex flex-wrap items-center gap-2">
         {filterOptions && onFilterChange && (
           <select
+            aria-label="Filter list"
             value={selectedFilter}
             onChange={(e) => onFilterChange(e.target.value)}
-            className="h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="h-11 sm:h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
             {filterOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>

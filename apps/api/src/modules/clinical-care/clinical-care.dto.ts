@@ -1,4 +1,5 @@
 import {
+  AlertReceiptState,
   ClinicalCarePlanDto,
   ClinicalCarePlanReviewDto,
   ClinicalCarePlanVersionDto,
@@ -107,6 +108,14 @@ export function toEscalationHistoryDto(h: ClinicalEscalationHistory): ClinicalEs
   };
 }
 
+export function toAlertReceiptState(
+  esc: Pick<ClinicalEscalation, 'deliveredAt' | 'acknowledgedAt'>,
+): AlertReceiptState {
+  if (esc.acknowledgedAt) return AlertReceiptState.ACKNOWLEDGED;
+  if (esc.deliveredAt) return AlertReceiptState.DELIVERED;
+  return AlertReceiptState.DISPATCHED;
+}
+
 export function toEscalationDto(esc: ClinicalEscalation): ClinicalEscalationDto {
   return {
     id: esc.id,
@@ -115,11 +124,20 @@ export function toEscalationDto(esc: ClinicalEscalation): ClinicalEscalationDto 
     category: esc.category,
     priority: esc.priority,
     status: esc.status,
+    reason: esc.reasonCode ?? null,
     clinicalReason: esc.clinicalReason,
     sourceObservationType: esc.sourceObservationType ?? null,
     sourceObservationId: esc.sourceObservationId ?? null,
     initiatedByUserId: esc.initiatedByUserId,
     assignedRecipientUserId: esc.assignedRecipientUserId ?? null,
+    reversedAt: esc.reversedAt ? esc.reversedAt.toISOString() : null,
+    reversedByUserId: esc.reversedByUserId ?? null,
+    reversalReason: esc.reversalReason ?? null,
+    alertState: toAlertReceiptState(esc),
+    dispatchedAt: esc.dispatchedAt.toISOString(),
+    deliveredAt: esc.deliveredAt ? esc.deliveredAt.toISOString() : null,
+    timedOutAt: esc.timedOutAt ? esc.timedOutAt.toISOString() : null,
+    recipientContactNumber: null,
     acknowledgedAt: esc.acknowledgedAt ? esc.acknowledgedAt.toISOString() : null,
     acknowledgedByUserId: esc.acknowledgedByUserId ?? null,
     assessmentAt: esc.assessmentAt ? esc.assessmentAt.toISOString() : null,

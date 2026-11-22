@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { pinoHttp } from 'pino-http';
-import { env } from './config/env.js';
+import { webOriginCors } from './common/web-origin.js';
 import { logger } from './common/logging/logger.js';
 import { requestIdMiddleware } from './common/middleware/request-id.js';
 import { errorHandler, notFoundHandler } from './common/middleware/error-handler.js';
@@ -21,6 +21,7 @@ import { clinicalCareRoutes } from './modules/clinical-care/clinical-care.routes
 import { notificationRoutes } from './modules/realtime/notification.routes.js';
 import postpartumDeliveryRoutes from './modules/postpartum-delivery/delivery.routes.js';
 import { analyticsRouter } from './modules/analytics/analytics.routes.js';
+import { auditRouter } from './modules/audit/audit.routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -31,7 +32,7 @@ export function createApp(): Express {
   // Strict CORS in development / production
   app.use(
     cors({
-      origin: env.WEB_ORIGIN,
+      origin: webOriginCors,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token'],
@@ -66,6 +67,7 @@ export function createApp(): Express {
   apiV1Router.use('/users', userRouter);
   apiV1Router.use('/patients', patientRouter);
   apiV1Router.use('/analytics', analyticsRouter);
+  apiV1Router.use('/audit-logs', auditRouter);
   apiV1Router.use('/notifications', notificationRoutes);
   apiV1Router.use('/admissions', admissionRouter);
   apiV1Router.use('/wards', wardRouter);

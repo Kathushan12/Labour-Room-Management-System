@@ -33,9 +33,17 @@ export class ShiftService {
     fromDate?: string,
     toDate?: string,
     status?: ShiftStatus,
-  ): Promise<ShiftDto[]> {
+  ): Promise<ShiftWithStaffDto[]> {
     const qb = AppDataSource.getRepository(Shift)
       .createQueryBuilder('shift')
+      .leftJoinAndSelect(
+        'shift.staffAssignments',
+        'assignment',
+        'assignment.status != :cancelledStatus',
+        { cancelledStatus: ShiftStaffAssignmentStatus.CANCELLED },
+      )
+      .leftJoinAndSelect('assignment.user', 'user')
+      .leftJoinAndSelect('user.role', 'role')
       .where('shift.wardId = :wardId', { wardId })
       .orderBy('shift.startsAt', 'ASC');
 
@@ -50,7 +58,7 @@ export class ShiftService {
     }
 
     const shifts = await qb.getMany();
-    return shifts.map(serializeShift);
+    return shifts.map(serializeShiftWithStaff);
   }
 
   public async getShiftById(wardId: string, shiftId: string): Promise<ShiftWithStaffDto> {

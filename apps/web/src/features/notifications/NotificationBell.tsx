@@ -51,7 +51,7 @@ export const NotificationBell: React.FC = () => {
     <div className="relative inline-block" ref={containerRef}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="relative flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
         title="Notifications"
         aria-label={`Notifications: ${unreadCounts.unreadCount} unread`}
         aria-expanded={isOpen}
@@ -67,7 +67,7 @@ export const NotificationBell: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 z-50 w-96 max-w-[90vw] animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto mt-2 z-50 sm:w-96 sm:max-w-[90vw] animate-in fade-in slide-in-from-top-2 duration-150">
           <NotificationCenter onClose={() => setIsOpen(false)} />
         </div>
       )}

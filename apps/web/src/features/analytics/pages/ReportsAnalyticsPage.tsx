@@ -106,7 +106,7 @@ const REPORT_CATALOG: ReportCatalogItem[] = [
     type: OperationalReportType.NEWBORN_ALOS,
     title: 'Newborn Average Length of Stay (ALOS) Report',
     description:
-      'Strictly independent newborn hospitalization durations and release tracking in accordance with Caldicott principles.',
+      'Strictly independent newborn hospitalization durations and release tracking in line with patient-privacy principles.',
     targetAudience: 'Paediatric Directorate, Clinical Director',
     frequency: 'Monthly',
   },
@@ -140,7 +140,6 @@ const REPORT_CATALOG: ReportCatalogItem[] = [
 export const ReportsAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [exportingReport, setExportingReport] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{

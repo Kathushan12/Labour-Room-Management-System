@@ -30,15 +30,39 @@ export enum BedDisplayStatus {
 
 export enum AdmissionCategory {
   NORMAL_DELIVERY = 'NORMAL_DELIVERY',
-  SCHEDULED_CESAREAN = 'SCHEDULED_CESAREAN',
-  OBSERVATION_20_PLUS_WEEKS = 'OBSERVATION_20_PLUS_WEEKS',
+  PLANNED_CESAREAN = 'PLANNED_CESAREAN',
+  OBSERVATION_20PLUS = 'OBSERVATION_20PLUS',
 }
 
 export enum CarePlanState {
+  OBSERVATION_20PLUS = 'OBSERVATION_20PLUS',
   NORMAL_DELIVERY = 'NORMAL_DELIVERY',
-  SCHEDULED_CESAREAN = 'SCHEDULED_CESAREAN',
-  OBSERVATION_20_PLUS_WEEKS = 'OBSERVATION_20_PLUS_WEEKS',
+  PLANNED_CESAREAN = 'PLANNED_CESAREAN',
   EMERGENCY_CESAREAN = 'EMERGENCY_CESAREAN',
+  DELIVERED = 'DELIVERED',
+  DISCHARGED = 'DISCHARGED',
+}
+
+export enum EscalationReason {
+  FETAL_DISTRESS = 'FETAL_DISTRESS',
+  FAILURE_TO_PROGRESS = 'FAILURE_TO_PROGRESS',
+  MATERNAL_COMPLICATION = 'MATERNAL_COMPLICATION',
+  OTHER = 'OTHER',
+}
+
+export enum DischargeDestination {
+  POSTNATAL = 'POSTNATAL',
+  ANTENATAL = 'ANTENATAL',
+  THEATRE = 'THEATRE',
+  ICU = 'ICU',
+  OTHER = 'OTHER',
+}
+
+export enum AmnioticFluid {
+  INTACT = 'INTACT',
+  CLEAR = 'CLEAR',
+  MECONIUM = 'MECONIUM',
+  BLOOD = 'BLOOD',
 }
 
 export enum AdmissionStatus {
@@ -50,8 +74,8 @@ export enum AdmissionStatus {
 export enum RiskFlagKey {
   HYPERTENSION = 'HYPERTENSION',
   GESTATIONAL_DIABETES = 'GESTATIONAL_DIABETES',
-  PREVIOUS_CESAREAN = 'PREVIOUS_CESAREAN',
-  OBSERVATION_20_PLUS_WEEKS = 'OBSERVATION_20_PLUS_WEEKS',
+  PRIOR_CESAREAN = 'PRIOR_CESAREAN',
+  OBSERVATION_20PLUS = 'OBSERVATION_20PLUS',
   OTHER = 'OTHER',
 }
 
@@ -101,6 +125,15 @@ export enum AlertReceiptState {
   DISPATCHED = 'DISPATCHED',
   DELIVERED = 'DELIVERED',
   ACKNOWLEDGED = 'ACKNOWLEDGED',
+}
+
+// Values carried by the alert:state socket event. TIMED_OUT is a warning on top of the
+// receipt state, not a fourth receipt state.
+export enum AlertStateChange {
+  DISPATCHED = 'DISPATCHED',
+  DELIVERED = 'DELIVERED',
+  ACKNOWLEDGED = 'ACKNOWLEDGED',
+  TIMED_OUT = 'TIMED_OUT',
 }
 
 export enum AlertSeverity {
@@ -438,10 +471,14 @@ export enum SocketEvent {
   ALERT_ESCALATION = 'alert:escalation',
   CONNECTION_READY = 'connection:ready',
   NOTIFICATION_SYNC_REQUIRED = 'notification:sync-required',
+  ALERT_NEW = 'alert:new',
+  ALERT_STATE = 'alert:state',
+  BED_UPDATED = 'bed:updated',
 
   // Client to server
   JOIN_ROOM = 'room:join',
   LEAVE_ROOM = 'room:leave',
+  ALERT_RECEIPT = 'alert:receipt',
 }
 
 // ==========================================
@@ -454,12 +491,9 @@ export enum DeliveryStatus {
 }
 
 export enum DeliveryMode {
-  SPONTANEOUS_VAGINAL = 'SPONTANEOUS_VAGINAL',
-  ASSISTED_VACUUM = 'ASSISTED_VACUUM',
-  ASSISTED_FORCEPS = 'ASSISTED_FORCEPS',
-  EMERGENCY_CESAREAN = 'EMERGENCY_CESAREAN',
-  ELECTIVE_CESAREAN = 'ELECTIVE_CESAREAN',
-  BREECH_VAGINAL = 'BREECH_VAGINAL',
+  NORMAL = 'NORMAL',
+  ASSISTED = 'ASSISTED',
+  CESAREAN = 'CESAREAN',
 }
 
 export enum BirthOutcome {

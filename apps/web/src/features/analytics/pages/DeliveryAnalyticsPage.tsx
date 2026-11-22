@@ -3,6 +3,7 @@ import {
   AnalyticsDateRangePreset,
   DeliveryAnalyticsDto,
   OperationalReportType,
+  Permission,
 } from '@lrms/shared';
 import { analyticsApi } from '../../../services/analytics.api.js';
 import { PageHeader, SectionCard } from '../../../components/shared/HeadersAndCards.js';
@@ -15,13 +16,14 @@ import { AnalyticsKpiCard } from '../components/AnalyticsKpiCard.js';
 import { AnalyticsBarChart } from '../components/AnalyticsBarChart.js';
 import { AnalyticsDonutChart } from '../components/AnalyticsDonutChart.js';
 import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/AnalyticsStates.js';
+import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { Baby, Scissors, HeartPulse, Download, Activity } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const DeliveryAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     preset: AnalyticsDateRangePreset.THIS_MONTH,
-    wardId: 'WARD-18',
   });
   const [data, setData] = useState<DeliveryAnalyticsDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -56,14 +58,16 @@ export const DeliveryAnalyticsPage: React.FC = () => {
           { label: 'Deliveries & Outcomes', active: true },
         ]}
         action={
-          <Button
-            size="sm"
-            onClick={() => setIsExportOpen(true)}
-            className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export Delivery Report
-          </Button>
+          <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+            <Button
+              size="sm"
+              onClick={() => setIsExportOpen(true)}
+              className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export Delivery Report
+            </Button>
+          </PermissionGuard>
         }
       />
 
@@ -80,7 +84,7 @@ export const DeliveryAnalyticsPage: React.FC = () => {
       {!isLoading && data && (
         <div className="space-y-6 animate-fadeIn">
           {/* Top KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <AnalyticsKpiCard
               title="Total Deliveries"
               value={data.totalDeliveries}
@@ -120,7 +124,7 @@ export const DeliveryAnalyticsPage: React.FC = () => {
               <AnalyticsDonutChart
                 data={data.deliveriesByMode.map(
                   (dm: { mode: string; count: number; percentage: number }) => ({
-                    label: dm.mode.replace(/_/g, ' '),
+                    label: humanizeEnum(dm.mode),
                     value: dm.count,
                   }),
                 )}
@@ -136,7 +140,7 @@ export const DeliveryAnalyticsPage: React.FC = () => {
               <AnalyticsBarChart
                 data={data.perinealTraumaDistribution.map(
                   (pt: { status: string; count: number }) => ({
-                    label: pt.status.replace(/_/g, ' '),
+                    label: humanizeEnum(pt.status),
                     value: pt.count,
                   }),
                 )}
@@ -153,7 +157,7 @@ export const DeliveryAnalyticsPage: React.FC = () => {
             <AnalyticsBarChart
               data={data.placentaDeliveryStatusDistribution.map(
                 (pd: { status: string; count: number }) => ({
-                  label: pd.status.replace(/_/g, ' '),
+                  label: humanizeEnum(pd.status),
                   value: pd.count,
                 }),
               )}
@@ -163,13 +167,15 @@ export const DeliveryAnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      <ReportExportDialog
-        isOpen={isExportOpen}
-        onClose={() => setIsExportOpen(false)}
-        defaultReportType={OperationalReportType.DELIVERY_OUTCOMES}
-        defaultPreset={filters.preset}
-        defaultWardId={filters.wardId}
-      />
+      <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+        <ReportExportDialog
+          isOpen={isExportOpen}
+          onClose={() => setIsExportOpen(false)}
+          defaultReportType={OperationalReportType.DELIVERY_OUTCOMES}
+          defaultPreset={filters.preset}
+          defaultWardId={filters.wardId}
+        />
+      </PermissionGuard>
     </div>
   );
 };

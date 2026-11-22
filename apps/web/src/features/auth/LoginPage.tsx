@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import { Activity, Lock, User, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../../components/ui/button.js';
@@ -99,7 +99,7 @@ export const LoginPage: React.FC = () => {
                 Staff Username
               </Label>
               <div className="mt-1 relative rounded-md shadow-xs">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                   <User className="h-4 w-4" />
                 </div>
                 <Input
@@ -110,7 +110,7 @@ export const LoginPage: React.FC = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g., admin_hospital or dr_perera"
+                  placeholder="e.g. dr.perera or nurse.silva"
                   className="pl-9 text-xs py-2 h-9"
                   disabled={isSubmitting}
                 />
@@ -124,7 +124,7 @@ export const LoginPage: React.FC = () => {
                 </Label>
               </div>
               <div className="mt-1 relative rounded-md shadow-xs">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -135,14 +135,14 @@ export const LoginPage: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Enter your password"
                   className="pl-9 pr-9 text-xs py-2 h-9"
                   disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-600 focus:outline-none"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   tabIndex={-1}
                 >
@@ -171,12 +171,12 @@ export const LoginPage: React.FC = () => {
 
           {/* Academic / Security Notice */}
           <div className="mt-6 pt-5 border-t border-slate-100 text-center">
-            <p className="text-[11px] text-slate-400">
-              CO2307 - Software Engineering Project · Group 07
-            </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">
-              Argon2id · Asymmetric RS256 JWT · Role-Based Access Control
-            </p>
+            <Link
+              to="/privacy"
+              className="inline-block text-xs font-semibold text-teal-700 hover:underline"
+            >
+              Privacy notice
+            </Link>
           </div>
         </div>
       </div>

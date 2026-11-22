@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { AuthUser, UserRole } from '@lrms/shared';
+import { AuthUser, PASSWORD_MIN_LENGTH, UserRole } from '@lrms/shared';
 import { toStaffProfileDto } from '../modules/users/user.dto.js';
 import { AppDataSource } from '../config/database.js';
 import { User, AuditLog, RefreshSession } from '../database/entities/index.js';
@@ -11,17 +11,30 @@ import {
   validatePasswordInput,
 } from '../common/crypto/password.service.js';
 import { signAccessToken } from '../common/crypto/jwt.service.js';
-import { generateCsrfToken } from '../common/crypto/csrf.service.js';
+import { generateCsrfToken, verifyCsrfToken } from '../common/crypto/csrf.service.js';
 import {
   createSession,
   rotateSession,
-  revokeSession,
+  revokeFamily,
   hashRefreshToken,
   generateRawRefreshToken,
+  buildSessionWindow,
+  getRefreshCookieMaxAgeMs,
 } from '../services/session.service.js';
+import {
+  getLockoutRemainingSeconds,
+  formatLockoutMessage,
+  registerFailedLogin,
+  clearFailedLogins,
+  LOCKOUT_MINUTES,
+} from '../services/account-lockout.service.js';
 import { disconnectUserSessions } from '../modules/realtime/realtime.server.js';
 import { authRateLimiter } from '../common/middleware/rate-limiter.js';
-import { UnauthorizedError, BadRequestError } from '../common/errors/auth.errors.js';
+import {
+  UnauthorizedError,
+  BadRequestError,
+  AccountLockedError,
+} from '../common/errors/auth.errors.js';
 import { env } from '../config/env.js';
 
 const loginSchema = z
@@ -36,7 +49,10 @@ const changePasswordSchema = z
     currentPassword: z.string().min(1, 'Current password is required'),
     newPassword: z
       .string()
-      .min(10, 'New password must be at least 10 characters long')
+      .min(
+        PASSWORD_MIN_LENGTH,
+        `New password must be at least ${PASSWORD_MIN_LENGTH} characters long`,
+      )
       .max(128, 'New password cannot exceed 128 characters'),
   })
   .strict();
@@ -59,14 +75,21 @@ function getCookieOptions(maxAgeMs?: number) {
   };
 }
 
-function getCsrfCookieOptions() {
+function getCsrfCookieOptions(maxAgeMs: number) {
   return {
     httpOnly: false,
     secure: isCookieSecure(),
     sameSite: 'lax' as const,
     path: '/',
-    maxAge: env.JWT_REFRESH_EXPIRATION_DAYS * 24 * 60 * 60 * 1000,
+    maxAge: maxAgeMs,
   };
+}
+
+// Every tab shares the CSRF cookie, so keep a valid one across refreshes; issuing a new one
+// would break the double-submit check in tabs still holding the previous value.
+function resolveCsrfToken(req: Request): string {
+  const existing = req.cookies?.[CSRF_COOKIE_NAME];
+  return typeof existing === 'string' && verifyCsrfToken(existing) ? existing : generateCsrfToken();
 }
 
 export function buildAuthUserDto(user: User): AuthUser {
@@ -111,7 +134,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       .getOne();
 
     if (!user || !user.isActive) {
-      authRateLimiter.recordFailedAttempt(ip, username);
+      authRateLimiter.recordFailedAttempt(ip);
       await auditRepo.save(
         auditRepo.create({
           userId: user ? user.id : null,
@@ -129,9 +152,8 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       return next(new UnauthorizedError('Invalid username or password', 'INVALID_CREDENTIALS'));
     }
 
-    const passwordMatch = await verifyPassword(password, user.passwordHash);
-    if (!passwordMatch) {
-      authRateLimiter.recordFailedAttempt(ip, username);
+    const lockedForSeconds = getLockoutRemainingSeconds(user);
+    if (lockedForSeconds > 0) {
       await auditRepo.save(
         auditRepo.create({
           userId: user.id,
@@ -139,10 +161,41 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
           entityName: 'User',
           entityId: user.id,
           ipAddress: ip,
+          details: { requestId: req.id || null, reason: 'Account locked' },
+        }),
+      );
+      return next(new AccountLockedError(formatLockoutMessage(lockedForSeconds), lockedForSeconds));
+    }
+
+    const passwordMatch = await verifyPassword(password, user.passwordHash);
+    if (!passwordMatch) {
+      authRateLimiter.recordFailedAttempt(ip);
+      const outcome = await registerFailedLogin(user.id);
+      await auditRepo.save(
+        auditRepo.create({
+          userId: user.id,
+          action: outcome.locked ? 'ACCOUNT_LOCKED' : 'LOGIN_FAILED',
+          entityName: 'User',
+          entityId: user.id,
+          ipAddress: ip,
           details: { requestId: req.id || null, reason: 'Password verification failed' },
         }),
       );
-      return next(new UnauthorizedError('Invalid username or password', 'INVALID_CREDENTIALS'));
+      if (outcome.locked) {
+        return next(
+          new AccountLockedError(
+            formatLockoutMessage(outcome.retryAfterSeconds),
+            outcome.retryAfterSeconds,
+          ),
+        );
+      }
+      const warning =
+        outcome.remainingAttempts <= 2
+          ? ` ${outcome.remainingAttempts} attempt${outcome.remainingAttempts === 1 ? '' : 's'} left before the account is locked for ${LOCKOUT_MINUTES} minutes.`
+          : '';
+      return next(
+        new UnauthorizedError(`Invalid username or password.${warning}`, 'INVALID_CREDENTIALS'),
+      );
     }
 
     // Check temporary password expiration ONLY after hash verification passes
@@ -169,8 +222,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       );
     }
 
-    // Reset rate limiter on successful login
-    authRateLimiter.resetUser(user.username);
+    await clearFailedLogins(user);
 
     // Create session and family
     const { session, rawRefreshToken } = await createSession(user.id);
@@ -186,10 +238,9 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 
     const csrfToken = generateCsrfToken();
 
-    // Set refresh token cookie
-    const refreshMaxAgeMs = env.JWT_REFRESH_EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
+    const refreshMaxAgeMs = getRefreshCookieMaxAgeMs(session);
     res.cookie(REFRESH_COOKIE_NAME, rawRefreshToken, getCookieOptions(refreshMaxAgeMs));
-    res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
+    res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions(refreshMaxAgeMs));
 
     // Audit log
     await auditRepo.save(
@@ -242,7 +293,7 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
     });
 
     if (!user || !user.isActive) {
-      await revokeSession(newSession.id);
+      await revokeFamily(newSession.familyId);
       return next(new UnauthorizedError('User account is inactive or not found', 'USER_INACTIVE'));
     }
 
@@ -254,11 +305,13 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
       sessionId: newSession.id,
     });
 
-    const csrfToken = generateCsrfToken();
+    const csrfToken = resolveCsrfToken(req);
 
-    const refreshMaxAgeMs = env.JWT_REFRESH_EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
-    res.cookie(REFRESH_COOKIE_NAME, newRawToken, getCookieOptions(refreshMaxAgeMs));
-    res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
+    const refreshMaxAgeMs = getRefreshCookieMaxAgeMs(newSession);
+    if (newRawToken) {
+      res.cookie(REFRESH_COOKIE_NAME, newRawToken, getCookieOptions(refreshMaxAgeMs));
+    }
+    res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions(refreshMaxAgeMs));
 
     await auditRepo.save(
       auditRepo.create({
@@ -267,7 +320,7 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
         entityName: 'RefreshSession',
         entityId: newSession.id,
         ipAddress: ip,
-        details: { requestId: req.id || null },
+        details: { requestId: req.id || null, concurrentRefresh: newRawToken === null },
       }),
     );
 
@@ -298,7 +351,7 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
 
       const session = await sessionRepo.findOne({ where: { tokenHash } });
       if (session) {
-        await revokeSession(session.id);
+        await revokeFamily(session.familyId);
         disconnectUserSessions(session.userId).catch(() => {});
         await auditRepo.save(
           auditRepo.create({
@@ -443,15 +496,13 @@ export async function changePassword(
       // Create brand-new refresh session for this rotated credential state
       const newRawRefreshToken = generateRawRefreshToken();
       const newTokenHash = hashRefreshToken(newRawRefreshToken);
-      const newExpiresAt = new Date();
-      newExpiresAt.setDate(newExpiresAt.getDate() + env.JWT_REFRESH_EXPIRATION_DAYS);
 
       const newSession = transactionManager.create(RefreshSession, {
         userId: lockedUser.id,
         tokenHash: newTokenHash,
         familyId: crypto.randomUUID(),
         isRevoked: false,
-        expiresAt: newExpiresAt,
+        ...buildSessionWindow(),
       });
       await transactionManager.save(newSession);
 
@@ -493,9 +544,9 @@ export async function changePassword(
     });
     const csrfToken = generateCsrfToken();
 
-    const refreshMaxAgeMs = env.JWT_REFRESH_EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
+    const refreshMaxAgeMs = getRefreshCookieMaxAgeMs(result.newSession);
     res.cookie(REFRESH_COOKIE_NAME, result.newRawRefreshToken, getCookieOptions(refreshMaxAgeMs));
-    res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
+    res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions(refreshMaxAgeMs));
 
     res.status(200).json({
       success: true,

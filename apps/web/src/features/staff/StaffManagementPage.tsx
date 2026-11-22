@@ -66,6 +66,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { formatColomboDate } from '../../lib/datetime.js';
+import { roleLabel } from '../../lib/labels.js';
 
 export const StaffManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -247,7 +249,7 @@ export const StaffManagementPage: React.FC = () => {
       throw new Error(res.error?.message || 'Failed to update role');
     }
     setActionBanner(
-      `Role changed to ${role} for ${res.data?.username}. All active sessions revoked.`,
+      `Role changed to ${roleLabel(role)} for ${res.data?.username}. All active sessions revoked.`,
     );
     await loadDirectory();
   };
@@ -394,13 +396,13 @@ export const StaffManagementPage: React.FC = () => {
               icon={<Stethoscope className="w-5 h-5 text-teal-700" />}
             />
             <StatCard
-              title="Nurses & Midwives (Page)"
+              title="Nurses & Midwives (this list)"
               value={pageNurses}
               subtitle="Ward 18 Bedside Care"
               icon={<HeartPulse className="w-5 h-5 text-emerald-600" />}
             />
             <StatCard
-              title="Administrators (Page)"
+              title="Administrators (this list)"
               value={pageAdmins}
               subtitle="User & Bed Control"
               icon={<ShieldCheck className="w-5 h-5 text-slate-700" />}
@@ -501,7 +503,7 @@ export const StaffManagementPage: React.FC = () => {
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
+                    <table className="stack-table w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                           <th className="pb-3 pr-3">Staff Name & Username</th>
@@ -522,7 +524,7 @@ export const StaffManagementPage: React.FC = () => {
 
                           return (
                             <tr key={staff.id} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="py-3.5 pr-3">
+                              <td data-label="Staff Name & Username" className="py-3.5 pr-3">
                                 <div className="font-bold text-slate-900">
                                   {staff.fullName}
                                   {isSelf && (
@@ -539,24 +541,27 @@ export const StaffManagementPage: React.FC = () => {
                                   {staff.email ? ` · ${staff.email}` : ''}
                                 </div>
                               </td>
-                              <td className="py-3.5 pr-3 font-mono text-slate-700">
+                              <td
+                                data-label="Staff ID"
+                                className="py-3.5 pr-3 font-mono text-slate-700"
+                              >
                                 {staff.staffProfile?.staffId || (
-                                  <span className="text-slate-400 italic">—</span>
+                                  <span className="text-slate-500 italic">—</span>
                                 )}
                               </td>
-                              <td className="py-3.5 pr-3">
+                              <td data-label="System Role" className="py-3.5 pr-3">
                                 <RoleBadge role={staff.role} />
                               </td>
-                              <td className="py-3.5 pr-3">
+                              <td data-label="Registration" className="py-3.5 pr-3">
                                 {regDisplay ? (
                                   <span className="font-mono text-slate-800 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                                     {regDisplay}
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 italic">Optional / None</span>
+                                  <span className="text-slate-500 italic">Optional / None</span>
                                 )}
                               </td>
-                              <td className="py-3.5 pr-3">
+                              <td data-label="Account Status" className="py-3.5 pr-3">
                                 <div className="flex flex-col items-start gap-1">
                                   {staff.isActive ? (
                                     <span className="inline-flex items-center text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -578,10 +583,13 @@ export const StaffManagementPage: React.FC = () => {
                                   )}
                                 </div>
                               </td>
-                              <td className="py-3.5 pr-3 text-slate-600 whitespace-nowrap">
-                                {new Date(staff.createdAt).toLocaleDateString()}
+                              <td
+                                data-label="Created"
+                                className="py-3.5 pr-3 text-slate-600 whitespace-nowrap"
+                              >
+                                {formatColomboDate(staff.createdAt)}
                               </td>
-                              <td className="py-3.5 text-right">
+                              <td data-label="Actions" className="py-3.5 text-right">
                                 <div className="inline-flex items-center gap-1.5 flex-wrap justify-end">
                                   <Button
                                     variant="outline"
@@ -760,7 +768,7 @@ export const StaffManagementPage: React.FC = () => {
               />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
+                <table className="stack-table w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-semibold">
                       <th className="py-2.5 px-3">Clinician Name</th>
@@ -774,22 +782,25 @@ export const StaffManagementPage: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {wardRoster.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/60">
-                        <td className="py-2.5 px-3 font-medium text-slate-900">
+                        <td
+                          data-label="Clinician Name"
+                          className="py-2.5 px-3 font-medium text-slate-900"
+                        >
                           {item.user?.fullName}
-                          <div className="text-[11px] text-slate-400 font-mono">
+                          <div className="text-[11px] text-slate-500 font-mono">
                             @{item.user?.username}
                           </div>
                         </td>
-                        <td className="py-2.5 px-3">
+                        <td data-label="Role" className="py-2.5 px-3">
                           <RoleBadge role={item.user?.role || ''} />
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-slate-600">
+                        <td data-label="Staff ID" className="py-2.5 px-3 font-mono text-slate-600">
                           {item.userId.substring(0, 8)}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-600">
-                          {new Date(item.assignedAt).toLocaleDateString()}
+                        <td data-label="Assigned At" className="py-2.5 px-3 text-slate-600">
+                          {formatColomboDate(item.assignedAt)}
                         </td>
-                        <td className="py-2.5 px-3">
+                        <td data-label="Status" className="py-2.5 px-3">
                           <Badge
                             variant="outline"
                             className={
@@ -801,7 +812,7 @@ export const StaffManagementPage: React.FC = () => {
                             {item.isActive ? 'Active on Ward' : 'Ended'}
                           </Badge>
                         </td>
-                        <td className="py-2.5 px-3 text-right">
+                        <td data-label="Actions" className="py-2.5 px-3 text-right">
                           {item.isActive && (
                             <Button
                               variant="outline"
@@ -888,7 +899,7 @@ export const StaffManagementPage: React.FC = () => {
                   )
                   .map((u) => (
                     <option key={u.id} value={u.id}>
-                      {u.fullName} ({u.role}) — @{u.username}
+                      {u.fullName} ({roleLabel(u.role)}) — @{u.username}
                     </option>
                   ))}
               </select>

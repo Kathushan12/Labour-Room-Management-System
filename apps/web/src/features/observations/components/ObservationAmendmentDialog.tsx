@@ -13,6 +13,7 @@ import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, History, Loader2 } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface ObservationAmendmentDialogProps {
   isOpen: boolean;
@@ -114,11 +115,11 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
           {/* Type-specific editable fields */}
           <div className="space-y-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs">
             <div className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] mb-1">
-              Correct Observation Values ({observationType})
+              Correct Observation Values ({humanizeEnum(observationType)})
             </div>
 
             {observationType === ClinicalObservationType.MATERNAL && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label
                     htmlFor="amend-systolic-bp"
@@ -129,6 +130,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-systolic-bp"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.systolicBp ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -149,6 +151,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-diastolic-bp"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.diastolicBp ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -169,6 +172,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-pulse-rate"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.pulseRateBpm ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -189,6 +193,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-temperature"
                     type="number"
+                    inputMode="decimal"
                     step="0.1"
                     value={formValues.temperatureCelsius ?? ''}
                     onChange={(e) =>
@@ -206,26 +211,26 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
             {observationType === ClinicalObservationType.FETAL && (
               <div>
                 <Label htmlFor="amend-fhr" className="text-xs font-semibold text-slate-700">
-                  Fetal Heart Rate (bpm) *
+                  Fetal Heart Rate (bpm)
                 </Label>
                 <Input
                   id="amend-fhr"
                   type="number"
+                  inputMode="numeric"
                   value={formValues.fetalHeartRateBpm ?? ''}
                   onChange={(e) =>
                     handleFieldChange(
                       'fetalHeartRateBpm',
-                      e.target.value ? Number(e.target.value) : '',
+                      e.target.value ? Number(e.target.value) : null,
                     )
                   }
-                  required
                   className="text-sm mt-1"
                 />
               </div>
             )}
 
             {observationType === ClinicalObservationType.LABOUR_ASSESSMENT && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label
                     htmlFor="amend-cervical-dilation"
@@ -236,6 +241,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-cervical-dilation"
                     type="number"
+                    inputMode="decimal"
                     step="0.5"
                     value={formValues.cervicalDilationCm ?? ''}
                     onChange={(e) =>
@@ -257,6 +263,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-effacement"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.cervicalEffacementPercent ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -271,7 +278,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
             )}
 
             {observationType === ClinicalObservationType.CONTRACTION && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label
                     htmlFor="amend-contractions-count"
@@ -282,6 +289,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-contractions-count"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.contractionsCount ?? ''}
                     onChange={(e) =>
                       handleFieldChange(
@@ -299,6 +307,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
                   <Input
                     id="amend-duration"
                     type="number"
+                    inputMode="numeric"
                     value={formValues.durationSeconds ?? ''}
                     onChange={(e) =>
                       handleFieldChange(

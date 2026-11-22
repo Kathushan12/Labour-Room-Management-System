@@ -1,15 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
+import { env } from '../../config/env.js';
 
 interface RateLimitRecord {
   attempts: number;
   resetAt: number;
 }
 
+const WINDOW_MS = 15 * 60 * 1000;
+
+/**
+ * Per-IP throttle on failed logins. Per-account lockout (REQ-1.4) is persisted on the user
+ * row instead, so it survives restarts; losing this in-memory throttle on restart is harmless.
+ */
 class InMemoryRateLimiter {
   private ipRecords = new Map<string, RateLimitRecord>();
-  private userRecords = new Map<string, RateLimitRecord>();
 
-  // Cleanup expired entries periodically (every 5 minutes)
   constructor() {
     setInterval(
       () => {
@@ -26,78 +31,32 @@ class InMemoryRateLimiter {
         this.ipRecords.delete(key);
       }
     }
-    for (const [key, record] of this.userRecords.entries()) {
-      if (now > record.resetAt) {
-        this.userRecords.delete(key);
-      }
-    }
   }
 
-  public recordFailedAttempt(ip: string, username?: string, windowMs = 15 * 60 * 1000): void {
+  public recordFailedAttempt(ip: string): void {
     const now = Date.now();
-
-    // Record IP
     const ipRec = this.ipRecords.get(ip);
     if (!ipRec || now > ipRec.resetAt) {
-      this.ipRecords.set(ip, { attempts: 1, resetAt: now + windowMs });
+      this.ipRecords.set(ip, { attempts: 1, resetAt: now + WINDOW_MS });
     } else {
       ipRec.attempts += 1;
     }
-
-    // Record Username if present
-    if (username) {
-      const normalizedUser = username.toLowerCase().trim();
-      const userRec = this.userRecords.get(normalizedUser);
-      if (!userRec || now > userRec.resetAt) {
-        this.userRecords.set(normalizedUser, { attempts: 1, resetAt: now + windowMs });
-      } else {
-        userRec.attempts += 1;
-      }
-    }
-  }
-
-  public resetUser(username: string): void {
-    this.userRecords.delete(username.toLowerCase().trim());
   }
 
   public checkLimit(
     ip: string,
-    username?: string,
-    maxIpAttempts = 20,
-    maxUserAttempts = 5,
-  ): { limited: boolean; retryAfterSeconds?: number; reason?: string } {
+    maxIpAttempts = env.LOGIN_IP_MAX_FAILED_ATTEMPTS,
+  ): { limited: boolean; retryAfterSeconds?: number } {
     const now = Date.now();
-
-    // Check IP
     const ipRec = this.ipRecords.get(ip);
     if (ipRec && now < ipRec.resetAt && ipRec.attempts >= maxIpAttempts) {
-      const retryAfterSeconds = Math.ceil((ipRec.resetAt - now) / 1000);
-      return {
-        limited: true,
-        retryAfterSeconds,
-        reason: 'Too many requests from this IP address. Please try again later.',
-      };
+      return { limited: true, retryAfterSeconds: Math.ceil((ipRec.resetAt - now) / 1000) };
     }
-
-    // Check Username
-    if (username) {
-      const userRec = this.userRecords.get(username.toLowerCase().trim());
-      if (userRec && now < userRec.resetAt && userRec.attempts >= maxUserAttempts) {
-        const retryAfterSeconds = Math.ceil((userRec.resetAt - now) / 1000);
-        return {
-          limited: true,
-          retryAfterSeconds,
-          reason: 'Too many failed login attempts for this account. Please try again later.',
-        };
-      }
-    }
-
     return { limited: false };
   }
 
   public clearAll(): void {
     this.ipRecords.clear();
-    this.userRecords.clear();
   }
 }
 
@@ -108,17 +67,18 @@ export const authRateLimiter = new InMemoryRateLimiter();
  */
 export function loginRateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  const username = req.body?.username;
 
-  const result = authRateLimiter.checkLimit(ip, username);
+  const result = authRateLimiter.checkLimit(ip);
   if (result.limited) {
-    res.setHeader('Retry-After', result.retryAfterSeconds?.toString() || '60');
+    const retryAfterSeconds = result.retryAfterSeconds ?? 60;
+    const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
+    res.setHeader('Retry-After', retryAfterSeconds.toString());
     res.status(429).json({
       success: false,
       error: {
         code: 'TOO_MANY_REQUESTS',
-        message: result.reason || 'Too many requests. Please try again later.',
-        details: { retryAfterSeconds: result.retryAfterSeconds },
+        message: `Too many failed sign-in attempts from this device. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+        details: { retryAfterSeconds },
       },
       timestamp: new Date().toISOString(),
     });

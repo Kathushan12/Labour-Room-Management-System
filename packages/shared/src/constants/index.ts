@@ -9,6 +9,9 @@ export const SYSTEM_CONSTANTS = {
   DEFAULT_PORT: 4000,
 } as const;
 
+// REQ-1.3: applies to every password, including generated temporary ones.
+export const PASSWORD_MIN_LENGTH = 15;
+
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   [UserRole.ADMIN]: [
     Permission.WARDS_VIEW,
@@ -18,9 +21,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.BEDS_TOGGLE_FUNCTIONING,
     Permission.BEDS_MARK_OUT_OF_SERVICE,
     Permission.BEDS_MARK_CLEANED,
-    Permission.BEDS_ALLOCATE,
-    Permission.BEDS_TRANSFER,
-    Permission.BEDS_RELEASE,
     Permission.BEDS_CLEANING_START,
     Permission.BEDS_CLEANING_COMPLETE,
     Permission.USERS_VIEW,
@@ -102,7 +102,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.ALERTS_ACKNOWLEDGE,
     Permission.DISCHARGE_RECORD_OUTCOME,
     Permission.DISCHARGE_EXECUTE,
-    Permission.REPORTS_VIEW_AUDIT_LOGS,
     Permission.NOTIFICATIONS_VIEW,
     Permission.NOTIFICATIONS_MARK_READ,
     // Phase 12 Delivery, Newborn & Postpartum
@@ -125,7 +124,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.ANALYTICS_ALOS_VIEW,
     Permission.ANALYTICS_STAFFING_VIEW,
     Permission.ANALYTICS_ALERTS_VIEW,
-    Permission.ANALYTICS_EXPORT,
   ],
   [UserRole.NURSE_STAFF]: [
     Permission.WARDS_VIEW,
@@ -152,7 +150,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.SHIFTS_VIEW,
     Permission.HANDOVERS_CREATE,
     Permission.HANDOVERS_ACKNOWLEDGE,
-    Permission.OVERRIDES_EMERGENCY,
     Permission.OBSERVATIONS_VIEW,
     Permission.OBSERVATIONS_RECORD_BP,
     Permission.OBSERVATIONS_RECORD_GLUCOSE,
@@ -190,6 +187,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.APGAR_RECORD,
     Permission.POSTPARTUM_ASSESS,
     Permission.POSTPARTUM_VIEW,
+    Permission.POSTPARTUM_DISCHARGE_AUTHORIZE,
     // Phase 13 Operational Analytics & Reporting
     Permission.ANALYTICS_VIEW,
     Permission.ANALYTICS_ADMISSIONS_VIEW,
@@ -198,3 +196,26 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.ANALYTICS_STAFFING_VIEW,
   ],
 };
+
+// REQ-5.3: values outside these ranges are physiologically impossible and are rejected.
+export const OBSERVATION_LIMITS = {
+  systolicBp: { min: 50, max: 260 },
+  diastolicBp: { min: 20, max: 180 },
+  pulseRateBpm: { min: 30, max: 220 },
+  fetalHeartRateBpm: { min: 50, max: 220 },
+  bloodGlucoseMmolL: { min: 0.5, max: 50 },
+  bloodGlucoseMgDl: { min: 9, max: 900 },
+} as const;
+
+// REQ-5.4: values that are highlighted for staff. Display only; never triggers an alert (REQ-5.5).
+export const OBSERVATION_HIGHLIGHT = {
+  fetalHeartRateLow: 110,
+  fetalHeartRateHigh: 160,
+  systolicHigh: 140,
+  diastolicHigh: 90,
+  pulseLow: 60,
+  pulseHigh: 120,
+} as const;
+
+// REQ-5.8: an active-labour patient is due an FHR check when none was recorded for this long.
+export const FHR_OBSERVATION_DUE_MINUTES = 30;

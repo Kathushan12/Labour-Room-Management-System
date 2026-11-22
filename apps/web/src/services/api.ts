@@ -1,69 +1,22 @@
 import { env } from '../config/env.js';
-import {
-  ApiResponse,
-  HealthLiveResponse,
-  HealthReadyResponse,
-  RefreshResponse,
-} from '@lrms/shared';
-import {
-  getMemoryAccessToken,
-  getMemoryCsrfToken,
-  syncMemoryTokensFromInterceptor,
-} from '../context/AuthContext.js';
+import { ApiResponse, HealthLiveResponse, HealthReadyResponse } from '@lrms/shared';
+import { getAccessToken, getCsrfToken, refreshSession } from './auth-session.js';
 
 interface RequestOptions extends RequestInit {
   _retry?: boolean;
 }
 
-let refreshPromise: Promise<string | null> | null = null;
-
-async function executeTokenRefresh(): Promise<string | null> {
-  try {
-    const csrfToken = getMemoryCsrfToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    }
-
-    const res = await fetch(`${env.API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-    });
-
-    if (!res.ok) {
-      syncMemoryTokensFromInterceptor(null);
-      return null;
-    }
-
-    const body: ApiResponse<RefreshResponse> = await res.json();
-    if (body.success && body.data) {
-      syncMemoryTokensFromInterceptor(body.data);
-      return body.data.accessToken;
-    }
-
-    syncMemoryTokensFromInterceptor(null);
-    return null;
-  } catch {
-    syncMemoryTokensFromInterceptor(null);
-    return null;
-  } finally {
-    refreshPromise = null;
-  }
-}
-
 /**
- * Centralized authenticated API fetch wrapper with single-flight token refresh on HTTP 401.
+ * Centralized authenticated API fetch wrapper. On HTTP 401 it refreshes once (shared with
+ * other tabs) and retries; the session only ends if the server rejects the refresh.
  */
 export async function apiFetch<T = unknown>(
   endpoint: string,
   options: RequestOptions = {},
 ): Promise<ApiResponse<T>> {
   const url = endpoint.startsWith('http') ? endpoint : `${env.API_BASE_URL}${endpoint}`;
-  const token = getMemoryAccessToken();
-  const csrfToken = getMemoryCsrfToken();
+  const token = getAccessToken();
+  const csrfToken = getCsrfToken();
 
   const headers = new Headers(options.headers || {});
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
@@ -75,6 +28,17 @@ export async function apiFetch<T = unknown>(
   }
 
   const method = (options.method || 'GET').toUpperCase();
+  // SAF-3: no clinical changes are sent while offline (dialogs sit outside the disabled form).
+  if (method !== 'GET' && typeof navigator !== 'undefined' && !navigator.onLine) {
+    return {
+      success: false,
+      error: {
+        code: 'OFFLINE',
+        message: 'You are offline. Changes are disabled until the connection returns.',
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
   if (
     ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) &&
     csrfToken &&
@@ -89,24 +53,18 @@ export async function apiFetch<T = unknown>(
     credentials: 'include',
   });
 
-  // Handle HTTP 401 Unauthorized with single-flight refresh
   if (
     response.status === 401 &&
     !options._retry &&
     !endpoint.includes('/auth/login') &&
     !endpoint.includes('/auth/refresh')
   ) {
-    if (!refreshPromise) {
-      refreshPromise = executeTokenRefresh();
-    }
+    const outcome = await refreshSession(token);
 
-    const newAccessToken = await refreshPromise;
-
-    if (newAccessToken) {
-      // Retry original request with newly refreshed token
+    if (outcome.status === 'ok') {
       const retryHeaders = new Headers(options.headers || {});
-      retryHeaders.set('Authorization', `Bearer ${newAccessToken}`);
-      const refreshedCsrf = getMemoryCsrfToken();
+      retryHeaders.set('Authorization', `Bearer ${outcome.accessToken}`);
+      const refreshedCsrf = getCsrfToken();
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && refreshedCsrf) {
         retryHeaders.set('X-CSRF-Token', refreshedCsrf);
       }
@@ -118,7 +76,14 @@ export async function apiFetch<T = unknown>(
     }
   }
 
-  const data = (await response.json()) as ApiResponse<T>;
+  const data = (await response.json().catch(() => ({
+    success: false,
+    error: {
+      code: 'INVALID_RESPONSE',
+      message: `Unexpected response from server (HTTP ${response.status})`,
+    },
+    timestamp: new Date().toISOString(),
+  }))) as ApiResponse<T>;
   return data;
 }
 

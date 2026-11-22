@@ -5,7 +5,6 @@ import {
   BedFunctioningStatus,
   BedOccupancyStatus,
   CreateBedRequest,
-  Permission,
   UpdateBedMaintenanceRequest,
 } from '@lrms/shared';
 import { AppDataSource } from '../../config/database.js';
@@ -18,6 +17,7 @@ import { AuditLog } from '../../database/entities/AuditLog.js';
 import { RequestUser } from '../../common/middleware/auth.middleware.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../../common/errors/auth.errors.js';
 import { toBedCleaningRecordDto, toBedDto } from './bed.dto.js';
+import { emitBedUpdated } from '../realtime/realtime.server.js';
 import {
   findActiveAllocationForBed,
   findBedById,
@@ -27,28 +27,26 @@ import {
 } from './bed.repository.js';
 import { IsNull } from 'typeorm';
 
-export async function listBeds(wardId: string, actor: RequestUser): Promise<BedDto[]> {
+export async function listBeds(wardId: string, _actor: RequestUser): Promise<BedDto[]> {
   const beds = await findBedsByWard(wardId);
-  const canViewPii = actor.permissions.includes(Permission.PATIENTS_VIEW_PII);
 
   const dtos: BedDto[] = [];
   for (const bed of beds) {
     const activeAllocation = await findActiveAllocationForBed(bed.id);
     const lastCleaning = await findLastCleaningRecordForBed(bed.id);
-    dtos.push(toBedDto(bed, activeAllocation, lastCleaning, canViewPii));
+    dtos.push(toBedDto(bed, activeAllocation, lastCleaning));
   }
   return dtos;
 }
 
-export async function getBed(bedId: string, actor: RequestUser): Promise<BedDto> {
+export async function getBed(bedId: string, _actor: RequestUser): Promise<BedDto> {
   const bed = await findBedById(bedId);
   if (!bed) {
     throw new NotFoundError(`Bed not found with ID ${bedId}`, 'BED_NOT_FOUND');
   }
-  const canViewPii = actor.permissions.includes(Permission.PATIENTS_VIEW_PII);
   const activeAllocation = await findActiveAllocationForBed(bed.id);
   const lastCleaning = await findLastCleaningRecordForBed(bed.id);
-  return toBedDto(bed, activeAllocation, lastCleaning, canViewPii);
+  return toBedDto(bed, activeAllocation, lastCleaning);
 }
 
 export async function createBed(
@@ -130,7 +128,8 @@ export async function createBed(
     return bed;
   });
 
-  return toBedDto(savedBed, null, null, false);
+  emitBedUpdated(savedBed.wardId, savedBed.id);
+  return toBedDto(savedBed, null, null);
 }
 
 export async function updateBedMaintenance(
@@ -207,10 +206,10 @@ export async function updateBedMaintenance(
     return lockedBed;
   });
 
+  emitBedUpdated(savedBed.wardId, savedBed.id);
   const activeAllocation = await findActiveAllocationForBed(savedBed.id);
   const lastCleaning = await findLastCleaningRecordForBed(savedBed.id);
-  const canViewPii = actor.permissions.includes(Permission.PATIENTS_VIEW_PII);
-  return toBedDto(savedBed, activeAllocation, lastCleaning, canViewPii);
+  return toBedDto(savedBed, activeAllocation, lastCleaning);
 }
 
 export async function startBedCleaning(
@@ -281,8 +280,8 @@ export async function startBedCleaning(
   });
 
   const lastCleaning = await findLastCleaningRecordForBed(savedBed.id);
-  const canViewPii = actor.permissions.includes(Permission.PATIENTS_VIEW_PII);
-  return toBedDto(savedBed, null, lastCleaning, canViewPii);
+  emitBedUpdated(savedBed.wardId, savedBed.id);
+  return toBedDto(savedBed, null, lastCleaning);
 }
 
 export async function completeBedCleaning(
@@ -363,8 +362,8 @@ export async function completeBedCleaning(
   });
 
   const lastCleaning = await findLastCleaningRecordForBed(savedBed.id);
-  const canViewPii = actor.permissions.includes(Permission.PATIENTS_VIEW_PII);
-  return toBedDto(savedBed, null, lastCleaning, canViewPii);
+  emitBedUpdated(savedBed.wardId, savedBed.id);
+  return toBedDto(savedBed, null, lastCleaning);
 }
 
 export async function getBedCleaningHistory(bedId: string): Promise<BedCleaningRecordDto[]> {

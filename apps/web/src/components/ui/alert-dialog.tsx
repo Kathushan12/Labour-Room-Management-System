@@ -33,7 +33,7 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="h-auto max-h-[92vh] self-end rounded-t-xl sm:self-auto">
         <div className="flex items-start space-x-3">
           {destructive && (
             <div className="rounded-full bg-red-100 p-2 text-red-600">

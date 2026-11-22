@@ -64,6 +64,9 @@ export class Admission {
   @Column({ name: 'discharged_at', type: 'timestamptz', nullable: true })
   dischargedAt!: Date | null;
 
+  @Column({ name: 'gestation_weeks', type: 'smallint', nullable: true })
+  gestationWeeks!: number | null;
+
   @Column({ name: 'no_listed_risk_flags_confirmed', type: 'boolean', default: false })
   noListedRiskFlagsConfirmed!: boolean;
 

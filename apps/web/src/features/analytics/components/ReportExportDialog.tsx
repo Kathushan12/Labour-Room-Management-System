@@ -100,7 +100,7 @@ export const ReportExportDialog: React.FC<ReportExportDialogProps> = ({
   onClose,
   defaultReportType = OperationalReportType.DAILY_OPERATIONAL_SUMMARY,
   defaultPreset = AnalyticsDateRangePreset.THIS_MONTH,
-  defaultWardId = 'WARD-18',
+  defaultWardId,
 }) => {
   const [reportType, setReportType] = useState<OperationalReportType>(defaultReportType);
   const [format, setFormat] = useState<ExportFormat>(ExportFormat.CSV);

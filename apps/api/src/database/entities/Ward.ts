@@ -28,6 +28,9 @@ export class Ward {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
+  @Column({ name: 'alert_timeout_seconds', type: 'integer', default: 120 })
+  alertTimeoutSeconds!: number;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

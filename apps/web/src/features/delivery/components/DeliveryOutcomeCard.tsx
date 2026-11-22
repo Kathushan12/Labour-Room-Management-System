@@ -3,6 +3,8 @@ import { DeliveryDto, DeliveryMode, DeliveryStatus } from '@lrms/shared';
 import { Badge } from '../../../components/ui/badge.js';
 import { Button } from '../../../components/ui/button.js';
 import { Calendar, Clock, Edit2, CheckCircle2, Lock, AlertTriangle, UserCheck } from 'lucide-react';
+import { formatColomboDate, formatColomboDateTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface DeliveryOutcomeCardProps {
   delivery: DeliveryDto | null;
@@ -63,11 +65,11 @@ export const DeliveryOutcomeCard: React.FC<DeliveryOutcomeCardProps> = ({
                     : 'bg-amber-100 text-amber-800 border-amber-200'
                 }
               >
-                {delivery.status}
+                {humanizeEnum(delivery.status)}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Recorded on {new Date(delivery.createdAt).toLocaleDateString()} by{' '}
+              Recorded on {formatColomboDate(delivery.createdAt)} by{' '}
               {delivery.recordedByFullName || 'Clinical Staff'}
             </p>
           </div>
@@ -103,10 +105,10 @@ export const DeliveryOutcomeCard: React.FC<DeliveryOutcomeCardProps> = ({
           <span className="text-muted-foreground block mb-1">Delivery Time & Mode</span>
           <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-slate-100">
             <Clock className="w-3.5 h-3.5 text-teal-600" />
-            {new Date(delivery.deliveryTimestamp).toLocaleString()}
+            {formatColomboDateTime(delivery.deliveryTimestamp)}
           </div>
           <Badge variant="outline" className="mt-1 font-mono uppercase text-[10px]">
-            {delivery.deliveryMode.replace(/_/g, ' ')}
+            {humanizeEnum(delivery.deliveryMode)}
           </Badge>
         </div>
 

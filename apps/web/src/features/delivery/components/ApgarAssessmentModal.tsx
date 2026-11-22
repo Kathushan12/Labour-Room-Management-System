@@ -13,6 +13,8 @@ import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
 import { Badge } from '../../../components/ui/badge.js';
 import { AlertCircle, Award, CheckCircle2, Loader2 } from 'lucide-react';
+import { formatColomboTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface ApgarAssessmentModalProps {
   open: boolean;
@@ -150,7 +152,7 @@ export const ApgarAssessmentModal: React.FC<ApgarAssessmentModalProps> = ({
                     onClick={() => setMinute(m)}
                     className="h-7 text-xs font-mono"
                   >
-                    {m.replace(/_/g, ' ')}
+                    {humanizeEnum(m)}
                   </Button>
                 ))}
               </div>
@@ -372,9 +374,8 @@ export const ApgarAssessmentModal: React.FC<ApgarAssessmentModalProps> = ({
                       <option value="">-- Choose previous assessment --</option>
                       {existingAssessments.map((a) => (
                         <option key={a.id} value={a.id}>
-                          {a.assessmentMinute.replace(/_/g, ' ')} ({a.totalScore}/10) -{' '}
-                          {new Date(a.assessedAt).toLocaleTimeString()} by{' '}
-                          {a.assessedByFullName || 'Clinician'}
+                          {humanizeEnum(a.assessmentMinute)} ({a.totalScore}/10) -{' '}
+                          {formatColomboTime(a.assessedAt)} by {a.assessedByFullName || 'Clinician'}
                         </option>
                       ))}
                     </select>

@@ -4,6 +4,21 @@ import { ExportFormat, OperationalReportType } from '@lrms/shared';
 import { ResolvedDateRange } from './analytics.date-range.js';
 import { AnalyticsRepository } from './analytics.repository.js';
 
+// Reports show Asia/Colombo local time in 24-hour format.
+function formatColomboTime(iso: string | null): string {
+  if (!iso) return '';
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Colombo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date(iso));
+}
+
 export class ReportExportService {
   constructor(
     private readonly dataSource: DataSource,
@@ -399,6 +414,41 @@ export class ReportExportService {
             `${alerts.slaUnder3MinutesPercentage ?? 0}%`,
             'Target: < 180s',
           ],
+          ['Doctor Alerts Sent', alerts.alertReceipts.totalAlerts, 'N/A'],
+          [
+            'Delivered to Doctor Device',
+            alerts.alertReceipts.deliveredCount,
+            alerts.alertReceipts.averageSecondsToDelivered ?? 'N/A',
+          ],
+          [
+            'Acknowledged by Doctor',
+            alerts.alertReceipts.acknowledgedCount,
+            alerts.alertReceipts.averageSecondsToAcknowledged ?? 'N/A',
+          ],
+          ['Timed Out (doctor phoned)', alerts.alertReceipts.timedOutCount, 'N/A'],
+          [],
+          [
+            'Alert Ref',
+            'Admission Ref',
+            'Reason',
+            'Dispatched',
+            'Delivered',
+            'Acknowledged',
+            'Timed Out',
+            'Seconds to Delivered',
+            'Seconds to Acknowledged',
+          ],
+          ...alerts.alertReceipts.alerts.map((a) => [
+            a.escalationReferenceId,
+            a.admissionReferenceId,
+            a.reason ?? '',
+            formatColomboTime(a.dispatchedAt),
+            formatColomboTime(a.deliveredAt),
+            formatColomboTime(a.acknowledgedAt),
+            formatColomboTime(a.timedOutAt),
+            a.secondsToDelivered ?? '',
+            a.secondsToAcknowledged ?? '',
+          ]),
         ];
         return this.buildCsv(headers, rows);
       }

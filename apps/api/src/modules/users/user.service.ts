@@ -73,7 +73,7 @@ export async function createUser(
   ipAddress: string | null,
   requestId: string | null,
 ): Promise<CreateUserResponse> {
-  const temporaryPassword = generateTemporaryPassword(14);
+  const temporaryPassword = generateTemporaryPassword();
   const passwordHash = await hashPassword(temporaryPassword);
   const tempPasswordExpiresAt = new Date(
     Date.now() + env.TEMP_PASSWORD_EXPIRATION_HOURS * 60 * 60 * 1000,
@@ -476,7 +476,7 @@ export async function reissueTemporaryPassword(
     );
   }
 
-  const temporaryPassword = generateTemporaryPassword(14);
+  const temporaryPassword = generateTemporaryPassword();
   const passwordHash = await hashPassword(temporaryPassword);
   const tempPasswordExpiresAt = new Date(
     Date.now() + env.TEMP_PASSWORD_EXPIRATION_HOURS * 60 * 60 * 1000,
@@ -502,6 +502,8 @@ export async function reissueTemporaryPassword(
     user.passwordHash = passwordHash;
     user.mustChangePassword = true;
     user.temporaryPasswordExpiresAt = tempPasswordExpiresAt;
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
     await tm.save(user);
 
     // Revoke all active sessions so only the newly issued temporary password works

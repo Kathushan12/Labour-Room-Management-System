@@ -237,12 +237,35 @@ export interface ClinicalAlertAnalyticsDto {
   averageAcknowledgementLatencySeconds: number | null;
   medianAcknowledgementLatencySeconds: number | null;
   slaUnder3MinutesPercentage: number | null;
+  // REQ-9.3: proof-of-receipt figures for doctor alerts (one alert per escalation).
+  alertReceipts: {
+    totalAlerts: number;
+    deliveredCount: number;
+    acknowledgedCount: number;
+    timedOutCount: number;
+    averageSecondsToDelivered: number | null;
+    averageSecondsToAcknowledged: number | null;
+    alerts: AlertReceiptReportRow[];
+  };
   notificationOutboxStats: {
     totalEvents: number;
     processedEvents: number;
     pendingEvents: number;
     deadLetterEvents: number;
   };
+}
+
+export interface AlertReceiptReportRow {
+  escalationReferenceId: string;
+  admissionReferenceId: string;
+  bedNumber: string | null;
+  reason: string | null;
+  dispatchedAt: string;
+  deliveredAt: string | null;
+  acknowledgedAt: string | null;
+  timedOutAt: string | null;
+  secondsToDelivered: number | null;
+  secondsToAcknowledged: number | null;
 }
 
 export interface ReportMetadataDto {
@@ -261,4 +284,3 @@ export interface ExportReportQuery {
   endDate?: string;
   wardId?: string;
 }
-

@@ -1,8 +1,9 @@
 import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { env } from '../../config/env.js';
+import { webOriginCors } from '../../common/web-origin.js';
 import { authenticateSocket } from './realtime.auth.js';
 import { handleRoomJoin, handleRoomLeave } from './realtime.rooms.js';
+import { registerAlertHandlers } from './alert-socket.handlers.js';
 import { SocketEvent } from '@lrms/shared';
 import { logger } from '../../common/logging/logger.js';
 import { RequestUser } from '../../common/middleware/auth.middleware.js';
@@ -13,7 +14,7 @@ export function initRealtimeServer(httpServer: HttpServer): SocketIOServer {
   io = new SocketIOServer(httpServer, {
     path: '/socket.io',
     cors: {
-      origin: env.WEB_ORIGIN,
+      origin: webOriginCors,
       credentials: true,
       methods: ['GET', 'POST'],
     },
@@ -71,6 +72,8 @@ export function initRealtimeServer(httpServer: HttpServer): SocketIOServer {
       },
     );
 
+    registerAlertHandlers(socket);
+
     // Handle disconnection
     socket.on('disconnect', (reason: string) => {
       logger.info(
@@ -106,6 +109,12 @@ export function emitToUser(userId: string, event: SocketEvent, payload: unknown)
   return true;
 }
 
+export async function isUserOnline(userId: string): Promise<boolean> {
+  if (!io) return false;
+  const sockets = await io.in(`user:${userId}`).fetchSockets();
+  return sockets.length > 0;
+}
+
 export function emitToAdmission(
   admissionId: string,
   event: SocketEvent,
@@ -120,6 +129,15 @@ export function emitToWard(wardId: string, event: SocketEvent, payload: unknown)
   if (!io) return false;
   io.to(`ward:${wardId}`).emit(event, payload);
   return true;
+}
+
+// REQ-2.7: tells every open ward board to reload its beds. Carries no patient data.
+export function emitBedUpdated(wardId: string, bedId: string | null = null): boolean {
+  return emitToWard(wardId, SocketEvent.BED_UPDATED, {
+    wardId,
+    bedId,
+    at: new Date().toISOString(),
+  });
 }
 
 /**

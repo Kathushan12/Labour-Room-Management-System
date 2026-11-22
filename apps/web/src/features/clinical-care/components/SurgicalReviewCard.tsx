@@ -6,6 +6,8 @@ import { Badge } from '../../../components/ui/badge.js';
 import { SurgicalDecisionDialog } from './SurgicalDecisionDialog.js';
 import { SurgicalReadinessDialog } from './SurgicalReadinessDialog.js';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { formatColomboTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface SurgicalReviewCardProps {
   admissionId: string;
@@ -99,6 +101,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
             Request Urgent Obstetric Surgical Consultation
           </span>
           <textarea
+            aria-label="Clinical indication for surgical review"
             rows={2}
             value={indication}
             onChange={(e) => setIndication(e.target.value)}
@@ -158,11 +161,11 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                     </span>
                     {getDecisionBadge(sr.caesareanDecision)}
                     <Badge variant="outline" className="text-xs">
-                      {sr.status.replace(/_/g, ' ')}
+                      {humanizeEnum(sr.status)}
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Requested: {new Date(sr.createdAt).toLocaleTimeString()}
+                    Requested: {formatColomboTime(sr.createdAt)}
                   </span>
                 </div>
 
@@ -188,7 +191,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                       Anaesthetic Review:
                     </span>
                     <strong className="text-foreground">
-                      {sr.anaesthesiaReviewStatus.replace(/_/g, ' ')}
+                      {humanizeEnum(sr.anaesthesiaReviewStatus)}
                     </strong>
                     {sr.anaesthesiaNotes && (
                       <p className="text-muted-foreground text-[10px] mt-0.5">
@@ -202,11 +205,11 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                       Operating Theatre Readiness:
                     </span>
                     <strong className="text-foreground">
-                      {sr.theatreReadinessStatus.replace(/_/g, ' ')}
+                      {humanizeEnum(sr.theatreReadinessStatus)}
                     </strong>
                     {sr.theatreReadyAt && (
                       <span className="text-emerald-700 dark:text-emerald-400 text-[10px] block">
-                        Theatre Ready: {new Date(sr.theatreReadyAt).toLocaleTimeString()}
+                        Theatre Ready: {formatColomboTime(sr.theatreReadyAt)}
                       </span>
                     )}
                   </div>
@@ -226,7 +229,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                     )}
                     {sr.handedOverAt && (
                       <span className="text-emerald-700 dark:text-emerald-400 font-semibold ml-3">
-                        ✓ Handed over to Theatre at {new Date(sr.handedOverAt).toLocaleTimeString()}
+                        ✓ Handed over to Theatre at {formatColomboTime(sr.handedOverAt)}
                       </span>
                     )}
                   </div>

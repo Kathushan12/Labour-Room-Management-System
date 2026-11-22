@@ -20,6 +20,8 @@ import { Badge } from '../../../components/ui/badge.js';
 import { CarePlanTransitionDialog } from './CarePlanTransitionDialog.js';
 import { CarePlanAmendDialog } from './CarePlanAmendDialog.js';
 import { CarePlanReviewDialog } from './CarePlanReviewDialog.js';
+import { formatColomboDateTime, formatColomboTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface ClinicalCarePlanCardProps {
   admissionId: string;
@@ -153,13 +155,8 @@ export const ClinicalCarePlanCard: React.FC<ClinicalCarePlanCardProps> = ({
           )}
           <span>
             {isReviewOverdue
-              ? `Review Overdue! Was scheduled for ${new Date(
-                  plan.plannedReviewAt,
-                ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-              : `Next planned clinical review: ${new Date(plan.plannedReviewAt).toLocaleTimeString(
-                  [],
-                  { hour: '2-digit', minute: '2-digit' },
-                )}`}
+              ? `Review Overdue! Was scheduled for ${formatColomboTime(plan.plannedReviewAt)}`
+              : `Next planned clinical review: ${formatColomboTime(plan.plannedReviewAt)}`}
           </span>
         </div>
       )}
@@ -257,7 +254,7 @@ export const ClinicalCarePlanCard: React.FC<ClinicalCarePlanCardProps> = ({
                   <span className="font-mono font-bold mr-2">v{ver.versionNumber}</span>
                   <span className="font-medium mr-2">{ver.title}</span>
                   <span className="text-muted-foreground text-[11px]">
-                    ({new Date(ver.createdAt).toLocaleString()})
+                    ({formatColomboDateTime(ver.createdAt)})
                   </span>
                   {ver.changeReason && (
                     <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-1">
@@ -283,10 +280,10 @@ export const ClinicalCarePlanCard: React.FC<ClinicalCarePlanCardProps> = ({
               <div key={rev.id} className="p-2 border rounded bg-background space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <Badge variant="outline" className="text-[10px]">
-                    {rev.reviewOutcome.replace(/_/g, ' ')}
+                    {humanizeEnum(rev.reviewOutcome)}
                   </Badge>
                   <span className="text-muted-foreground">
-                    {new Date(rev.createdAt).toLocaleString()} by {rev.reviewedByUser?.fullName}
+                    {formatColomboDateTime(rev.createdAt)} by {rev.reviewedByUser?.fullName}
                   </span>
                 </div>
                 <p className="text-foreground text-[11px]">{rev.reviewNotes}</p>
