@@ -31,7 +31,7 @@ import {
 } from '../entities/index.js';
 import { RequestUser } from '../../common/middleware/auth.middleware.js';
 import { blindIndexService } from '../../common/crypto/blind-index.service.js';
-import { generateTemporaryPassword, hashPassword } from '../../common/crypto/password.service.js';
+import { hashPassword } from '../../common/crypto/password.service.js';
 import { createUser } from '../../modules/users/user.service.js';
 import { createBed, updateBedMaintenance } from '../../modules/beds/bed.service.js';
 import { updateWard } from '../../modules/wards/ward.service.js';
@@ -50,7 +50,6 @@ const WARD_CODE = 'WARD-18';
 const BED_COUNT = 7;
 const OUT_OF_SERVICE_BEDS = new Set(['BED-06', 'BED-07']);
 const DEMO_SHIFT_NAME = 'Demo Duty Shift';
-const PASSWORD_LENGTH = 18;
 
 interface StaffSpec {
   key: string;
@@ -61,6 +60,7 @@ interface StaffSpec {
   regBody: ProfessionalRegistrationBody;
   regNumber: string;
   contactNumber: string;
+  password: string;
 }
 
 const STAFF: StaffSpec[] = [
@@ -73,6 +73,7 @@ const STAFF: StaffSpec[] = [
     regBody: ProfessionalRegistrationBody.SLMC,
     regNumber: 'SLMC-DEMO-10231',
     contactNumber: '+94 77 123 4501',
+    password: 'Perera@Doctor2026',
   },
   {
     key: 'doctor2',
@@ -83,6 +84,7 @@ const STAFF: StaffSpec[] = [
     regBody: ProfessionalRegistrationBody.SLMC,
     regNumber: 'SLMC-DEMO-10477',
     contactNumber: '+94 71 123 4502',
+    password: 'Jayasinghe@Doctor2026',
   },
   {
     key: 'nurse1',
@@ -93,6 +95,7 @@ const STAFF: StaffSpec[] = [
     regBody: ProfessionalRegistrationBody.SLNC,
     regNumber: 'SLNC-DEMO-20311',
     contactNumber: '+94 76 123 4503',
+    password: 'Fernando@Nurse2026',
   },
   {
     key: 'nurse2',
@@ -103,6 +106,7 @@ const STAFF: StaffSpec[] = [
     regBody: ProfessionalRegistrationBody.SLNC,
     regNumber: 'SLNC-DEMO-20312',
     contactNumber: '+94 75 123 4504',
+    password: 'Silva@Nurse2026!',
   },
   {
     key: 'nurse3',
@@ -113,6 +117,7 @@ const STAFF: StaffSpec[] = [
     regBody: ProfessionalRegistrationBody.SLNC,
     regNumber: 'SLNC-DEMO-20313',
     contactNumber: '+94 70 123 4505',
+    password: 'Wickrama@Nurse2026',
   },
 ];
 
@@ -272,7 +277,7 @@ export interface DemoCredential {
   username: string;
   fullName: string;
   role: UserRole;
-  password: string | null;
+  password: string;
 }
 
 export interface DemoSeedResult {
@@ -316,14 +321,23 @@ async function loadAdmin(): Promise<User> {
 async function ensureStaff(
   spec: StaffSpec,
   admin: User,
-): Promise<{ user: User; password: string | null }> {
+): Promise<{ user: User; password: string }> {
   const repo = AppDataSource.getRepository(User);
   const existing = await repo.findOne({
     where: { username: ILike(spec.username) },
     relations: ['role'],
   });
+  const passwordHash = await hashPassword(spec.password);
+  const credentialReset = {
+    passwordHash,
+    mustChangePassword: false,
+    passwordChangedAt: new Date(),
+    temporaryPasswordExpiresAt: null,
+  };
+
   if (existing) {
-    return { user: existing, password: null };
+    await repo.update(existing.id, credentialReset);
+    return { user: existing, password: spec.password };
   }
 
   const created = await createUser(
@@ -341,18 +355,11 @@ async function ensureStaff(
     null,
   );
 
-  // createUser issues a 14-char temporary password that forces a change on first login;
-  // replace it with a longer one the demo can log in with directly.
-  const password = generateTemporaryPassword(PASSWORD_LENGTH);
-  await repo.update(created.user.id, {
-    passwordHash: await hashPassword(password),
-    mustChangePassword: false,
-    passwordChangedAt: new Date(),
-    temporaryPasswordExpiresAt: null,
-  });
+  // createUser issues a temporary password that forces a change; demo accounts use fixed ones.
+  await repo.update(created.user.id, credentialReset);
 
   const user = await repo.findOneOrFail({ where: { id: created.user.id }, relations: ['role'] });
-  return { user, password };
+  return { user, password: spec.password };
 }
 
 async function ensureBeds(ward: Ward, adminReq: RequestUser): Promise<Map<string, Bed>> {
@@ -582,6 +589,10 @@ async function ensureAdmission(
 }
 
 export async function seedDemoData(): Promise<DemoSeedResult> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Demo seed must not run in production.');
+  }
+
   const admin = await loadAdmin();
   const adminReq = toRequestUser(admin);
 

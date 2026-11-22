@@ -10,10 +10,9 @@ async function runSeed(): Promise<void> {
   const result = await seedDemoData();
   await AppDataSource.destroy();
 
-  console.log('\nDemo staff logins (passwords are shown only when the account is created):\n');
+  console.log('\nDemo staff logins (dev only, passwords reset on every run):\n');
   for (const c of result.credentials) {
-    const password = c.password ?? '(account already exists, password unchanged)';
-    console.log(`  ${c.role.padEnd(12)} ${c.username.padEnd(16)} ${password}   ${c.fullName}`);
+    console.log(`  ${c.role.padEnd(12)} ${c.username.padEnd(16)} ${c.password}   ${c.fullName}`);
   }
   console.log(`\nActive demo admissions: ${result.admissionReferenceIds.join(', ')}`);
 }
