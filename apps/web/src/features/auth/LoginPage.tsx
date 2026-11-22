@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import { Activity, Lock, User, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../../components/ui/button.js';
@@ -177,6 +177,12 @@ export const LoginPage: React.FC = () => {
             <p className="text-[10px] text-slate-400 mt-0.5">
               Argon2id · Asymmetric RS256 JWT · Role-Based Access Control
             </p>
+            <Link
+              to="/privacy"
+              className="inline-block mt-2 text-xs font-semibold text-teal-700 hover:underline"
+            >
+              Privacy notice
+            </Link>
           </div>
         </div>
       </div>

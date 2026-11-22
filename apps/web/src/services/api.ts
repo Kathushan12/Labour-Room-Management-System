@@ -28,6 +28,17 @@ export async function apiFetch<T = unknown>(
   }
 
   const method = (options.method || 'GET').toUpperCase();
+  // SAF-3: no clinical changes are sent while offline (dialogs sit outside the disabled form).
+  if (method !== 'GET' && typeof navigator !== 'undefined' && !navigator.onLine) {
+    return {
+      success: false,
+      error: {
+        code: 'OFFLINE',
+        message: 'You are offline. Changes are disabled until the connection returns.',
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
   if (
     ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) &&
     csrfToken &&

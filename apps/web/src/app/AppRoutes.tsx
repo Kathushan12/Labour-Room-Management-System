@@ -6,6 +6,7 @@ import { ProtectedRoute } from '../components/auth/ProtectedRoute.js';
 import { LoginPage } from '../features/auth/LoginPage.js';
 import { ChangePasswordPage } from '../features/auth/ChangePasswordPage.js';
 import { UnauthorizedPage } from '../features/auth/UnauthorizedPage.js';
+import { PrivacyNoticePage } from '../features/auth/PrivacyNoticePage.js';
 import { DashboardRouter } from '../features/dashboard/DashboardRouter.js';
 import { AdmissionsPage } from '../features/admissions/AdmissionsPage.js';
 import { AdmissionDetailPage } from '../features/admissions/AdmissionDetailPage.js';
@@ -37,6 +38,7 @@ export const AppRoutes: React.FC = () => {
       {/* Public Authentication Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      <Route path="/privacy" element={<PrivacyNoticePage />} />
 
       {/* Password Rotation / First-Login Password Change Gate */}
       <Route element={<ProtectedRoute allowPendingPasswordChange />}>
@@ -149,11 +151,14 @@ export const AppRoutes: React.FC = () => {
             }
           />
 
-          {/* Forensic Audit Logs (Admin & Doctor) */}
+          {/* Audit logs (Admin only, REQ-9.6) */}
           <Route
             path="/audit"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.DOCTOR]}>
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN]}
+                requiredPermission={Permission.REPORTS_VIEW_AUDIT_LOGS}
+              >
                 <AuditLogsPage />
               </ProtectedRoute>
             }

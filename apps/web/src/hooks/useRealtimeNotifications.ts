@@ -18,8 +18,8 @@ export function useSocketEvent<T>(event: SocketEvent, handler: (payload: T) => v
 }
 
 /**
- * Reloads screen data when an alert changes state (REQ-7.9) and after a reconnect, so missed
- * events are caught up. Joins the admission and/or ward room that carries alert:state.
+ * Reloads screen data when an alert changes state (REQ-7.9) or a bed changes (REQ-2.7), and after
+ * a reconnect, so missed events are caught up. Joins the admission and/or ward room that carries alert:state.
  */
 export function useAlertStateRefresh(
   reload: () => void,
@@ -41,6 +41,12 @@ export function useAlertStateRefresh(
 
   useSocketEvent<AlertStatePayload>(SocketEvent.ALERT_STATE, (payload) => {
     if (scope.admissionId && payload.admissionId !== scope.admissionId) return;
+    scheduleReload();
+  });
+
+  // REQ-2.7: bed changes reach every open ward board.
+  useSocketEvent<{ wardId: string }>(SocketEvent.BED_UPDATED, (payload) => {
+    if (scope.wardId && payload.wardId !== scope.wardId) return;
     scheduleReload();
   });
 

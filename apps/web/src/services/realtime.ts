@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { env } from '../config/env.js';
 import { SocketEvent } from '@lrms/shared';
-import { getAccessToken } from './auth-session.js';
+import { getAccessToken, refreshSession } from './auth-session.js';
 
 type SocketHandler = (...args: unknown[]) => void;
 
@@ -66,6 +66,8 @@ class RealtimeClient {
       if (reason === 'io server disconnect') {
         // Server revoked session or kicked client - do not reconnect automatically
         this.updateStatus('DISCONNECTED');
+        // REQ-1.9: a deactivated or revoked account is signed out here and in every tab.
+        void refreshSession(getAccessToken());
       } else {
         this.updateStatus('RECONNECTING');
       }

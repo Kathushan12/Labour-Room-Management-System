@@ -2,7 +2,8 @@ import React from 'react';
 import { Link, useInRouterContext } from 'react-router-dom';
 import { Menu, UserCircle2, LogOut, KeyRound } from 'lucide-react';
 import { UserRole } from '@lrms/shared';
-import { NetworkStatusIndicator } from '../status/NetworkStatusIndicator.js';
+import { LiveState, NetworkStatusIndicator } from '../status/NetworkStatusIndicator.js';
+import { HelpButton } from './HelpButton.js';
 import { ServiceStatusIndicator } from '../status/ServiceStatusIndicator.js';
 import { Button } from '../ui/button.js';
 import { Badge } from '../ui/badge.js';
@@ -13,6 +14,7 @@ interface AppHeaderProps {
   currentRole: UserRole;
   onRoleChange: (role: UserRole) => void;
   onMobileToggle: () => void;
+  liveState: LiveState;
   networkStatus: {
     browserOnline: boolean;
     apiConnected: boolean;
@@ -27,6 +29,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   currentRole,
   onRoleChange,
   onMobileToggle,
+  liveState,
   networkStatus,
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -61,7 +64,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       {/* Right: Network, Health, Role Switcher & Profile */}
       <div className="flex items-center space-x-3 sm:space-x-4">
         {/* Real Network Status */}
-        <NetworkStatusIndicator online={networkStatus.browserOnline} />
+        <NetworkStatusIndicator state={liveState} />
 
         {/* Real Backend & DB Status */}
         <div className="hidden sm:block">
@@ -93,6 +96,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
         )}
 
+        {inRouter && <HelpButton />}
+
         {/* Real-Time Notification Bell & Dropdown */}
         <NotificationBell />
 
@@ -101,8 +106,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs border border-slate-200">
             <UserCircle2 className="w-5 h-5 text-slate-600" />
           </div>
-          <div className="hidden xl:block text-left">
-            <p className="text-xs font-semibold text-slate-900 leading-tight">
+          <div className="text-left">
+            <p className="hidden sm:block text-xs font-semibold text-slate-900 leading-tight">
               {isAuthenticated && user
                 ? user.fullName
                 : currentRole === UserRole.ADMIN
