@@ -87,8 +87,8 @@ export const AuditLogsPage: React.FC = () => {
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
-        title="Forensic Security & Clinical Audit Trail"
-        description="Immutable audit trail of authentication events, patient admissions, PII decryption requests, and doctor escalations."
+        title="Security & Clinical Audit Log"
+        description="Record of sign-ins, patient admissions, identity detail access, and doctor escalations."
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Audit Logs', active: true },
@@ -102,7 +102,7 @@ export const AuditLogsPage: React.FC = () => {
         action={
           <Button variant="outline" size="sm" className="text-xs" onClick={handleExport}>
             <Download className="w-3.5 h-3.5 mr-1.5 text-slate-600" />
-            Export Forensic Audit Log
+            Export Audit Log
           </Button>
         }
       />

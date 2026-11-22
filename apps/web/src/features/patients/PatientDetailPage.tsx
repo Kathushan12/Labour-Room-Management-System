@@ -90,13 +90,13 @@ export const PatientDetailPage: React.FC = () => {
     try {
       const res = await revealPatientPii(patient.id);
       if (!res.success || !res.data) {
-        setPiiError(res.error?.message || 'PII disclosure denied.');
+        setPiiError(res.error?.message || 'You are not allowed to view identity details.');
         return;
       }
       setDisclosedPii(res.data);
       await loadPatient(); // Refresh audit history to show PATIENT_PII_ACCESSED event
     } catch {
-      setPiiError('Network error requesting audited PII decryption.');
+      setPiiError('Unable to load identity details. Please try again.');
     } finally {
       setRevealingPii(false);
     }
@@ -130,7 +130,7 @@ export const PatientDetailPage: React.FC = () => {
       });
 
       if (!res.success || !res.data) {
-        setEditError(res.error?.message || 'Unable to update encrypted patient identity.');
+        setEditError(res.error?.message || 'Unable to update patient identity details.');
         return;
       }
 
@@ -176,7 +176,7 @@ export const PatientDetailPage: React.FC = () => {
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
         title="Patient Master Record"
-        description="Stable patient UUID, server-audited AES-256-GCM identity envelope, and multi-admission history."
+        description="Patient reference, identity details, and admission history."
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Admissions', href: '/admissions' },
@@ -185,7 +185,7 @@ export const PatientDetailPage: React.FC = () => {
         badge={
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-300">
             <ShieldCheck className="w-3.5 h-3.5 mr-1 text-teal-700" />
-            AES-256-GCM ENCRYPTED PII
+            IDENTITY DETAILS PROTECTED
           </span>
         }
         action={
@@ -205,12 +205,11 @@ export const PatientDetailPage: React.FC = () => {
             <Lock className="w-5 h-5 text-teal-800 shrink-0 mt-0.5" />
             <div>
               <h3 className="text-sm font-bold text-teal-950">
-                Patient Identifiable Information (PII) Security Boundary
+                Patient identity details
               </h3>
               <p className="text-xs text-teal-800 mt-0.5">
-                Optional legal name, NIC, and contact number are encrypted at rest in PostgreSQL.
-                Decryption requires patient-level authorization and records an immutable{' '}
-                <code className="font-mono">PATIENT_PII_ACCESSED</code> audit entry.
+                Name, NIC, and contact number are optional and shown only to the care team. Each
+                time they are viewed, the access is recorded in the audit log.
               </p>
             </div>
           </div>
@@ -267,12 +266,12 @@ export const PatientDetailPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <SectionCard
-          title="Patient Identity Envelope"
-          description="Internal reference & encrypted demographic fields"
+          title="Patient Identity"
+          description="Patient reference and identity details"
         >
           <div className="space-y-3 text-xs">
             <div className="flex justify-between py-1.5 border-b border-slate-100">
-              <span className="text-slate-500">Patient UUID:</span>
+              <span className="text-slate-500">Patient reference:</span>
               <span className="font-mono text-[11px] font-semibold text-slate-900">
                 {patient.id}
               </span>
@@ -283,7 +282,7 @@ export const PatientDetailPage: React.FC = () => {
                 {disclosedPii
                   ? disclosedPii.fullName || 'Not recorded'
                   : patient.hasFullName
-                    ? '•••••••• (Encrypted)'
+                    ? '•••••••• (Hidden)'
                     : 'Not recorded'}
               </span>
             </div>
@@ -293,7 +292,7 @@ export const PatientDetailPage: React.FC = () => {
                 {disclosedPii
                   ? disclosedPii.nic || 'Not recorded'
                   : patient.hasNic
-                    ? '•••••••• (Encrypted)'
+                    ? '•••••••• (Hidden)'
                     : 'Not recorded'}
               </span>
             </div>
@@ -303,7 +302,7 @@ export const PatientDetailPage: React.FC = () => {
                 {disclosedPii
                   ? disclosedPii.contactPhone || 'Not recorded'
                   : patient.hasContactPhone
-                    ? '•••••••• (Encrypted)'
+                    ? '•••••••• (Hidden)'
                     : 'Not recorded'}
               </span>
             </div>
@@ -321,7 +320,7 @@ export const PatientDetailPage: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <SectionCard
             title="Authorized Admission History"
-            description="Labour room episodes linked to this patient UUID"
+            description="Labour room episodes linked to this patient"
           >
             {patient.admissions && patient.admissions.length > 0 ? (
               <div className="space-y-3">
@@ -385,7 +384,7 @@ export const PatientDetailPage: React.FC = () => {
 
           <SectionCard
             title="Patient Access & Audit History"
-            description="Immutable security and clinical metadata audit log (strictly free of plaintext PII)"
+            description="Security and clinical audit log (contains no identity details)"
           >
             {patient.auditHistory && patient.auditHistory.length > 0 ? (
               <div className="space-y-2 text-xs">
@@ -420,7 +419,7 @@ export const PatientDetailPage: React.FC = () => {
               Update Optional Patient Identity
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-600">
-              All fields are optional and immediately encrypted with AES-256-GCM before storage.
+              All fields are optional. Details are stored securely and shown only to the care team.
             </DialogDescription>
           </DialogHeader>
 
@@ -492,7 +491,7 @@ export const PatientDetailPage: React.FC = () => {
                 disabled={savingPii}
                 className="bg-teal-700 hover:bg-teal-800 text-white"
               >
-                {savingPii ? 'Encrypting & Saving...' : 'Save Encrypted Identity'}
+                {savingPii ? 'Saving...' : 'Save Identity Details'}
               </Button>
             </DialogFooter>
           </form>

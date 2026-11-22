@@ -174,9 +174,6 @@ export const LoginPage: React.FC = () => {
             <p className="text-[11px] text-slate-400">
               CO2307 - Software Engineering Project · Group 07
             </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">
-              Argon2id · Asymmetric RS256 JWT · Role-Based Access Control
-            </p>
             <Link
               to="/privacy"
               className="inline-block mt-2 text-xs font-semibold text-teal-700 hover:underline"

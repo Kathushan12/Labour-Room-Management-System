@@ -146,7 +146,7 @@ export const EmergencyAlertsPage: React.FC = () => {
       {/* 3-State Delivery Proof Explainer */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">
-          Three-State Proof-of-Receipt Lifecycle Protocol
+          Alert progress
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
           <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-start space-x-3">
@@ -154,8 +154,7 @@ export const EmergencyAlertsPage: React.FC = () => {
             <div>
               <span className="font-bold text-slate-800">1. Dispatched</span>
               <p className="text-[11px] text-slate-600 mt-0.5">
-                Outbox record committed and socket push stream broadcasted to assigned doctor
-                channel.
+                Alert sent to the attending doctor
               </p>
             </div>
           </div>
@@ -164,7 +163,7 @@ export const EmergencyAlertsPage: React.FC = () => {
             <div>
               <span className="font-bold text-blue-900">2. Delivered</span>
               <p className="text-[11px] text-blue-800 mt-0.5">
-                Doctor device received packet and sent automated transport ACK to the server.
+                Alert received on the doctor's device
               </p>
             </div>
           </div>
@@ -173,8 +172,7 @@ export const EmergencyAlertsPage: React.FC = () => {
             <div>
               <span className="font-bold text-emerald-900">3. Acknowledged</span>
               <p className="text-[11px] text-emerald-800 mt-0.5">
-                Doctor explicitly confirmed clinical review. Timestamp and doctor ID sealed in audit
-                trail.
+                Doctor confirmed and is responding
               </p>
             </div>
           </div>
@@ -296,8 +294,8 @@ export const EmergencyAlertsPage: React.FC = () => {
               <span>Escalate Clinical Emergency Alert</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-600">
-              Dispatches an immediate notification to the on-duty doctor device with transport
-              proof-of-receipt tracking.
+              Sends an immediate alert to the on-duty doctor and tracks when it is received and
+              acknowledged.
             </DialogDescription>
           </DialogHeader>
 

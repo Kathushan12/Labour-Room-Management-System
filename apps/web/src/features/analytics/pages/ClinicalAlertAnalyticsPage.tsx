@@ -248,12 +248,12 @@ export const ClinicalAlertAnalyticsPage: React.FC = () => {
                 </SectionCard>
 
                 <SectionCard
-                  title="Notification Outbox & Telemetry Health"
-                  description="Reliable delivery pipeline and dead-letter queue metrics"
+                  title="Alert Delivery Status"
+                  description="How many alerts were sent, delivered and are still waiting"
                 >
                   <div className="p-4 bg-slate-50 rounded-lg space-y-3 text-xs">
                     <div className="flex justify-between items-center py-1 border-b border-slate-200">
-                      <span className="text-slate-600 font-medium">Total Outbox Events</span>
+                      <span className="text-slate-600 font-medium">Total Alerts Sent</span>
                       <span className="font-bold text-slate-900">
                         {data.notificationOutboxStats.totalEvents}
                       </span>
@@ -272,7 +272,7 @@ export const ClinicalAlertAnalyticsPage: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center py-1">
                       <span className="text-slate-600 font-medium">
-                        Dead Letter Events (Failed)
+                        Failed Deliveries
                       </span>
                       <span className="font-bold text-slate-900">
                         {data.notificationOutboxStats.deadLetterEvents}

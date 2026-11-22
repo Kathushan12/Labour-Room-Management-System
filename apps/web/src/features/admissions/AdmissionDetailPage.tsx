@@ -331,7 +331,7 @@ export const AdmissionDetailPage: React.FC = () => {
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
         title={`Admission Record: ${admission.admissionReferenceId}`}
-        description="Server-generated admission reference, physical bed assignment, triage risk flags, intake metadata, and linked patient master file."
+        description="Admission reference, bed assignment, triage risk flags, intake details, and linked patient record."
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Admissions', href: '/admissions' },
@@ -367,7 +367,7 @@ export const AdmissionDetailPage: React.FC = () => {
         <StatCard
           title="Reference ID"
           value={admission.admissionReferenceId}
-          subtitle="Unique PostgreSQL sequence"
+          subtitle="Admission reference"
           icon={<FileText className="w-5 h-5 text-teal-600" />}
         />
         <StatCard
@@ -607,7 +607,7 @@ export const AdmissionDetailPage: React.FC = () => {
         <div className="space-y-6">
           <SectionCard
             title="Intake & Patient Reference"
-            description="Non-identifying admission metadata (PII guarded on Patient Master File)"
+            description="Non-identifying admission details (identity details are kept on the patient record)"
           >
             <div className="space-y-3 text-xs">
               <div className="flex justify-between py-1.5 border-b border-slate-100">
@@ -617,9 +617,9 @@ export const AdmissionDetailPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-500">Encrypted PII on File:</span>
+                <span className="text-slate-500">Identity details:</span>
                 <Badge variant="outline" className="text-[10px]">
-                  {admission.hasPii ? 'Yes (AES-256-GCM)' : 'Not Entered'}
+                  {admission.hasPii ? 'Recorded' : 'Not yet recorded'}
                 </Badge>
               </div>
               <div className="flex justify-between py-1.5 border-b border-slate-100">

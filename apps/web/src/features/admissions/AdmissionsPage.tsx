@@ -182,7 +182,7 @@ export const AdmissionsPage: React.FC = () => {
         description={
           isAdminDeidentifiedMode
             ? 'De-identified labour room admission summary register. Identifiable patient records remain restricted to authorized clinicians.'
-            : 'Centralized admission register, sequential reference ID assignment, clinical risk flag screening, and optional AES-256-GCM PII intake.'
+            : 'Admission register, reference ID assignment, clinical risk flag screening, and optional identity details.'
         }
         breadcrumbs={[
           { label: 'Home', href: '/' },
@@ -232,8 +232,8 @@ export const AdmissionsPage: React.FC = () => {
       {/* Authorized Blind-Index NIC Exact Lookup (clinicians only) */}
       <PermissionGuard permission={Permission.PATIENTS_VIEW_PII}>
         <SectionCard
-          title="Exact-Match Patient Lookup (HMAC-SHA256 Blind Index)"
-          description="Locate an authorized patient master record by exact NIC without storing or logging plaintext queries."
+          title="Exact-Match Patient Lookup"
+          description="Find an authorised patient record by exact NIC."
         >
           <form
             onSubmit={handleNicLookup}
@@ -286,7 +286,7 @@ export const AdmissionsPage: React.FC = () => {
       {/* Search, Filters & Register Table */}
       <SectionCard
         title="Admissions Register"
-        description="De-identified listing keyed by server-generated Admission Reference ID"
+        description="De-identified listing by Admission Reference ID"
       >
         <div className="space-y-4">
           <div className="space-y-3">
@@ -459,11 +459,11 @@ export const AdmissionsPage: React.FC = () => {
                                 className="text-[10px] bg-teal-50 text-teal-800 border-teal-200"
                               >
                                 <Lock className="w-2.5 h-2.5 mr-1" />
-                                Encrypted PII
+                                Identity recorded
                               </Badge>
                             ) : (
                               <span className="text-[11px] text-slate-400 italic">
-                                No PII entered
+                                No identity details
                               </span>
                             )}
                           </div>

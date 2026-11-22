@@ -66,7 +66,7 @@ export const AdminDashboard: React.FC = () => {
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
         title="Ward Administration Dashboard"
-        description="System overview, ward physical inventory, staff accounts, operational reports, and forensic audit logs."
+        description="System overview, ward physical inventory, staff accounts, operational reports, and audit logs."
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Admin Dashboard', active: true },
@@ -179,7 +179,7 @@ export const AdminDashboard: React.FC = () => {
               <Link to="/audit" className="block">
                 <Button variant="outline" className="w-full justify-start text-xs h-10">
                   <ShieldAlert className="w-4 h-4 mr-2 text-slate-500" />
-                  Forensic Security Audit Logs
+                  Security Audit Log
                 </Button>
               </Link>
             </div>

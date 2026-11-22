@@ -186,7 +186,7 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
               <Label className="text-xs">Attending Doctor ID *</Label>
               <Input
                 type="text"
-                placeholder="Doctor User UUID"
+                placeholder="Doctor staff ID"
                 value={attendingDoctorId}
                 onChange={(e) => setAttendingDoctorId(e.target.value)}
                 required
@@ -198,7 +198,7 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
               <Label className="text-xs">Responsible Midwife ID (Optional)</Label>
               <Input
                 type="text"
-                placeholder="Midwife User UUID"
+                placeholder="Midwife staff ID"
                 value={responsibleMidwifeId}
                 onChange={(e) => setResponsibleMidwifeId(e.target.value)}
                 className="h-8 text-xs font-mono"

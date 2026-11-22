@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, ArrowLeft, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../../components/ui/button.js';
-import { Badge } from '../../components/ui/badge.js';
 
 export const UnauthorizedPage: React.FC = () => {
   const { user, role, logout } = useAuth();
@@ -21,24 +20,22 @@ export const UnauthorizedPage: React.FC = () => {
           <ShieldAlert className="w-8 h-8" />
         </div>
 
-        <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-300 mb-2">
-          HTTP 403 Forbidden
-        </Badge>
-
-        <h1 className="text-xl font-bold text-slate-900 mt-1">Access Restricted</h1>
+        <h1 className="text-xl font-bold text-slate-900 mt-1">
+          You don't have access to this page
+        </h1>
         <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-          Your active staff session is authenticated, but your clinical role lacks authorization to
-          view or modify this module per the hospital Role-Permission policy.
+          Your role does not include access to this part of the system. Please return to the
+          dashboard or contact the ward administrator if you need access.
         </p>
 
         {user && (
           <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200 text-left text-xs space-y-1">
             <div className="flex justify-between">
-              <span className="text-slate-500">Authenticated Staff:</span>
+              <span className="text-slate-500">Signed in as:</span>
               <span className="font-semibold text-slate-800">{user.fullName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Active Role:</span>
+              <span className="text-slate-500">Role:</span>
               <span className="font-bold text-teal-700">{role}</span>
             </div>
           </div>

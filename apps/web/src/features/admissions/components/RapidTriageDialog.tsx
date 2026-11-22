@@ -249,7 +249,7 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
           setDuplicateMatchPrompt(true);
           setApiError(
             res.error.message ||
-              'Existing historical patient matches this NIC. Confirm linking below to proceed without overwriting stored PII.',
+              'Existing historical patient matches this NIC. Confirm linking below to proceed without overwriting the stored identity details.',
           );
         } else {
           setApiError(res.error?.message || 'Unable to complete rapid triage admission.');
@@ -277,8 +277,8 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
             <span>Rapid Patient Triage &amp; Admission</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-600">
-            Immediate point-of-care registration. Backend generates a unique Admission Reference ID
-            and encrypts optional patient identity details via AES-256-GCM.
+            Register the mother quickly. Only the clinical details are required; identity details
+            can be added later.
           </DialogDescription>
         </DialogHeader>
 
@@ -575,11 +575,10 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
                   <Lock className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-slate-900">
-                      3. Patient Identity Details (Optional — leave blank if urgent)
+                      3. Identity details (optional)
                     </p>
                     <p className="text-[11px] text-slate-500">
-                      Any details entered here are encrypted with AES-256-GCM at rest. Triage can
-                      proceed immediately with zero personal information.
+                      Stored securely and shown only to the care team.
                     </p>
                   </div>
                 </div>

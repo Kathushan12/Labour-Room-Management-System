@@ -215,12 +215,12 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Delivering Clinician UUID *</Label>
+            <Label className="text-xs">Delivering Clinician ID *</Label>
             <Input
               type="text"
               value={deliveredByUserId}
               onChange={(e) => setDeliveredByUserId(e.target.value)}
-              placeholder="Doctor or Midwife User UUID"
+              placeholder="Doctor or midwife staff ID"
               required
               className="h-8 text-xs font-mono"
             />

@@ -4,7 +4,6 @@ import { Menu, UserCircle2, LogOut, KeyRound } from 'lucide-react';
 import { UserRole } from '@lrms/shared';
 import { LiveState, NetworkStatusIndicator } from '../status/NetworkStatusIndicator.js';
 import { HelpButton } from './HelpButton.js';
-import { ServiceStatusIndicator } from '../status/ServiceStatusIndicator.js';
 import { Button } from '../ui/button.js';
 import { Badge } from '../ui/badge.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -65,17 +64,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <div className="flex items-center space-x-3 sm:space-x-4">
         {/* Real Network Status */}
         <NetworkStatusIndicator state={liveState} />
-
-        {/* Real Backend & DB Status */}
-        <div className="hidden sm:block">
-          <ServiceStatusIndicator
-            apiConnected={networkStatus.apiConnected}
-            dbReady={networkStatus.dbReady}
-            loading={networkStatus.loading}
-            dbLatencyMs={networkStatus.dbLatencyMs}
-            onRefresh={networkStatus.refresh}
-          />
-        </div>
 
         {/* Development-Only Role Preview Switcher (hidden when genuinely signed in) */}
         {import.meta.env.DEV && !isAuthenticated && (
