@@ -20,6 +20,9 @@ import { Badge } from '../../../components/ui/badge.js';
 import { EscalationDetailModal } from './EscalationDetailModal.js';
 import { EscalationCreateDialog } from './EscalationCreateDialog.js';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { useAuth } from '../../../hooks/useAuth.js';
+import { formatColomboTime } from '../../../lib/datetime.js';
+import { AlertReceiptStepper } from '../../alerts/components/AlertReceiptStepper.js';
 
 interface ClinicalEscalationPanelProps {
   admissionId: string;
@@ -32,6 +35,7 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
   escalations,
   onRefresh,
 }) => {
+  const { user } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedEscalation, setSelectedEscalation] = useState<ClinicalEscalationDto | null>(null);
   const [ackingId, setAckingId] = useState<string | null>(null);
@@ -152,20 +156,17 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
                   <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground pt-1">
                     <span>Initiated by: {esc.initiatedByUser?.fullName}</span>
                     <span>
-                      Assignee:{' '}
-                      <strong>{esc.assignedRecipientUser?.fullName || 'On-call Doctor'}</strong>
+                      Doctor:{' '}
+                      <strong>{esc.assignedRecipientUser?.fullName || 'No doctor assigned'}</strong>
                     </span>
-                    <span>
-                      {new Date(esc.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                    <span>{formatColomboTime(esc.createdAt)}</span>
                   </div>
+
+                  <AlertReceiptStepper alert={esc} className="pt-2 max-w-md" />
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-center">
-                  {isOpen && (
+                  {isOpen && esc.assignedRecipientUserId === user?.id && (
                     <Button
                       size="sm"
                       variant="outline"

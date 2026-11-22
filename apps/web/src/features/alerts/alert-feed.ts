@@ -10,9 +10,12 @@ export function isPendingAlert(item: EscalationFeedItemDto): boolean {
   return item.status === EscalationStatus.OPEN && item.acknowledgedAt === null;
 }
 
-// Per-device delivery is not recorded on escalations, so only Dispatched/Acknowledged are shown.
 export function receiptStateOf(item: EscalationFeedItemDto): AlertReceiptState {
-  return item.acknowledgedAt ? AlertReceiptState.ACKNOWLEDGED : AlertReceiptState.DISPATCHED;
+  return item.alertState;
+}
+
+export function isTimedOutAlert(item: EscalationFeedItemDto): boolean {
+  return isPendingAlert(item) && item.timedOutAt !== null;
 }
 
 export function severityOf(item: EscalationFeedItemDto): AlertSeverity {

@@ -19,7 +19,9 @@ import { PermissionGuard } from '../../components/auth/PermissionGuard.js';
 import { clinicalCareApi } from '../../services/clinical-care.api.js';
 import { useClinicalDashboardData } from '../dashboard/useClinicalDashboardData.js';
 import { categoryLabel, isPendingAlert, receiptStateOf, severityOf } from './alert-feed.js';
-import { formatColomboTime } from '../../lib/datetime.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { useAlertStateRefresh } from '../../hooks/useRealtimeNotifications.js';
+import { AlertReceiptStepper } from './components/AlertReceiptStepper.js';
 
 const ALERT_TYPE_OPTIONS: { value: EscalationCategory; label: string }[] = [
   { value: EscalationCategory.FETAL, label: 'Fetal Heart Rate Deceleration / Distress' },
@@ -37,7 +39,10 @@ const errorMessage = (err: unknown, fallback: string): string =>
     ?.message || fallback;
 
 export const EmergencyAlertsPage: React.FC = () => {
-  const { admissions, alerts, loading, error, reload } = useClinicalDashboardData();
+  const { user } = useAuth();
+  const { admissions, alerts, loading, error, wardId, reload, refresh } =
+    useClinicalDashboardData();
+  useAlertStateRefresh(refresh, { wardId });
   const [filter, setFilter] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
   const [isEscalateOpen, setIsEscalateOpen] = useState<boolean>(false);
@@ -246,37 +251,30 @@ export const EmergencyAlertsPage: React.FC = () => {
 
                   <p className="text-xs text-slate-800 mt-2 font-medium">{alert.clinicalReason}</p>
 
-                  <div className="mt-3 pt-3 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-500">
-                    <div className="space-x-4">
-                      <span>
-                        Dispatched:{' '}
-                        <strong className="text-slate-700">
-                          {formatColomboTime(alert.createdAt)}
+                  <div className="mt-3 pt-3 border-t border-slate-200/60 flex flex-col lg:flex-row lg:items-start justify-between gap-3 text-[11px] text-slate-600">
+                    <div className="flex-1 max-w-xl space-y-1">
+                      <p>
+                        Doctor:{' '}
+                        <strong className="text-slate-800">
+                          {alert.assignedRecipientUser?.fullName ?? 'No doctor assigned'}
                         </strong>
-                      </span>
-                      {alert.acknowledgedAt && (
-                        <span>
-                          Acknowledged:{' '}
-                          <strong className="text-emerald-800">
-                            {formatColomboTime(alert.acknowledgedAt)} by{' '}
-                            {alert.acknowledgedByUser?.fullName ?? 'Doctor'}
-                          </strong>
-                        </span>
-                      )}
+                        {alert.acknowledgedAt && alert.acknowledgedByUser && (
+                          <> · acknowledged by {alert.acknowledgedByUser.fullName}</>
+                        )}
+                      </p>
+                      <AlertReceiptStepper alert={alert} />
                     </div>
 
-                    {isPending && (
-                      <PermissionGuard permission={Permission.ESCALATIONS_ACKNOWLEDGE}>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleAcknowledge(alert.admissionId, alert.id)}
-                          className="text-xs font-semibold h-7 px-3"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                          Acknowledge Alert as Attending Doctor
-                        </Button>
-                      </PermissionGuard>
+                    {isPending && alert.assignedRecipientUserId === user?.id && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleAcknowledge(alert.admissionId, alert.id)}
+                        className="text-xs font-semibold min-h-[44px] px-4"
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-1" />
+                        Acknowledge
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -348,8 +346,9 @@ export const EmergencyAlertsPage: React.FC = () => {
             <div className="rounded-md bg-red-50 border border-red-200 p-2.5 text-[11px] text-red-900">
               <strong>Emergency Notification Channel: </strong>
               <span>
-                Dispatches to primary attending doctor and duty obstetric registrar. Escalation
-                timers track 3-minute acknowledge SLA.
+                Sent to the attending doctor (or the on-duty ward doctor). If it is not
+                acknowledged within the ward alert timeout, this screen shows TIMED-OUT with the
+                doctor's phone number.
               </span>
             </div>
 

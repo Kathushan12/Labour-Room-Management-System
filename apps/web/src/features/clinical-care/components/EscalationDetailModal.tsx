@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { ClinicalEscalationDto, EscalationStatus } from '@lrms/shared';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { useAuth } from '../../../hooks/useAuth.js';
+import { AlertReceiptStepper } from '../../alerts/components/AlertReceiptStepper.js';
 
 interface EscalationDetailModalProps {
   admissionId: string;
@@ -38,6 +40,7 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
   onClose,
   onUpdated,
 }) => {
+  const { user } = useAuth();
   const [actionTab, setActionTab] = useState<'view' | 'resolve' | 'transition'>('view');
   const [responseNotes, setResponseNotes] = useState('');
   const [closureReason, setClosureReason] = useState('');
@@ -195,6 +198,8 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
             </div>
           )}
 
+          <AlertReceiptStepper alert={escalation} className="p-3 border rounded-md" />
+
           {/* Timeline History */}
           {escalation.history && escalation.history.length > 0 && (
             <div className="p-3 bg-muted/30 border rounded-md space-y-2">
@@ -228,7 +233,8 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
           {!isTerminal && (
             <div className="border-t pt-3 space-y-3">
               <div className="flex gap-2">
-                {escalation.status === EscalationStatus.OPEN && (
+                {escalation.status === EscalationStatus.OPEN &&
+                  escalation.assignedRecipientUserId === user?.id && (
                   <Button
                     type="button"
                     size="sm"

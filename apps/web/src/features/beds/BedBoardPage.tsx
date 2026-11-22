@@ -13,6 +13,8 @@ import {
   WardDto,
 } from '@lrms/shared';
 import { BedStatusBadge, AdmissionCategoryBadge } from '../../components/status/Badges.js';
+import { useAlertStateRefresh } from '../../hooks/useRealtimeNotifications.js';
+import { BedAlertStatus } from '../alerts/components/BedAlertStatus.js';
 import { Button } from '../../components/ui/button.js';
 import { Input } from '../../components/ui/input.js';
 import { Label } from '../../components/ui/label.js';
@@ -112,9 +114,9 @@ export const BedBoardPage: React.FC = () => {
   }, []);
 
   // Load Bed Board for Active Ward
-  const loadBedBoard = useCallback(async (wardId: string) => {
+  const loadBedBoard = useCallback(async (wardId: string, quiet = false) => {
     if (!wardId) return;
-    setLoading(true);
+    if (!quiet) setLoading(true);
     setActionError(null);
     try {
       const res = await fetchWardBedBoard(wardId);
@@ -139,6 +141,11 @@ export const BedBoardPage: React.FC = () => {
       loadBedBoard(activeWardId);
     }
   }, [activeWardId, loadBedBoard]);
+
+  const refreshBedBoard = useCallback(() => {
+    if (activeWardId) void loadBedBoard(activeWardId, true);
+  }, [activeWardId, loadBedBoard]);
+  useAlertStateRefresh(refreshBedBoard, { wardId: activeWardId });
 
   // Dynamic KPI counts (never hardcoded)
   const totalBeds = beds.length;
@@ -648,6 +655,8 @@ export const BedBoardPage: React.FC = () => {
                                 ))}
                               </div>
                             )}
+
+                          {bed.activeAlert && <BedAlertStatus alert={bed.activeAlert} />}
 
                           {bed.currentAllocation?.allocatedAt && (
                             <div className="text-[10px] text-teal-700 pt-0.5">
