@@ -20,10 +20,11 @@ import {
   ShieldCheck,
   User,
 } from 'lucide-react';
-import { ClinicalEscalationDto, EscalationStatus } from '@lrms/shared';
+import { ClinicalEscalationDto, EscalationStatus, UserRole } from '@lrms/shared';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { AlertReceiptStepper } from '../../alerts/components/AlertReceiptStepper.js';
+import { formatColomboDateTime, formatColomboTime } from '../../../lib/datetime.js';
 
 interface EscalationDetailModalProps {
   admissionId: string;
@@ -48,6 +49,38 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
   const [targetStatus, setTargetStatus] = useState<EscalationStatus>(EscalationStatus.UNDER_REVIEW);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [reverseReason, setReverseReason] = useState('');
+  const [confirmReverse, setConfirmReverse] = useState(false);
+
+  // REQ-6.6: only a doctor reverses an emergency escalation, with a reason.
+  const canReverse =
+    user?.role === UserRole.DOCTOR && Boolean(escalation.reason) && !escalation.reversedAt;
+
+  const handleReverse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (reverseReason.trim().length < 5) {
+      setErrorMsg('Give a reason of at least 5 characters for the reversal.');
+      return;
+    }
+    if (!confirmReverse) {
+      setConfirmReverse(true);
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      await clinicalCareApi.reverseEscalation(admissionId, escalation.id, {
+        reason: reverseReason.trim(),
+      });
+      onUpdated();
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.error?.message || err.message);
+      setConfirmReverse(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const isTerminal =
     escalation.status === EscalationStatus.RESOLVED ||
@@ -153,7 +186,7 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
               </Badge>
             </div>
             <span className="text-[11px] text-muted-foreground">
-              Logged: {new Date(escalation.createdAt).toLocaleString()}
+              Logged: {formatColomboDateTime(escalation.createdAt)}
             </span>
           </div>
 
@@ -177,13 +210,13 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
             {escalation.acknowledgedAt && (
               <div>
                 Acknowledged:{' '}
-                <strong>{new Date(escalation.acknowledgedAt).toLocaleTimeString()}</strong> by{' '}
+                <strong>{formatColomboTime(escalation.acknowledgedAt)}</strong> by{' '}
                 {escalation.acknowledgedByUser?.fullName}
               </div>
             )}
             {escalation.resolvedAt && (
               <div>
-                Resolved: <strong>{new Date(escalation.resolvedAt).toLocaleTimeString()}</strong> by{' '}
+                Resolved: <strong>{formatColomboTime(escalation.resolvedAt)}</strong> by{' '}
                 {escalation.resolvedByUser?.fullName}
               </div>
             )}
@@ -199,6 +232,37 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
           )}
 
           <AlertReceiptStepper alert={escalation} className="p-3 border rounded-md" />
+
+          {escalation.reversedAt && (
+            <div className="p-3 bg-slate-50 border rounded-md text-[11px]">
+              <strong>Escalation reversed</strong> {formatColomboDateTime(escalation.reversedAt)}:{' '}
+              {escalation.reversalReason}
+            </div>
+          )}
+
+          {canReverse && (
+            <form onSubmit={handleReverse} className="p-3 border rounded-md space-y-2 bg-muted/20">
+              <Label htmlFor="esc-reverse-reason">Reverse escalation (doctor)</Label>
+              <Input
+                id="esc-reverse-reason"
+                value={reverseReason}
+                onChange={(e) => {
+                  setReverseReason(e.target.value);
+                  setConfirmReverse(false);
+                }}
+                placeholder="Reason, e.g. CTG recovered after repositioning"
+                className="text-xs"
+              />
+              {confirmReverse && (
+                <p role="alert" className="text-[11px] text-red-800">
+                  Confirm: return this patient to the previous care plan?
+                </p>
+              )}
+              <Button type="submit" size="sm" variant="outline" disabled={loading}>
+                {confirmReverse ? 'Confirm Reversal' : 'Reverse Escalation'}
+              </Button>
+            </form>
+          )}
 
           {/* Timeline History */}
           {escalation.history && escalation.history.length > 0 && (
@@ -221,7 +285,7 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
                       {h.notes && <p className="text-muted-foreground mt-0.5">{h.notes}</p>}
                     </div>
                     <span className="text-muted-foreground whitespace-nowrap">
-                      {new Date(h.createdAt).toLocaleTimeString()} · {h.changedByUser?.fullName}
+                      {formatColomboTime(h.createdAt)} · {h.changedByUser?.fullName}
                     </span>
                   </div>
                 ))}

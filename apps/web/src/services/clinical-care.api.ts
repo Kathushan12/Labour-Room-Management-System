@@ -18,6 +18,7 @@ import {
   RecordCarePlanReviewRequest,
   RecordSurgicalDecisionRequest,
   ResolveEscalationRequest,
+  ReverseEscalationRequest,
   SurgicalReviewDto,
   TransitionCarePlanRequest,
   TransitionEmergencyResponseRequest,
@@ -179,6 +180,18 @@ export const clinicalCareApi = {
   ): Promise<ClinicalEscalationDto> => {
     const res = await api.post<{ success: boolean; data: ClinicalEscalationDto }>(
       `/admissions/${admissionId}/escalations/${escalationId}/transition`,
+      payload,
+    );
+    return res.data.data;
+  },
+
+  reverseEscalation: async (
+    admissionId: string,
+    escalationId: string,
+    payload: ReverseEscalationRequest,
+  ): Promise<ClinicalEscalationDto> => {
+    const res = await api.post<{ success: boolean; data: ClinicalEscalationDto }>(
+      `/admissions/${admissionId}/escalations/${escalationId}/reverse`,
       payload,
     );
     return res.data.data;

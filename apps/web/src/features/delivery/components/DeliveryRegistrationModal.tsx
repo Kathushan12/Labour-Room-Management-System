@@ -31,7 +31,7 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
   const isEditing = Boolean(existingDelivery);
 
   const [deliveryTimestamp, setDeliveryTimestamp] = useState('');
-  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>(DeliveryMode.SPONTANEOUS_VAGINAL);
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>(DeliveryMode.NORMAL);
   const [deliveryLocation, setDeliveryLocation] = useState('Ward 18 - Labour Room');
   const [attendingDoctorId, setAttendingDoctorId] = useState('');
   const [responsibleMidwifeId, setResponsibleMidwifeId] = useState('');
@@ -66,7 +66,7 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
       setAmendmentReason('');
     } else {
       setDeliveryTimestamp(new Date().toISOString().slice(0, 16));
-      setDeliveryMode(DeliveryMode.SPONTANEOUS_VAGINAL);
+      setDeliveryMode(DeliveryMode.NORMAL);
       setDeliveryLocation('Ward 18 - Labour Room');
       setAttendingDoctorId(attendingStaffList[0]?.id || '');
       setResponsibleMidwifeId('');
@@ -174,16 +174,9 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
                 onChange={(e) => setDeliveryMode(e.target.value as DeliveryMode)}
                 className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs"
               >
-                <option value={DeliveryMode.SPONTANEOUS_VAGINAL}>
-                  Spontaneous Vaginal Delivery (SVD)
-                </option>
-                <option value={DeliveryMode.ASSISTED_VACUUM}>Assisted - Vacuum Extraction</option>
-                <option value={DeliveryMode.ASSISTED_FORCEPS}>Assisted - Forceps Delivery</option>
-                <option value={DeliveryMode.EMERGENCY_CESAREAN}>
-                  Emergency Cesarean Section (Cat 1/2)
-                </option>
-                <option value={DeliveryMode.ELECTIVE_CESAREAN}>Elective Cesarean Section</option>
-                <option value={DeliveryMode.BREECH_VAGINAL}>Assisted Vaginal Breech</option>
+                <option value={DeliveryMode.NORMAL}>Normal</option>
+                <option value={DeliveryMode.ASSISTED}>Assisted</option>
+                <option value={DeliveryMode.CESAREAN}>Cesarean</option>
               </select>
             </div>
           </div>

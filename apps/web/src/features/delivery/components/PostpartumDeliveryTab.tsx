@@ -31,6 +31,7 @@ import { NewbornDischargeModal } from './NewbornDischargeModal.js';
 import { Button } from '../../../components/ui/button.js';
 import { Badge } from '../../../components/ui/badge.js';
 import { AlertCircle, Baby, CheckCircle2, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
+import { formatColomboDateTime } from '../../../lib/datetime.js';
 
 interface PostpartumDeliveryTabProps {
   admissionId: string;
@@ -83,6 +84,8 @@ export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
   const canRecordApgar = canClinical;
   const canAssessPostpartum = canClinical;
   const canAuthorizeDischarge = isDoctor;
+  // REQ-8.3: the assigned nurse or doctor discharges or transfers the mother.
+  const canDischargeMother = canClinical;
 
   const loadData = useCallback(async () => {
     try {
@@ -230,14 +233,14 @@ export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
             Refresh
           </Button>
 
-          {canAuthorizeDischarge && delivery && !maternalDischarge && (
+          {canDischargeMother && !maternalDischarge && (
             <Button
               size="sm"
               onClick={() => setMaternalDischargeOpen(true)}
               className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Authorize Maternal Discharge
+              Discharge / Transfer
             </Button>
           )}
         </div>
@@ -261,7 +264,7 @@ export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
               </span>
               <p className="text-emerald-800 dark:text-emerald-300 mt-0.5">
                 Authorized by {maternalDischarge.authorizedByDoctorFullName || 'Attending Doctor'}{' '}
-                on {new Date(maternalDischarge.dischargedAt).toLocaleString()} · Condition:{' '}
+                on {formatColomboDateTime(maternalDischarge.dischargedAt)} · Condition:{' '}
                 {maternalDischarge.maternalCondition}
               </p>
             </div>

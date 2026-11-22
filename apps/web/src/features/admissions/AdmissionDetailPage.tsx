@@ -61,12 +61,13 @@ import {
   UserCheck,
   UserPlus,
 } from 'lucide-react';
+import { formatColomboDate, formatColomboDateTime } from '../../lib/datetime.js';
 
 const CORE_RISK_KEYS: RiskFlagKey[] = [
   RiskFlagKey.HYPERTENSION,
   RiskFlagKey.GESTATIONAL_DIABETES,
-  RiskFlagKey.PREVIOUS_CESAREAN,
-  RiskFlagKey.OBSERVATION_20_PLUS_WEEKS,
+  RiskFlagKey.PRIOR_CESAREAN,
+  RiskFlagKey.OBSERVATION_20PLUS,
 ];
 
 export const AdmissionDetailPage: React.FC = () => {
@@ -374,7 +375,7 @@ export const AdmissionDetailPage: React.FC = () => {
           value={admission.status}
           subtitle={
             admission.dischargedAt
-              ? `Closed ${new Date(admission.dischargedAt).toLocaleDateString()}`
+              ? `Closed ${formatColomboDate(admission.dischargedAt)}`
               : 'Active intake record'
           }
           icon={<Clock className="w-5 h-5 text-emerald-600" />}
@@ -465,7 +466,7 @@ export const AdmissionDetailPage: React.FC = () => {
                     <div>
                       <span className="text-teal-700">Allocated At: </span>
                       <span className="font-mono font-medium">
-                        {new Date(activeBedAllocation.assignedAt).toLocaleString()}
+                        {formatColomboDateTime(activeBedAllocation.assignedAt)}
                       </span>
                     </div>
                     <div>
@@ -510,11 +511,11 @@ export const AdmissionDetailPage: React.FC = () => {
                           <tr key={bh.id} className="hover:bg-slate-50">
                             <td className="py-1.5 font-bold">{bh.bedNumber}</td>
                             <td className="py-1.5 font-mono text-[11px]">
-                              {new Date(bh.assignedAt).toLocaleString()}
+                              {formatColomboDateTime(bh.assignedAt)}
                             </td>
                             <td className="py-1.5 font-mono text-[11px]">
                               {bh.releasedAt ? (
-                                new Date(bh.releasedAt).toLocaleString()
+                                formatColomboDateTime(bh.releasedAt)
                               ) : (
                                 <span className="text-emerald-700 font-bold">Active Current</span>
                               )}
@@ -565,7 +566,7 @@ export const AdmissionDetailPage: React.FC = () => {
                       </div>
                       <span className="text-[11px] text-amber-800">
                         Recorded by {flag.flaggedByFullName || flag.flaggedByUsername || 'Staff'} ·{' '}
-                        {new Date(flag.createdAt).toLocaleString()}
+                        {formatColomboDateTime(flag.createdAt)}
                       </span>
                     </div>
                   ))}
@@ -593,7 +594,7 @@ export const AdmissionDetailPage: React.FC = () => {
                         <span className="line-through">{flag.label}</span>
                         <span className="text-[11px]">
                           Removed{' '}
-                          {flag.deactivatedAt ? new Date(flag.deactivatedAt).toLocaleString() : ''}
+                          {flag.deactivatedAt ? formatColomboDateTime(flag.deactivatedAt) : ''}
                         </span>
                       </div>
                     ))}
@@ -624,14 +625,14 @@ export const AdmissionDetailPage: React.FC = () => {
               <div className="flex justify-between py-1.5 border-b border-slate-100">
                 <span className="text-slate-500">Admitted At:</span>
                 <span className="font-mono text-slate-800">
-                  {new Date(admission.admittedAt).toLocaleString()}
+                  {formatColomboDateTime(admission.admittedAt)}
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-slate-500">Screening Completed:</span>
                 <span className="font-mono text-slate-800">
                   {admission.riskAssessmentCompletedAt
-                    ? new Date(admission.riskAssessmentCompletedAt).toLocaleString()
+                    ? formatColomboDateTime(admission.riskAssessmentCompletedAt)
                     : '—'}
                 </span>
               </div>

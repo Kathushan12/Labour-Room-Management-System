@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   AdmissionObservationsSummaryDto,
   ClinicalObservationType,
+  ObservationHighlight,
   PartographDto,
   Permission,
 } from '@lrms/shared';
@@ -30,6 +31,31 @@ import { ContractionObservationForm } from './ContractionObservationForm.js';
 import { ObservationAmendmentDialog } from './ObservationAmendmentDialog.js';
 import { PartographView } from './PartographView.js';
 import { EscalationCreateDialog } from '../../clinical-care/components/EscalationCreateDialog.js';
+
+const HIGHLIGHT_LABELS: Record<ObservationHighlight, string> = {
+  SYSTOLIC_HIGH: 'Systolic high',
+  DIASTOLIC_HIGH: 'Diastolic high',
+  PULSE_LOW: 'Pulse low',
+  PULSE_HIGH: 'Pulse high',
+  FHR_LOW: 'FHR low',
+  FHR_HIGH: 'FHR high',
+};
+
+// REQ-5.4 / SAF-6: out-of-range values are marked with a symbol and text, never colour alone.
+const HighlightBadges: React.FC<{ highlights: ObservationHighlight[] }> = ({ highlights }) => (
+  <>
+    {highlights.map((h) => (
+      <Badge
+        key={h}
+        variant="outline"
+        className="text-[10px] bg-red-50 text-red-800 border-red-300 font-semibold"
+      >
+        <AlertTriangle className="w-3 h-3 mr-0.5" aria-hidden="true" />
+        {HIGHLIGHT_LABELS[h]}
+      </Badge>
+    ))}
+  </>
+);
 
 interface ClinicalObservationPanelProps {
   admissionId: string;
@@ -316,6 +342,18 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
         </div>
       ) : (
         <div>
+          {summary?.fhrObservationDue && (
+            <div
+              role="status"
+              className="mb-3 p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-xs flex items-center gap-2"
+            >
+              <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>
+                <strong>Observation due:</strong> no fetal heart rate recorded in the last 30
+                minutes.
+              </span>
+            </div>
+          )}
           {/* TAB 1: PARTOGRAPH */}
           {activeTab === 'partograph' && partograph && (
             <PartographView partograph={partograph} onRefresh={loadData} />
@@ -376,6 +414,13 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                               Temp: {obs.temperatureCelsius} °C
                             </Badge>
                           )}
+                          {obs.bloodGlucoseValue != null && (
+                            <Badge variant="outline" className="text-[10px] text-slate-700">
+                              Glucose: {obs.bloodGlucoseValue}{' '}
+                              {obs.bloodGlucoseUnit === 'MG_DL' ? 'mg/dL' : 'mmol/L'}
+                            </Badge>
+                          )}
+                          <HighlightBadges highlights={obs.highlights ?? []} />
                           {obs.supersedesId && (
                             <Badge
                               variant="outline"
@@ -488,9 +533,10 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                           <span className="font-bold text-indigo-900 text-sm">
                             FHR: {obs.fetalHeartRateBpm} bpm
                           </span>
+                          <HighlightBadges highlights={obs.highlights ?? []} />
                           {obs.liquorStatus && (
                             <Badge variant="outline" className="text-[10px] text-slate-700">
-                              Liquor: {obs.liquorStatus}
+                              Amniotic fluid: {obs.liquorStatus}
                             </Badge>
                           )}
                           {obs.variability && (

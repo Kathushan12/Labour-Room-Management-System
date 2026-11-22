@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PageHeader, StatCard, SectionCard } from '../../components/shared/HeadersAndCards.js';
 import { FilterBar } from '../../components/shared/FilterBar.js';
-import { EscalationCategory, EscalationPriority, Permission } from '@lrms/shared';
+import { EscalationReason, Permission } from '@lrms/shared';
 import { AlertSeverityBadge, AlertReceiptBadge } from '../../components/status/Badges.js';
 import { Button } from '../../components/ui/button.js';
 import { Input } from '../../components/ui/input.js';
@@ -23,15 +23,11 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { useAlertStateRefresh } from '../../hooks/useRealtimeNotifications.js';
 import { AlertReceiptStepper } from './components/AlertReceiptStepper.js';
 
-const ALERT_TYPE_OPTIONS: { value: EscalationCategory; label: string }[] = [
-  { value: EscalationCategory.FETAL, label: 'Fetal Heart Rate Deceleration / Distress' },
-  {
-    value: EscalationCategory.OBSTETRIC_EMERGENCY,
-    label: 'Obstetric Emergency (PPH, cord prolapse, cesarean)',
-  },
-  { value: EscalationCategory.MATERNAL, label: 'Maternal Deterioration / Severe Preeclampsia' },
-  { value: EscalationCategory.LABOUR_PROGRESSION, label: 'Labour Progression Concern' },
-  { value: EscalationCategory.OTHER, label: 'Other Clinical Concern' },
+const REASON_OPTIONS: { value: EscalationReason; label: string }[] = [
+  { value: EscalationReason.FETAL_DISTRESS, label: 'Fetal distress' },
+  { value: EscalationReason.FAILURE_TO_PROGRESS, label: 'Failure to progress' },
+  { value: EscalationReason.MATERNAL_COMPLICATION, label: 'Maternal complication' },
+  { value: EscalationReason.OTHER, label: 'Other' },
 ];
 
 const errorMessage = (err: unknown, fallback: string): string =>
@@ -50,8 +46,9 @@ export const EmergencyAlertsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   const [selectedAdmission, setSelectedAdmission] = useState('');
-  const [category, setCategory] = useState<EscalationCategory>(EscalationCategory.FETAL);
+  const [reason, setReason] = useState<EscalationReason>(EscalationReason.FETAL_DISTRESS);
   const [message, setMessage] = useState('');
+  const [confirming, setConfirming] = useState(false);
 
   const unacknowledgedCount = alerts.filter(isPendingAlert).length;
   const acknowledgedCount = alerts.filter((a) => a.acknowledgedAt !== null).length;
@@ -86,24 +83,30 @@ export const EmergencyAlertsPage: React.FC = () => {
     setActionError(null);
     setSelectedAdmission(admissions[0]?.id ?? '');
     setMessage('');
+    setConfirming(false);
     setIsEscalateOpen(true);
   };
 
   const handleCreateAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAdmission) return;
+    // REQ-6.2 / SAF-4: second step confirms the patient by Ref ID and bed.
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
     setSubmitting(true);
     setActionError(null);
     try {
       await clinicalCareApi.createEscalation(selectedAdmission, {
-        category,
-        priority: EscalationPriority.EMERGENCY,
-        clinicalReason: message.trim(),
+        reason,
+        clinicalReason: message.trim() || null,
       });
       setIsEscalateOpen(false);
       reload();
     } catch (err) {
       setActionError(errorMessage(err, 'Failed to dispatch the alert.'));
+      setConfirming(false);
     } finally {
       setSubmitting(false);
     }
@@ -303,7 +306,10 @@ export const EmergencyAlertsPage: React.FC = () => {
               <Label className="text-xs font-semibold text-slate-700">Target Patient / Bed</Label>
               <select
                 value={selectedAdmission}
-                onChange={(e) => setSelectedAdmission(e.target.value)}
+                onChange={(e) => {
+                  setSelectedAdmission(e.target.value);
+                  setConfirming(false);
+                }}
                 className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 {admissions.map((adm) => (
@@ -315,13 +321,16 @@ export const EmergencyAlertsPage: React.FC = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Emergency Alert Type</Label>
+              <Label className="text-xs font-semibold text-slate-700">Reason</Label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as EscalationCategory)}
+                value={reason}
+                onChange={(e) => {
+                  setReason(e.target.value as EscalationReason);
+                  setConfirming(false);
+                }}
                 className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                {ALERT_TYPE_OPTIONS.map((o) => (
+                {REASON_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
@@ -330,16 +339,12 @@ export const EmergencyAlertsPage: React.FC = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">
-                Clinical Reason & Situation
-              </Label>
+              <Label className="text-xs font-semibold text-slate-700">Note (optional)</Label>
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Describe the clinical situation (at least 10 characters)"
-                minLength={10}
+                placeholder="Optional bedside note"
                 className="mt-1 text-xs"
-                required
               />
             </div>
 
@@ -352,14 +357,32 @@ export const EmergencyAlertsPage: React.FC = () => {
               </span>
             </div>
 
+            {confirming && (
+              <div
+                role="alert"
+                className="rounded-md bg-red-100 border border-red-400 p-2.5 text-[11px] text-red-900"
+              >
+                <strong>
+                  Confirm escalation of{' '}
+                  {(() => {
+                    const adm = admissions.find((a) => a.id === selectedAdmission);
+                    return adm
+                      ? `${adm.admissionReferenceId} (bed ${adm.bedNumber ?? 'none'})`
+                      : 'this patient';
+                  })()}
+                </strong>{' '}
+                to EMERGENCY_CESAREAN?
+              </div>
+            )}
+
             <DialogFooter className="gap-2 sm:gap-0 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setIsEscalateOpen(false)}
+                onClick={() => (confirming ? setConfirming(false) : setIsEscalateOpen(false))}
               >
-                Cancel
+                {confirming ? 'Back' : 'Cancel'}
               </Button>
               <Button
                 type="submit"
@@ -368,7 +391,7 @@ export const EmergencyAlertsPage: React.FC = () => {
                 className="font-semibold"
                 disabled={submitting || !selectedAdmission}
               >
-                {submitting ? 'Dispatching...' : 'Dispatch Emergency Alert'}
+                {submitting ? 'Dispatching...' : confirming ? 'Confirm Escalation' : 'Escalate'}
               </Button>
             </DialogFooter>
           </form>

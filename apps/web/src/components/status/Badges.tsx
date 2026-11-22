@@ -74,13 +74,13 @@ export const AdmissionCategoryBadge: React.FC<{
           Normal Delivery
         </Badge>
       );
-    case AdmissionCategory.SCHEDULED_CESAREAN:
+    case AdmissionCategory.PLANNED_CESAREAN:
       return (
         <Badge variant="secondary" className={className}>
-          Scheduled Cesarean
+          Planned Cesarean
         </Badge>
       );
-    case AdmissionCategory.OBSERVATION_20_PLUS_WEEKS:
+    case AdmissionCategory.OBSERVATION_20PLUS:
       return (
         <Badge variant="warning" className={className}>
           Observation (&ge;20 Wks)

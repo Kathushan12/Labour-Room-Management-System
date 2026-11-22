@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   LogOut,
 } from 'lucide-react';
+import { PASSWORD_MIN_LENGTH } from '@lrms/shared';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../../components/ui/button.js';
 import { Input } from '../../components/ui/input.js';
@@ -35,7 +36,7 @@ export const ChangePasswordPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const checks = {
-    length: newPassword.length >= 10 && newPassword.length <= 128,
+    length: newPassword.length >= PASSWORD_MIN_LENGTH && newPassword.length <= 128,
     upper: /[A-Z]/.test(newPassword),
     lower: /[a-z]/.test(newPassword),
     digit: /[0-9]/.test(newPassword),
@@ -239,7 +240,7 @@ export const ChangePasswordPage: React.FC = () => {
             <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] space-y-1">
               <p className="font-semibold text-slate-700 mb-1">Hospital Password Policy</p>
               <div className={checks.length ? 'text-emerald-700 font-medium' : 'text-slate-500'}>
-                {checks.length ? '✔' : '•'} At least 10 characters
+                {checks.length ? '✔' : '•'} At least {PASSWORD_MIN_LENGTH} characters
               </div>
               <div
                 className={

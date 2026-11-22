@@ -39,12 +39,13 @@ import {
   Stethoscope,
   UserPlus,
 } from 'lucide-react';
+import { formatColomboDateTime } from '../../lib/datetime.js';
 
 const CORE_RISK_KEYS: RiskFlagKey[] = [
   RiskFlagKey.HYPERTENSION,
   RiskFlagKey.GESTATIONAL_DIABETES,
-  RiskFlagKey.PREVIOUS_CESAREAN,
-  RiskFlagKey.OBSERVATION_20_PLUS_WEEKS,
+  RiskFlagKey.PRIOR_CESAREAN,
+  RiskFlagKey.OBSERVATION_20PLUS,
 ];
 
 export const AdmissionsPage: React.FC = () => {
@@ -166,10 +167,10 @@ export const AdmissionsPage: React.FC = () => {
     (a) => a.admissionCategory === AdmissionCategory.NORMAL_DELIVERY,
   ).length;
   const pageCesarean = items.filter(
-    (a) => a.admissionCategory === AdmissionCategory.SCHEDULED_CESAREAN,
+    (a) => a.admissionCategory === AdmissionCategory.PLANNED_CESAREAN,
   ).length;
   const pageObservation = items.filter(
-    (a) => a.admissionCategory === AdmissionCategory.OBSERVATION_20_PLUS_WEEKS,
+    (a) => a.admissionCategory === AdmissionCategory.OBSERVATION_20PLUS,
   ).length;
 
   const isAdminDeidentifiedMode = role === UserRole.ADMIN;
@@ -299,10 +300,10 @@ export const AdmissionsPage: React.FC = () => {
               filterOptions={[
                 { label: 'All Categories', value: 'ALL' },
                 { label: 'Normal Delivery', value: AdmissionCategory.NORMAL_DELIVERY },
-                { label: 'Cesarean Section', value: AdmissionCategory.SCHEDULED_CESAREAN },
+                { label: 'Cesarean Section', value: AdmissionCategory.PLANNED_CESAREAN },
                 {
                   label: '20+ Weeks Observation',
-                  value: AdmissionCategory.OBSERVATION_20_PLUS_WEEKS,
+                  value: AdmissionCategory.OBSERVATION_20PLUS,
                 },
               ]}
               selectedFilter={categoryFilter}
@@ -445,7 +446,7 @@ export const AdmissionsPage: React.FC = () => {
                           )}
                         </td>
                         <td className="py-3.5 pr-3 text-slate-700 whitespace-nowrap">
-                          {new Date(adm.admittedAt).toLocaleString()}
+                          {formatColomboDateTime(adm.admittedAt)}
                         </td>
                         <td className="py-3.5 pr-3">
                           <div className="flex items-center space-x-1.5">

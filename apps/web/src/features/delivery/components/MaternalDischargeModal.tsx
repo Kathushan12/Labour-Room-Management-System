@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AuthorizeMaternalDischargeInput } from '@lrms/shared';
+import { AuthorizeMaternalDischargeInput, DischargeDestination } from '@lrms/shared';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,15 @@ import {
 import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
-import { AlertCircle, BedDouble, CheckCircle2, Loader2, ShieldAlert } from 'lucide-react';
+import { AlertCircle, BedDouble, CheckCircle2, Loader2 } from 'lucide-react';
+
+const DESTINATION_LABELS: Record<DischargeDestination, string> = {
+  [DischargeDestination.POSTNATAL]: 'Postnatal ward',
+  [DischargeDestination.ANTENATAL]: 'Antenatal ward',
+  [DischargeDestination.THEATRE]: 'Theatre',
+  [DischargeDestination.ICU]: 'ICU',
+  [DischargeDestination.OTHER]: 'Other',
+};
 
 interface MaternalDischargeModalProps {
   open: boolean;
@@ -28,7 +36,9 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
   hasActiveBed,
   onSubmit,
 }) => {
-  const [dischargeDestination, setDischargeDestination] = useState('Home with family');
+  const [dischargeDestination, setDischargeDestination] = useState<DischargeDestination>(
+    DischargeDestination.POSTNATAL,
+  );
   const [maternalCondition, setMaternalCondition] = useState('Stable, afebrile, lochia normal');
   const [dischargeSummary, setDischargeSummary] = useState(
     'Uncomplicated delivery and satisfactory postpartum recovery. Vitals stable.',
@@ -36,7 +46,7 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
   const [followUpInstructions, setFollowUpInstructions] = useState(
     'Postnatal clinic review in 2 weeks at MOH. Return immediately if fever or heavy bleeding.',
   );
-  const [releaseBed, setReleaseBed] = useState(true);
+  const [confirming, setConfirming] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -44,13 +54,8 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setSubmitting(true);
       setErrorMsg(null);
 
-      if (!dischargeDestination || dischargeDestination.trim().length < 2) {
-        setErrorMsg('Discharge destination is required.');
-        return;
-      }
       if (!maternalCondition || maternalCondition.trim().length < 2) {
         setErrorMsg('Maternal clinical condition summary is required.');
         return;
@@ -68,14 +73,21 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
         return;
       }
 
+      // SAF-4: discharge needs an explicit second confirmation naming the patient.
+      if (!confirming) {
+        setConfirming(true);
+        return;
+      }
+
+      setSubmitting(true);
       await onSubmit({
-        dischargeDestination: dischargeDestination.trim(),
+        dischargeDestination,
         maternalCondition: maternalCondition.trim(),
         dischargeSummary: dischargeSummary.trim(),
         followUpInstructions: followUpInstructions.trim(),
-        releaseBed,
       });
 
+      setConfirming(false);
       onOpenChange(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to authorize maternal discharge.';
@@ -94,7 +106,7 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
             Authorize Maternal Discharge — {admissionReferenceId}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Clinician authorization gate (DOCTOR only). Completes maternal episode of care.
+            Closes the admission. The bed is sent for cleaning.
           </DialogDescription>
         </DialogHeader>
 
@@ -107,15 +119,24 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="space-y-1.5">
-            <Label className="text-xs">Discharge Destination *</Label>
-            <Input
-              type="text"
+            <Label htmlFor="discharge-destination" className="text-xs">
+              Discharge / Transfer Destination *
+            </Label>
+            <select
+              id="discharge-destination"
               value={dischargeDestination}
-              onChange={(e) => setDischargeDestination(e.target.value)}
-              placeholder="e.g. Home with family / Transferred to Postnatal Ward"
-              required
-              className="h-8 text-xs"
-            />
+              onChange={(e) => {
+                setDischargeDestination(e.target.value as DischargeDestination);
+                setConfirming(false);
+              }}
+              className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs"
+            >
+              {Object.values(DischargeDestination).map((d) => (
+                <option key={d} value={d}>
+                  {DESTINATION_LABELS[d]}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">
@@ -155,29 +176,20 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
             />
           </div>
 
-          {/* Bed Release Integration Notification */}
           {hasActiveBed && (
-            <div className="p-3 bg-teal-50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-900 rounded-lg space-y-2">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="release-bed-checkbox"
-                  checked={releaseBed}
-                  onChange={(e) => setReleaseBed(e.target.checked)}
-                  className="rounded text-teal-600 focus:ring-teal-500 h-3.5 w-3.5"
-                />
-                <label
-                  htmlFor="release-bed-checkbox"
-                  className="text-xs font-semibold text-teal-900 dark:text-teal-200 cursor-pointer flex items-center gap-1.5"
-                >
-                  <BedDouble className="w-3.5 h-3.5" />
-                  Release physical bed allocation upon discharge
-                </label>
-              </div>
-              <p className="text-[11px] text-teal-800 dark:text-teal-300 pl-5">
-                Releasing the bed marks the bed as <strong>AVAILABLE</strong> with{' '}
-                <strong>CLEANING_REQUIRED</strong> turnover workflow.
-              </p>
+            <div className="p-3 bg-teal-50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-900 rounded-lg flex items-center gap-2 text-xs font-semibold text-teal-900 dark:text-teal-200">
+              <BedDouble className="w-3.5 h-3.5 shrink-0" />
+              The bed will be set to CLEANING when you discharge.
+            </div>
+          )}
+
+          {confirming && (
+            <div
+              role="alert"
+              className="p-3 bg-red-50 border border-red-300 rounded-lg text-xs text-red-900"
+            >
+              <strong>Confirm discharge of {admissionReferenceId}</strong> to{' '}
+              {DESTINATION_LABELS[dischargeDestination]}? The admission becomes read-only.
             </div>
           )}
 
@@ -193,10 +205,10 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => onOpenChange(false)}
+              onClick={() => (confirming ? setConfirming(false) : onOpenChange(false))}
               disabled={submitting}
             >
-              Cancel
+              {confirming ? 'Back' : 'Cancel'}
             </Button>
             <Button
               type="submit"
@@ -205,7 +217,7 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
               className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Authorize Maternal Discharge
+              {confirming ? 'Confirm Discharge' : 'Discharge Patient'}
             </Button>
           </DialogFooter>
         </form>

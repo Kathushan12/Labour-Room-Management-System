@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FetalObservationDto } from '@lrms/shared';
+import { AmnioticFluid, FetalObservationDto } from '@lrms/shared';
 import { observationsApi } from '../../../services/observations.api.js';
 import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
@@ -94,7 +94,7 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
 
         <div>
           <Label htmlFor="fetal-liquor-status" className="text-xs font-semibold text-slate-700">
-            Liquor Status
+            Amniotic Fluid
           </Label>
           <select
             id="fetal-liquor-status"
@@ -102,11 +102,10 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
             onChange={(e) => setLiquorStatus(e.target.value)}
             className="w-full mt-1 border border-slate-300 rounded-md px-3 py-2 text-sm bg-white"
           >
-            <option value="INTACT">Intact Membranes (I)</option>
-            <option value="CLEAR">Clear Liquor (C)</option>
-            <option value="MECONIUM_STAINED">Meconium-Stained (M)</option>
-            <option value="BLOOD_STAINED">Blood-Stained (B)</option>
-            <option value="ABSENT">Absent Liquor (A)</option>
+            <option value={AmnioticFluid.INTACT}>Intact Membranes (I)</option>
+            <option value={AmnioticFluid.CLEAR}>Clear Liquor (C)</option>
+            <option value={AmnioticFluid.MECONIUM}>Meconium (M)</option>
+            <option value={AmnioticFluid.BLOOD}>Blood-Stained (B)</option>
           </select>
         </div>
       </div>

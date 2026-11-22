@@ -2,12 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AdmissionCategory,
+  BedDisplayStatus,
+  BedUnavailableDetails,
   CreateTriageResponse,
   Permission,
   RiskFlagDefinitionDto,
   RiskFlagKey,
+  UserRole,
 } from '@lrms/shared';
 import { submitRapidTriage } from '../../../services/admissions.api.js';
+import { fetchWardBedBoard, fetchWards } from '../../../services/wards.api.js';
+import { wardStaffApi } from '../../../services/ward-staff.api.js';
+import { formatColomboDateTime } from '../../../lib/datetime.js';
 import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { AdmissionCategoryBadge } from '../../../components/status/Badges.js';
 import { Button } from '../../../components/ui/button.js';
@@ -42,11 +48,18 @@ interface RapidTriageDialogProps {
 const CORE_PROPOSAL_FLAGS: RiskFlagKey[] = [
   RiskFlagKey.HYPERTENSION,
   RiskFlagKey.GESTATIONAL_DIABETES,
-  RiskFlagKey.PREVIOUS_CESAREAN,
-  RiskFlagKey.OBSERVATION_20_PLUS_WEEKS,
+  RiskFlagKey.PRIOR_CESAREAN,
+  RiskFlagKey.OBSERVATION_20PLUS,
 ];
 
 const NIC_FORMAT_REGEX = /^(?:\d{9}[VX]|\d{12})$/i;
+
+type FieldErrors = Partial<Record<'gestationWeeks' | 'bedId' | 'attendingDoctorId', string>>;
+
+interface Option {
+  id: string;
+  label: string;
+}
 
 export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
   open,
@@ -59,6 +72,12 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
   );
   const [selectedFlags, setSelectedFlags] = useState<RiskFlagKey[]>([]);
   const [noListedFlagsConfirmed, setNoListedFlagsConfirmed] = useState(false);
+  const [gestationWeeks, setGestationWeeks] = useState('');
+  const [bedId, setBedId] = useState('');
+  const [attendingDoctorId, setAttendingDoctorId] = useState('');
+  const [freeBeds, setFreeBeds] = useState<Option[]>([]);
+  const [doctors, setDoctors] = useState<Option[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const [fullName, setFullName] = useState('');
   const [nic, setNic] = useState('');
@@ -79,6 +98,10 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
     setAdmissionCategory(AdmissionCategory.NORMAL_DELIVERY);
     setSelectedFlags([]);
     setNoListedFlagsConfirmed(false);
+    setGestationWeeks('');
+    setBedId('');
+    setAttendingDoctorId('');
+    setFieldErrors({});
     setFullName('');
     setNic('');
     setContactPhone('');
@@ -93,6 +116,39 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
     if (!open) {
       resetForm();
     }
+  }, [open]);
+
+  // Free beds and active doctors for the required bed and attending doctor fields (REQ-3.2, 4.3).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const wards = await fetchWards();
+        const wardId = wards.data?.items[0]?.id;
+        if (!wardId) return;
+        const [board, staff] = await Promise.all([
+          fetchWardBedBoard(wardId),
+          wardStaffApi.listWardStaff(wardId, true),
+        ]);
+        if (cancelled) return;
+        setFreeBeds(
+          (board.data?.beds ?? [])
+            .filter((b) => b.displayStatus === BedDisplayStatus.AVAILABLE)
+            .map((b) => ({ id: b.id, label: b.bedNumber })),
+        );
+        setDoctors(
+          staff
+            .filter((s) => s.user?.role === UserRole.DOCTOR)
+            .map((s) => ({ id: s.userId, label: s.user?.fullName ?? s.userId })),
+        );
+      } catch {
+        if (!cancelled) setApiError('Could not load free beds and doctors. Try again.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   const toggleFlag = (key: RiskFlagKey) => {
@@ -118,6 +174,16 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
     e.preventDefault();
     setValidationError(null);
     setApiError(null);
+
+    const weeks = Number(gestationWeeks);
+    const nextFieldErrors: FieldErrors = {};
+    if (!gestationWeeks || !Number.isInteger(weeks) || weeks < 20 || weeks > 44) {
+      nextFieldErrors.gestationWeeks = 'Enter gestation between 20 and 44 weeks.';
+    }
+    if (!bedId) nextFieldErrors.bedId = 'Select a free bed.';
+    if (!attendingDoctorId) nextFieldErrors.attendingDoctorId = 'Select the attending doctor.';
+    setFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) return;
 
     if (selectedFlags.length === 0 && !noListedFlagsConfirmed) {
       setValidationError(
@@ -145,6 +211,9 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
     try {
       const res = await submitRapidTriage({
         admissionCategory,
+        gestationWeeks: weeks,
+        bedId,
+        attendingDoctorId,
         riskFlagKeys: selectedFlags,
         noListedRiskFlagsConfirmed: noListedFlagsConfirmed,
         linkExistingPatient: duplicateMatchPrompt ? linkExistingPatient : false,
@@ -158,6 +227,24 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
       });
 
       if (!res.success || !res.data) {
+        if (res.error?.code === 'BED_UNAVAILABLE') {
+          // REQ-3.11: keep everything typed so far and offer the beds that are still free.
+          const details = res.error.details as BedUnavailableDetails | undefined;
+          setFreeBeds((details?.availableBeds ?? []).map((b) => ({ id: b.id, label: b.bedNumber })));
+          setBedId('');
+          setFieldErrors({ bedId: `${res.error.message}` });
+          return;
+        }
+        const serverFields = (
+          res.error?.details as { fieldErrors?: Record<string, string[]> } | undefined
+        )?.fieldErrors;
+        if (serverFields) {
+          setFieldErrors({
+            gestationWeeks: serverFields.gestationWeeks?.[0],
+            bedId: serverFields.bedId?.[0],
+            attendingDoctorId: serverFields.attendingDoctorId?.[0],
+          });
+        }
         if (res.error?.code === 'DUPLICATE_PATIENT_MATCH') {
           setDuplicateMatchPrompt(true);
           setApiError(
@@ -228,7 +315,7 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Admitted At:</span>
                   <span className="font-mono text-slate-800">
-                    {new Date(createdResult.admission.admittedAt).toLocaleString()}
+                    {formatColomboDateTime(createdResult.admission.admittedAt)}
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-2 pt-1 border-t border-slate-100">
@@ -309,12 +396,12 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
                     hint: 'Active labour intake',
                   },
                   {
-                    value: AdmissionCategory.SCHEDULED_CESAREAN,
-                    label: 'Cesarean Section',
-                    hint: 'Scheduled operative intake',
+                    value: AdmissionCategory.PLANNED_CESAREAN,
+                    label: 'Planned Cesarean',
+                    hint: 'Planned operative intake',
                   },
                   {
-                    value: AdmissionCategory.OBSERVATION_20_PLUS_WEEKS,
+                    value: AdmissionCategory.OBSERVATION_20PLUS,
                     label: '20+ Weeks Observation',
                     hint: 'Antepartum monitoring',
                   },
@@ -345,6 +432,95 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
                     </label>
                   );
                 })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label htmlFor="triage-gestation" className="text-xs font-semibold text-slate-800">
+                  Gestation (weeks) *
+                </Label>
+                <Input
+                  id="triage-gestation"
+                  type="number"
+                  inputMode="numeric"
+                  min={20}
+                  max={44}
+                  value={gestationWeeks}
+                  onChange={(e) => {
+                    setGestationWeeks(e.target.value);
+                    setFieldErrors((f) => ({ ...f, gestationWeeks: undefined }));
+                  }}
+                  aria-invalid={Boolean(fieldErrors.gestationWeeks)}
+                  aria-describedby="triage-gestation-error"
+                  className="mt-1 h-11 text-xs bg-white"
+                  disabled={submitting}
+                />
+                {fieldErrors.gestationWeeks && (
+                  <p id="triage-gestation-error" className="mt-1 text-[11px] text-red-700">
+                    {fieldErrors.gestationWeeks}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="triage-bed" className="text-xs font-semibold text-slate-800">
+                  Bed *
+                </Label>
+                <select
+                  id="triage-bed"
+                  value={bedId}
+                  onChange={(e) => {
+                    setBedId(e.target.value);
+                    setFieldErrors((f) => ({ ...f, bedId: undefined }));
+                  }}
+                  aria-invalid={Boolean(fieldErrors.bedId)}
+                  aria-describedby="triage-bed-error"
+                  className="mt-1 w-full h-11 rounded-md border border-slate-300 bg-white px-2 text-xs"
+                  disabled={submitting}
+                >
+                  <option value="">
+                    {freeBeds.length > 0 ? 'Select a free bed' : 'No free beds'}
+                  </option>
+                  {freeBeds.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.label}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.bedId && (
+                  <p id="triage-bed-error" role="alert" className="mt-1 text-[11px] text-red-700">
+                    {fieldErrors.bedId}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="triage-doctor" className="text-xs font-semibold text-slate-800">
+                  Attending doctor *
+                </Label>
+                <select
+                  id="triage-doctor"
+                  value={attendingDoctorId}
+                  onChange={(e) => {
+                    setAttendingDoctorId(e.target.value);
+                    setFieldErrors((f) => ({ ...f, attendingDoctorId: undefined }));
+                  }}
+                  aria-invalid={Boolean(fieldErrors.attendingDoctorId)}
+                  aria-describedby="triage-doctor-error"
+                  className="mt-1 w-full h-11 rounded-md border border-slate-300 bg-white px-2 text-xs"
+                  disabled={submitting}
+                >
+                  <option value="">Select doctor</option>
+                  {doctors.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.attendingDoctorId && (
+                  <p id="triage-doctor-error" className="mt-1 text-[11px] text-red-700">
+                    {fieldErrors.attendingDoctorId}
+                  </p>
+                )}
               </div>
             </div>
 

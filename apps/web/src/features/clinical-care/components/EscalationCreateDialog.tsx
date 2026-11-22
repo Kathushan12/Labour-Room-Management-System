@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,14 @@ import {
 import { Button } from '../../../components/ui/button.js';
 import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, AlertTriangle, Send } from 'lucide-react';
-import { ClinicalObservationType, EscalationCategory, EscalationPriority } from '@lrms/shared';
+import {
+  AlreadyEscalatedDetails,
+  ClinicalObservationType,
+  EscalationReason,
+} from '@lrms/shared';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { fetchAdmissionDetail } from '../../../services/admissions.api.js';
+import { fetchAdmissionBedHistory } from '../../../services/beds.api.js';
 
 interface EscalationCreateDialogProps {
   admissionId: string;
@@ -23,6 +29,20 @@ interface EscalationCreateDialogProps {
   onCreated: () => void;
 }
 
+const REASON_LABELS: Record<EscalationReason, string> = {
+  [EscalationReason.FETAL_DISTRESS]: 'Fetal distress',
+  [EscalationReason.FAILURE_TO_PROGRESS]: 'Failure to progress',
+  [EscalationReason.MATERNAL_COMPLICATION]: 'Maternal complication',
+  [EscalationReason.OTHER]: 'Other',
+};
+
+const ALERT_STATE_LABELS: Record<string, string> = {
+  DISPATCHED: 'Dispatched (not yet on the doctor device)',
+  DELIVERED: 'Delivered to the doctor device',
+  ACKNOWLEDGED: 'Acknowledged by the doctor',
+};
+
+// REQ-6.2: one action (choose reason, Escalate) plus one confirmation.
 export const EscalationCreateDialog: React.FC<EscalationCreateDialogProps> = ({
   admissionId,
   sourceObservationType,
@@ -32,156 +52,174 @@ export const EscalationCreateDialog: React.FC<EscalationCreateDialogProps> = ({
   onClose,
   onCreated,
 }) => {
-  const [category, setCategory] = useState<EscalationCategory>(
-    sourceObservationType === ClinicalObservationType.FETAL
-      ? EscalationCategory.FETAL
-      : sourceObservationType === ClinicalObservationType.MATERNAL
-        ? EscalationCategory.MATERNAL
-        : EscalationCategory.LABOUR_PROGRESSION,
+  const [reason, setReason] = useState<EscalationReason>(
+    sourceObservationType === ClinicalObservationType.MATERNAL
+      ? EscalationReason.MATERNAL_COMPLICATION
+      : EscalationReason.FETAL_DISTRESS,
   );
-  const [priority, setPriority] = useState<EscalationPriority>(EscalationPriority.URGENT);
-  const [clinicalReason, setClinicalReason] = useState(
-    sourceObservationSummary ? `Escalated from observation: ${sourceObservationSummary} - ` : '',
-  );
+  const [note, setNote] = useState(sourceObservationSummary ?? '');
+  const [confirming, setConfirming] = useState(false);
+  const [refId, setRefId] = useState<string | null>(null);
+  const [bedNumber, setBedNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [existing, setExisting] = useState<AlreadyEscalatedDetails | null>(null);
+
+  // SAF-4 / SAF-5: the confirmation names the patient by Admission Ref ID and bed.
+  useEffect(() => {
+    if (!isOpen) return;
+    void fetchAdmissionDetail(admissionId).then((r) => setRefId(r.data?.admissionReferenceId ?? null));
+    void fetchAdmissionBedHistory(admissionId).then((r) => {
+      const active = r.data?.items.find((a) => !a.releasedAt);
+      setBedNumber(active?.bedNumber ?? null);
+    });
+  }, [isOpen, admissionId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (clinicalReason.trim().length < 10) {
-      setErrorMsg('Clinical escalation reason must be at least 10 characters.');
+    if (reason === EscalationReason.OTHER && note.trim().length === 0) {
+      setErrorMsg('Describe the reason when you choose Other.');
+      return;
+    }
+    if (!confirming) {
+      setConfirming(true);
       return;
     }
 
     setLoading(true);
     try {
       await clinicalCareApi.createEscalation(admissionId, {
-        category,
-        priority,
-        clinicalReason: clinicalReason.trim(),
+        reason,
+        clinicalReason: note.trim() || null,
         sourceObservationType: sourceObservationType || undefined,
         sourceObservationId: sourceObservationId || undefined,
       });
       onCreated();
       onClose();
-    } catch (err: any) {
-      setErrorMsg(
-        err.response?.data?.error?.message ||
-          err.message ||
-          'Failed to dispatch clinical escalation',
-      );
+    } catch (err: unknown) {
+      const body = (
+        err as {
+          response?: { data?: { error?: { code?: string; message?: string; details?: unknown } } };
+        }
+      ).response?.data?.error;
+      if (body?.code === 'ALREADY_ESCALATED') {
+        setExisting((body.details as AlreadyEscalatedDetails | undefined) ?? null);
+      }
+      setErrorMsg(body?.message || (err as Error).message || 'Failed to escalate');
+      setConfirming(false);
     } finally {
       setLoading(false);
     }
   };
 
+  const patientLabel = `${refId ?? 'this patient'}${bedNumber ? ` (bed ${bedNumber})` : ''}`;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-amber-600">
+          <div className="flex items-center gap-2 text-red-700">
             <AlertTriangle className="h-5 w-5" />
-            <DialogTitle>Initiate Structured Clinical Escalation</DialogTitle>
+            <DialogTitle>Escalate to Emergency Cesarean</DialogTitle>
           </div>
           <DialogDescription className="text-left text-xs">
-            Trigger formal clinical escalation for deteriorating maternal/fetal parameters or labour
-            progression arrest.
+            {patientLabel}: changes the care plan to EMERGENCY_CESAREAN and alerts the attending
+            doctor.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2 text-left">
           {errorMsg && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md flex items-start gap-2">
+            <div
+              role="alert"
+              className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md flex items-start gap-2"
+            >
               <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
+              <span>
+                {errorMsg}
+                {existing && (
+                  <>
+                    <br />
+                    Current alert {existing.escalationReferenceId}:{' '}
+                    <strong>
+                      {existing.timedOut
+                        ? 'TIMED OUT - phone the doctor'
+                        : (ALERT_STATE_LABELS[existing.alertState] ?? existing.alertState)}
+                    </strong>
+                  </>
+                )}
+              </span>
             </div>
           )}
 
-          {sourceObservationId && (
-            <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-md text-xs space-y-1">
-              <span className="font-semibold block">Linked Source Observation:</span>
-              <p className="text-[11px]">
-                {sourceObservationType?.replace(/_/g, ' ')} (ID: {sourceObservationId.slice(0, 8)}
-                ...)
-              </p>
-              {sourceObservationSummary && (
-                <p className="text-[11px] text-muted-foreground">{sourceObservationSummary}</p>
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="esc-category" className="text-xs font-semibold">
-                Category <span className="text-red-500">*</span>
-              </Label>
-              <select
-                id="esc-category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value as EscalationCategory)}
-                className="w-full text-xs p-2.5 border rounded-md bg-background"
-                required
-              >
-                <option value={EscalationCategory.MATERNAL}>Maternal</option>
-                <option value={EscalationCategory.FETAL}>Fetal</option>
-                <option value={EscalationCategory.LABOUR_PROGRESSION}>Labour Progression</option>
-                <option value={EscalationCategory.RISK_FLAG}>Risk Flag</option>
-                <option value={EscalationCategory.OBSTETRIC_EMERGENCY}>Obstetric Emergency</option>
-                <option value={EscalationCategory.OTHER}>Other</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="esc-priority" className="text-xs font-semibold">
-                Priority <span className="text-red-500">*</span>
-              </Label>
-              <select
-                id="esc-priority"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as EscalationPriority)}
-                className="w-full text-xs p-2.5 border rounded-md bg-background"
-                required
-              >
-                <option value={EscalationPriority.ROUTINE}>Routine</option>
-                <option value={EscalationPriority.URGENT}>Urgent</option>
-                <option value={EscalationPriority.EMERGENCY}>Emergency</option>
-              </select>
-            </div>
+          <div className="space-y-1">
+            <Label htmlFor="esc-reason-code" className="text-xs font-semibold">
+              Reason <span className="text-red-500">*</span>
+            </Label>
+            <select
+              id="esc-reason-code"
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value as EscalationReason);
+                setConfirming(false);
+              }}
+              className="w-full text-xs p-2.5 border rounded-md bg-background min-h-[44px]"
+              required
+            >
+              {Object.values(EscalationReason).map((r) => (
+                <option key={r} value={r}>
+                  {REASON_LABELS[r]}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="esc-reason" className="text-xs font-semibold">
-              Clinical Reason / Bedside Evaluation <span className="text-red-500">*</span>
+              Note {reason === EscalationReason.OTHER && <span className="text-red-500">*</span>}
             </Label>
             <textarea
               id="esc-reason"
-              rows={3}
-              value={clinicalReason}
-              onChange={(e) => setClinicalReason(e.target.value)}
-              placeholder="e.g. FHR deceleration < 100 bpm lasting 90s; uterine hyperstimulation suspected..."
-              required
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Optional bedside note"
               className="w-full text-xs p-2.5 border rounded-md"
             />
-            <span className="text-[10px] text-muted-foreground block text-right">
-              {clinicalReason.trim().length}/10 chars min
-            </span>
           </div>
 
+          {confirming && (
+            <div
+              role="alert"
+              className="p-3 bg-red-50 border border-red-300 rounded-md text-xs text-red-900"
+            >
+              <strong>Confirm escalation of {patientLabel}</strong> for{' '}
+              {REASON_LABELS[reason].toLowerCase()}?
+            </div>
+          )}
+
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={loading}>
-              Cancel
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => (confirming ? setConfirming(false) : onClose())}
+              disabled={loading}
+              className="min-h-[44px]"
+            >
+              {confirming ? 'Back' : 'Cancel'}
             </Button>
             <Button
               type="submit"
               size="sm"
-              className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
-              disabled={loading || clinicalReason.trim().length < 10}
+              className="bg-red-700 hover:bg-red-800 text-white font-medium min-h-[44px]"
+              disabled={loading}
               data-testid="btn-submit-escalation"
             >
               <Send className="h-4 w-4 mr-1.5" />
-              Dispatch Escalation
+              {confirming ? 'Confirm Escalation' : 'Escalate'}
             </Button>
           </DialogFooter>
         </form>
