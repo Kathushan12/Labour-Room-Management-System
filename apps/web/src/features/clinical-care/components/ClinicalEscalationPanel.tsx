@@ -24,6 +24,7 @@ import { useAuth } from '../../../hooks/useAuth.js';
 import { formatColomboTime } from '../../../lib/datetime.js';
 import { AlertReceiptStepper } from '../../alerts/components/AlertReceiptStepper.js';
 import { humanizeEnum } from '../../../lib/labels.js';
+import { useToast } from '../../../components/ui/toast.js';
 
 interface ClinicalEscalationPanelProps {
   admissionId: string;
@@ -37,6 +38,7 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
   onRefresh,
 }) => {
   const { user } = useAuth();
+  const toast = useToast();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedEscalation, setSelectedEscalation] = useState<ClinicalEscalationDto | null>(null);
   const [ackingId, setAckingId] = useState<string | null>(null);
@@ -47,9 +49,10 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
       await clinicalCareApi.acknowledgeEscalation(admissionId, escId, {
         notes: 'Quick acknowledged from bedside panel',
       });
+      toast.success('Alert acknowledged.');
       onRefresh();
     } catch {
-      // Handled via refresh or modal
+      toast.error('Could not acknowledge. Check the connection and try again.');
     } finally {
       setAckingId(null);
     }
@@ -203,7 +206,10 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
           admissionId={admissionId}
           isOpen={createOpen}
           onClose={() => setCreateOpen(false)}
-          onCreated={onRefresh}
+          onCreated={() => {
+            toast.success('Escalation sent. The attending doctor has been alerted.');
+            onRefresh();
+          }}
         />
       )}
 

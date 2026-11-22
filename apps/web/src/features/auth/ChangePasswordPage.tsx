@@ -148,7 +148,7 @@ export const ChangePasswordPage: React.FC = () => {
                 {mustChangePassword ? 'Current / Temporary Password' : 'Current Password'}
               </Label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -165,7 +165,7 @@ export const ChangePasswordPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowCurrent(!showCurrent)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-600"
                   aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
                   tabIndex={-1}
                 >
@@ -179,7 +179,7 @@ export const ChangePasswordPage: React.FC = () => {
                 New Permanent Password
               </Label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -196,7 +196,7 @@ export const ChangePasswordPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowNew(!showNew)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-600"
                   aria-label={showNew ? 'Hide new password' : 'Show new password'}
                   tabIndex={-1}
                 >
@@ -210,7 +210,7 @@ export const ChangePasswordPage: React.FC = () => {
                 Confirm New Password
               </Label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -227,7 +227,7 @@ export const ChangePasswordPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-600"
                   aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
                   tabIndex={-1}
                 >
@@ -290,7 +290,7 @@ export const ChangePasswordPage: React.FC = () => {
                 Back to Dashboard
               </Button>
             ) : (
-              <span className="text-[11px] text-slate-400">Session restricted until updated</span>
+              <span className="text-[11px] text-slate-500">Session restricted until updated</span>
             )}
 
             <Button

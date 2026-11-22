@@ -39,7 +39,7 @@ export const ConnectionStatusIndicator: React.FC<ConnectionStatusIndicatorProps>
           color: 'bg-slate-400',
           pulse: false,
           label: 'Offline',
-          textColor: 'text-slate-600 dark:text-slate-400',
+          textColor: 'text-slate-600 dark:text-slate-500',
         };
     }
   };

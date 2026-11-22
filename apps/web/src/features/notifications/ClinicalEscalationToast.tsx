@@ -33,7 +33,7 @@ export const ClinicalEscalationToast: React.FC = () => {
             </span>
             <button
               onClick={dismissToast}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded"
+              className="text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded"
               title="Dismiss toast"
               aria-label="Dismiss toast"
             >
@@ -43,7 +43,7 @@ export const ClinicalEscalationToast: React.FC = () => {
           <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
             {activeToast.title}
           </h4>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
+          <p className="text-xs text-slate-600 dark:text-slate-500 mt-1 line-clamp-2">
             {activeToast.safeMessage}
           </p>
 

@@ -57,6 +57,7 @@ import { fetchAdmissions } from '../../services/admissions.api.js';
 import { Link } from 'react-router-dom';
 import { formatColomboDate, formatColomboDateTime, formatColomboTime } from '../../lib/datetime.js';
 import { humanizeEnum } from '../../lib/labels.js';
+import { useToast } from '../../components/ui/toast.js';
 
 export const BedBoardPage: React.FC = () => {
   const [wards, setWards] = useState<WardDto[]>([]);
@@ -74,6 +75,8 @@ export const BedBoardPage: React.FC = () => {
   const [selectedAdmissionId, setSelectedAdmissionId] = useState<string>('');
   const [allocationNotes, setAllocationNotes] = useState<string>('');
   const [dialogLoading, setDialogLoading] = useState<boolean>(false);
+  const [cleaningBusy, setCleaningBusy] = useState<boolean>(false);
+  const toast = useToast();
 
   // Transfer Dialog State
   const [transferOpen, setTransferOpen] = useState(false);
@@ -203,7 +206,7 @@ export const BedBoardPage: React.FC = () => {
     setActionError(null);
     setAllocateOpen(true);
     try {
-      const res = await fetchAdmissions({ status: AdmissionStatus.ADMITTED, limit: 100 });
+      const res = await fetchAdmissions({ status: AdmissionStatus.ADMITTED, limit: 50 });
       if (res.success && res.data) {
         setAdmissionsList(res.data.items);
       }
@@ -229,6 +232,7 @@ export const BedBoardPage: React.FC = () => {
         return;
       }
       setAllocateOpen(false);
+      toast.success(`Bed ${selectedBedForAllocation.bedNumber} allocated.`);
       if (activeWardId) await loadBedBoard(activeWardId);
     } catch {
       setActionError('Network error executing bed allocation.');
@@ -263,6 +267,7 @@ export const BedBoardPage: React.FC = () => {
         return;
       }
       setTransferOpen(false);
+      toast.success('Patient moved to the new bed.');
       if (activeWardId) await loadBedBoard(activeWardId);
     } catch {
       setActionError('Network error executing bed transfer.');
@@ -295,6 +300,7 @@ export const BedBoardPage: React.FC = () => {
         return;
       }
       setReleaseOpen(false);
+      toast.success(`Bed ${bedForRelease.bedNumber} released and sent for cleaning.`);
       if (activeWardId) await loadBedBoard(activeWardId);
     } catch {
       setActionError('Network error executing bed release.');
@@ -305,6 +311,8 @@ export const BedBoardPage: React.FC = () => {
 
   // Cleaning turnover actions
   const handleStartCleaning = async (bedId: string) => {
+    if (cleaningBusy) return;
+    setCleaningBusy(true);
     setActionError(null);
     try {
       const res = await startBedCleaning(bedId);
@@ -312,13 +320,18 @@ export const BedBoardPage: React.FC = () => {
         setActionError(res.error?.message || 'Failed to start cleaning.');
         return;
       }
+      toast.success('Cleaning started.');
       if (activeWardId) await loadBedBoard(activeWardId);
     } catch {
       setActionError('Network error starting bed cleaning.');
+    } finally {
+      setCleaningBusy(false);
     }
   };
 
   const handleMarkCleaned = async (bedId: string) => {
+    if (cleaningBusy) return;
+    setCleaningBusy(true);
     setActionError(null);
     try {
       const res = await completeBedCleaning(bedId, 'Sanitization completed.');
@@ -326,9 +339,12 @@ export const BedBoardPage: React.FC = () => {
         setActionError(res.error?.message || 'Failed to mark bed as cleaned.');
         return;
       }
+      toast.success('Bed marked as cleaned and available.');
       if (activeWardId) await loadBedBoard(activeWardId);
     } catch {
       setActionError('Network error completing bed cleaning.');
+    } finally {
+      setCleaningBusy(false);
     }
   };
 
@@ -360,6 +376,11 @@ export const BedBoardPage: React.FC = () => {
         return;
       }
       setMaintenanceOpen(false);
+      toast.success(
+        maintenanceStatus === BedFunctioningStatus.FUNCTIONING
+          ? `Bed ${bedForMaintenance.bedNumber} is back in service.`
+          : `Bed ${bedForMaintenance.bedNumber} is out of service.`,
+      );
       if (activeWardId) await loadBedBoard(activeWardId);
     } catch {
       setActionError('Network error updating maintenance state.');
@@ -382,6 +403,7 @@ export const BedBoardPage: React.FC = () => {
       }
       setAddBedOpen(false);
       setNewBedNumber('');
+      toast.success('Bed added.');
       await loadBedBoard(activeWardId);
     } catch {
       setActionError('Network error creating bed.');
@@ -775,7 +797,7 @@ export const BedBoardPage: React.FC = () => {
                             onClick={() => handleMarkCleaned(bed.id)}
                           >
                             <Sparkles className="w-3 h-3 mr-1" />
-                            Mark Sanitized
+                            Mark Cleaned
                           </Button>
                         </>
                       )}
@@ -834,7 +856,7 @@ export const BedBoardPage: React.FC = () => {
             description="Audited history of patient stays, bed transfers, discharges, and sanitization turnovers."
           >
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="stack-table w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase">
                     <th className="pb-2.5">Bed Number</th>
@@ -850,20 +872,20 @@ export const BedBoardPage: React.FC = () => {
                     .filter((b) => b.currentAllocation)
                     .map((b) => (
                       <tr key={b.id} className="hover:bg-slate-50">
-                        <td className="py-2.5 font-bold">{b.bedNumber}</td>
-                        <td className="py-2.5 font-mono text-teal-700">
+                        <td data-label="Bed Number" className="py-2.5 font-bold">{b.bedNumber}</td>
+                        <td data-label="Admission Reference" className="py-2.5 font-mono text-teal-700">
                           {b.currentAllocation?.admissionReferenceId}
                         </td>
-                        <td className="py-2.5 font-medium">
+                        <td data-label="Patient Details" className="py-2.5 font-medium">
                           {b.currentAllocation?.patientDisplayName}
                         </td>
-                        <td className="py-2.5 text-slate-600">
+                        <td data-label="Allocated Time" className="py-2.5 text-slate-600">
                           {b.currentAllocation?.allocatedAt
                             ? formatColomboDateTime(b.currentAllocation.allocatedAt)
                             : '—'}
                         </td>
-                        <td className="py-2.5 text-slate-400">Active (Current)</td>
-                        <td className="py-2.5 text-teal-800 font-semibold">Occupied</td>
+                        <td data-label="Released Time" className="py-2.5 text-slate-500">Active (Current)</td>
+                        <td data-label="Turnover State" className="py-2.5 text-teal-800 font-semibold">Occupied</td>
                       </tr>
                     ))}
                 </tbody>

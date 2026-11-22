@@ -12,6 +12,7 @@ import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, FilePlus2, Send } from 'lucide-react';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { colomboInputToIso } from '../../../lib/datetime.js';
 
 interface CarePlanCreateDialogProps {
   admissionId: string;
@@ -49,7 +50,7 @@ export const CarePlanCreateDialog: React.FC<CarePlanCreateDialogProps> = ({
         objectives: objectives.trim(),
         plannedActions: plannedActions.trim(),
         submitForApproval,
-        plannedReviewAt: plannedReviewAt ? new Date(plannedReviewAt).toISOString() : undefined,
+        plannedReviewAt: plannedReviewAt ? colomboInputToIso(plannedReviewAt) : undefined,
       });
       onCreated();
       onClose();

@@ -97,18 +97,18 @@ export const AlertReceiptStepper: React.FC<{ alert: StepperAlert; className?: st
                 aria-hidden="true"
                 className={cn(
                   'relative z-10 h-6 w-6 rounded-full bg-card',
-                  done ? step.doneClass : 'text-slate-400',
+                  done ? step.doneClass : 'text-slate-500',
                 )}
               />
               <span
                 className={cn(
                   'mt-1 text-xs font-semibold',
-                  done ? step.doneClass : 'text-slate-600 dark:text-slate-400',
+                  done ? step.doneClass : 'text-slate-600 dark:text-slate-500',
                 )}
               >
                 {step.label}
               </span>
-              <span className="font-mono text-[11px] text-slate-600 dark:text-slate-400">
+              <span className="font-mono text-[11px] text-slate-600 dark:text-slate-500">
                 {step.at ? formatColomboTimeWithSeconds(step.at) : 'Waiting'}
               </span>
             </li>

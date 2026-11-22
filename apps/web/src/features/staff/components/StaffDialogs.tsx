@@ -97,7 +97,7 @@ export const TemporaryCredentialDialog: React.FC<TemporaryCredentialDialogProps>
           </div>
 
           <div className="p-3.5 rounded-lg bg-slate-900 text-slate-100 border border-slate-700 space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-slate-400">
+            <div className="flex items-center justify-between text-[11px] text-slate-500">
               <span>Temporary Password (One-Time)</span>
               <Badge variant="outline" className="text-[10px] border-teal-500/40 text-teal-300">
                 Expires {formatColomboDateTime(credential.temporaryPasswordExpiresAt)}

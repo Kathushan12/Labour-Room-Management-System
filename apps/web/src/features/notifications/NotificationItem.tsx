@@ -85,7 +85,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
             />
           )}
         </div>
-        <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+        <span className="text-xs text-slate-500 dark:text-slate-500 font-mono">
           {formatRelativeTime(notification.createdAt)}
         </span>
       </div>
@@ -94,7 +94,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
         {notification.title}
       </h4>
 
-      <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+      <p className="mt-1 text-xs text-slate-600 dark:text-slate-500 leading-relaxed">
         {notification.safeMessage}
       </p>
 
@@ -115,7 +115,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
           {isUnread && (
             <button
               onClick={() => onMarkAsRead(notification.id)}
-              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-200 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Mark as read"
             >
               <Check className="w-3 h-3 text-slate-500" />

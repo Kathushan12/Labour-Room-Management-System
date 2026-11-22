@@ -42,10 +42,10 @@ export function AnalyticsDataTable<T extends Record<string, any>>({
       )}
 
       <div
-        className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-xs"
+        className="bg-white overflow-hidden sm:rounded-lg sm:border sm:border-slate-200 sm:shadow-xs"
         style={maxHeight ? { maxHeight, overflowY: 'auto' } : undefined}
       >
-        <Table>
+        <Table className="stack-table">
           <TableHeader className="bg-slate-50 sticky top-0 z-10">
             <TableRow className="border-b border-slate-200">
               {columns.map((col) => (
@@ -69,7 +69,7 @@ export function AnalyticsDataTable<T extends Record<string, any>>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center py-8 text-xs text-slate-400 italic"
+                  className="text-center py-8 text-xs text-slate-500 italic"
                 >
                   {emptyText}
                 </TableCell>
@@ -83,6 +83,7 @@ export function AnalyticsDataTable<T extends Record<string, any>>({
                   {columns.map((col) => (
                     <TableCell
                       key={col.key}
+                      data-label={col.header}
                       className={`text-xs text-slate-800 py-2.5 px-3 ${
                         col.align === 'right'
                           ? 'text-right'

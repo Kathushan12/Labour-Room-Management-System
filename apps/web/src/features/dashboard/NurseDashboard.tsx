@@ -9,11 +9,7 @@ import {
   Sparkles,
   AlertTriangle,
 } from 'lucide-react';
-import {
-  AdmissionCategoryBadge,
-  BedStatusBadge,
-  AlertReceiptBadge,
-} from '../../components/status/Badges.js';
+import { AdmissionCategoryBadge, BedStatusBadge, AlertReceiptBadge, RiskFlagChip } from '../../components/status/Badges.js';
 import { WardDutyStatusBanner } from './components/WardDutyStatusBanner.js';
 import { Button } from '../../components/ui/button.js';
 import { Link } from 'react-router-dom';
@@ -111,7 +107,7 @@ export const NurseDashboard: React.FC = () => {
       <WardDutyStatusBanner />
 
       {/* Primary KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Active Labour Inpatients"
           value={loading ? '…' : admissions.length}
@@ -207,7 +203,7 @@ export const NurseDashboard: React.FC = () => {
             }
           >
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="stack-table w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                     <th className="pb-2.5">Bed / Ref</th>
@@ -228,41 +224,52 @@ export const NurseDashboard: React.FC = () => {
                   )}
                   {admissions.map((adm) => (
                     <tr key={adm.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3">
+                      <td data-label="Bed / Ref" className="py-3">
                         <div className="font-bold text-slate-900">{adm.bedNumber ?? 'No bed'}</div>
                         <div className="text-[11px] text-slate-500 font-mono">
                           {adm.admissionReferenceId}
                         </div>
                       </td>
-                      <td className="py-3">
+                      <td data-label="Category" className="py-3">
                         <AdmissionCategoryBadge category={adm.admissionCategory} />
                       </td>
-                      <td className="py-3">
+                      <td data-label="Care Plan" className="py-3">
                         <span className="font-medium text-slate-700">
                           {humanizeEnum(adm.currentCarePlan)}
                         </span>
                       </td>
-                      <td className="py-3 text-slate-600">{formatColomboTime(adm.admittedAt)}</td>
-                      <td className="py-3">
+                      <td data-label="Admitted" className="py-3 text-slate-600">{formatColomboTime(adm.admittedAt)}</td>
+                      <td data-label="Risk Flags" className="py-3">
                         <div className="flex flex-wrap gap-1">
                           {adm.riskFlags
                             .filter((rf) => rf.isActive)
                             .map((rf) => (
-                              <span
-                                key={rf.id}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium"
-                              >
-                                {rf.label}
-                              </span>
+                              <RiskFlagChip key={rf.id} label={rf.label} />
                             ))}
                         </div>
                       </td>
-                      <td className="py-3 text-right space-x-1">
-                        <Link to={`/admissions/${adm.id}`}>
-                          <Button size="sm" variant="outline" className="h-7 text-[11px] px-2">
-                            View
-                          </Button>
-                        </Link>
+                      <td data-label="Actions" className="py-3 text-right">
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          <Link to={`/admissions/${adm.id}?tab=observations`}>
+                            <Button size="sm" variant="outline" className="text-xs px-3">
+                              Vitals
+                            </Button>
+                          </Link>
+                          <Link to={`/admissions/${adm.id}?tab=care-plan`}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs px-3 border-red-200 text-red-800 hover:bg-red-50"
+                            >
+                              Escalate
+                            </Button>
+                          </Link>
+                          <Link to={`/admissions/${adm.id}`}>
+                            <Button size="sm" variant="outline" className="text-xs px-3">
+                              Open
+                            </Button>
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

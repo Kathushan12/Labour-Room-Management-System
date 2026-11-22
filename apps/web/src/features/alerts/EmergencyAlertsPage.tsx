@@ -22,6 +22,7 @@ import { categoryLabel, isPendingAlert, receiptStateOf, severityOf } from './ale
 import { useAuth } from '../../hooks/useAuth.js';
 import { useAlertStateRefresh } from '../../hooks/useRealtimeNotifications.js';
 import { AlertReceiptStepper } from './components/AlertReceiptStepper.js';
+import { useToast } from '../../components/ui/toast.js';
 
 const REASON_OPTIONS: { value: EscalationReason; label: string }[] = [
   { value: EscalationReason.FETAL_DISTRESS, label: 'Fetal distress' },
@@ -35,6 +36,7 @@ const errorMessage = (err: unknown, fallback: string): string =>
     ?.message || fallback;
 
 export const EmergencyAlertsPage: React.FC = () => {
+  const toast = useToast();
   const { user } = useAuth();
   const { admissions, alerts, loading, error, wardId, reload, refresh } =
     useClinicalDashboardData();
@@ -73,6 +75,7 @@ export const EmergencyAlertsPage: React.FC = () => {
     setActionError(null);
     try {
       await clinicalCareApi.acknowledgeEscalation(admissionId, escalationId);
+      toast.success('Alert acknowledged.');
       reload();
     } catch (err) {
       setActionError(errorMessage(err, 'Failed to acknowledge the alert.'));
@@ -103,6 +106,7 @@ export const EmergencyAlertsPage: React.FC = () => {
         clinicalReason: message.trim() || null,
       });
       setIsEscalateOpen(false);
+      toast.success('Alert sent to the attending doctor.');
       reload();
     } catch (err) {
       setActionError(errorMessage(err, 'Failed to dispatch the alert.'));
@@ -180,7 +184,7 @@ export const EmergencyAlertsPage: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <StatCard
           title="Total Escalations"
           value={loading ? '…' : alerts.length}
@@ -238,7 +242,7 @@ export const EmergencyAlertsPage: React.FC = () => {
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <AlertSeverityBadge severity={severityOf(alert)} />
                       <span className="font-bold text-slate-900 text-sm">
                         {categoryLabel(alert.category)}
@@ -271,7 +275,7 @@ export const EmergencyAlertsPage: React.FC = () => {
                         size="sm"
                         variant="destructive"
                         onClick={() => handleAcknowledge(alert.admissionId, alert.id)}
-                        className="text-xs font-semibold min-h-[44px] px-4"
+                        className="w-full text-xs font-semibold min-h-[44px] px-4 sm:w-auto"
                       >
                         <CheckCircle2 className="w-4 h-4 mr-1" />
                         Acknowledge
@@ -301,8 +305,9 @@ export const EmergencyAlertsPage: React.FC = () => {
 
           <form onSubmit={handleCreateAlert} className="space-y-4 py-2 text-xs">
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Target Patient / Bed</Label>
+              <Label htmlFor="alert-admission" className="text-xs font-semibold text-slate-700">Target Patient / Bed</Label>
               <select
+                id="alert-admission"
                 value={selectedAdmission}
                 onChange={(e) => {
                   setSelectedAdmission(e.target.value);
@@ -319,8 +324,9 @@ export const EmergencyAlertsPage: React.FC = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Reason</Label>
+              <Label htmlFor="alert-reason" className="text-xs font-semibold text-slate-700">Reason</Label>
               <select
+                id="alert-reason"
                 value={reason}
                 onChange={(e) => {
                   setReason(e.target.value as EscalationReason);
@@ -337,8 +343,9 @@ export const EmergencyAlertsPage: React.FC = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Note (optional)</Label>
+              <Label htmlFor="alert-note" className="text-xs font-semibold text-slate-700">Note (optional)</Label>
               <Input
+                id="alert-note"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Optional bedside note"

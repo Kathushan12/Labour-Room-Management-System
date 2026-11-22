@@ -291,33 +291,33 @@ export const StaffDetailPage: React.FC = () => {
             <dt className="text-slate-500">Hospital Staff ID</dt>
             <dd className="font-mono text-slate-800">
               {detail.staffProfile?.staffId || (
-                <span className="text-slate-400 italic">Not recorded</span>
+                <span className="text-slate-500 italic">Not recorded</span>
               )}
             </dd>
 
             <dt className="text-slate-500">Official Email</dt>
             <dd className="text-slate-800">
-              {detail.email || <span className="text-slate-400 italic">Not recorded</span>}
+              {detail.email || <span className="text-slate-500 italic">Not recorded</span>}
             </dd>
 
             <dt className="text-slate-500">Registration Body</dt>
             <dd className="text-slate-800">
               {detail.staffProfile?.professionalRegistrationBody || (
-                <span className="text-slate-400 italic">Optional / None</span>
+                <span className="text-slate-500 italic">Optional / None</span>
               )}
             </dd>
 
             <dt className="text-slate-500">Council Reg Number</dt>
             <dd className="font-mono text-slate-800">
               {detail.staffProfile?.professionalRegistrationNumber || (
-                <span className="text-slate-400 italic">Optional / None</span>
+                <span className="text-slate-500 italic">Optional / None</span>
               )}
             </dd>
 
             <dt className="text-slate-500">Contact Number</dt>
             <dd className="font-mono text-slate-800">
               {detail.staffProfile?.contactNumber || (
-                <span className="text-slate-400 italic">Not recorded</span>
+                <span className="text-slate-500 italic">Not recorded</span>
               )}
             </dd>
           </dl>
@@ -333,11 +333,11 @@ export const StaffDetailPage: React.FC = () => {
           <EmptyState
             title="No patient assignments recorded"
             description="Admission assignments appear here once bedside triage and patient assignment workflows are recorded."
-            icon={<ClipboardList className="w-8 h-8 text-slate-400" />}
+            icon={<ClipboardList className="w-8 h-8 text-slate-500" />}
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="stack-table w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 uppercase font-semibold">
                   <th className="pb-2">Admission Reference</th>
@@ -349,14 +349,14 @@ export const StaffDetailPage: React.FC = () => {
               <tbody className="divide-y divide-slate-100">
                 {detail.assignmentHistory.map((item) => (
                   <tr key={item.id}>
-                    <td className="py-2.5 font-mono font-semibold text-slate-800">
+                    <td data-label="Admission Reference" className="py-2.5 font-mono font-semibold text-slate-800">
                       {item.admissionReferenceId || item.admissionId}
                     </td>
-                    <td className="py-2.5">{assignmentRoleLabel(item.assignmentRole)}</td>
-                    <td className="py-2.5 text-slate-600">
+                    <td data-label="Duty Role" className="py-2.5">{assignmentRoleLabel(item.assignmentRole)}</td>
+                    <td data-label="Assigned At" className="py-2.5 text-slate-600">
                       {formatColomboDateTime(item.assignedAt)}
                     </td>
-                    <td className="py-2.5 text-slate-600">
+                    <td data-label="Unassigned At" className="py-2.5 text-slate-600">
                       {item.unassignedAt ? formatColomboDateTime(item.unassignedAt) : 'Active'}
                     </td>
                   </tr>
@@ -376,11 +376,11 @@ export const StaffDetailPage: React.FC = () => {
           <EmptyState
             title="No audit records found"
             description="Security actions touching this user account are logged here."
-            icon={<ShieldCheck className="w-8 h-8 text-slate-400" />}
+            icon={<ShieldCheck className="w-8 h-8 text-slate-500" />}
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="stack-table w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 uppercase font-semibold">
                   <th className="pb-2">Timestamp</th>
@@ -392,18 +392,18 @@ export const StaffDetailPage: React.FC = () => {
               <tbody className="divide-y divide-slate-100">
                 {detail.auditHistory.map((log) => (
                   <tr key={log.id}>
-                    <td className="py-2.5 text-slate-600 whitespace-nowrap">
+                    <td data-label="Timestamp" className="py-2.5 text-slate-600 whitespace-nowrap">
                       {formatColomboDateTime(log.createdAt)}
                     </td>
-                    <td className="py-2.5">
+                    <td data-label="Action" className="py-2.5">
                       <Badge variant="outline" className="font-mono text-[10px] bg-slate-50">
                         {log.action}
                       </Badge>
                     </td>
-                    <td className="py-2.5 font-mono text-slate-700">
+                    <td data-label="Actor" className="py-2.5 font-mono text-slate-700">
                       {log.actorUsername || 'SYSTEM'}
                     </td>
-                    <td className="py-2.5 font-mono text-[11px] text-slate-500 max-w-md truncate">
+                    <td data-label="Metadata" className="py-2.5 font-mono text-[11px] text-slate-500 max-w-md truncate">
                       {log.details ? JSON.stringify(log.details) : '—'}
                     </td>
                   </tr>

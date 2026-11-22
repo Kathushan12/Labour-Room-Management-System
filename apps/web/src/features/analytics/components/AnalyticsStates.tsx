@@ -12,7 +12,7 @@ export const AnalyticsLoadingSkeleton: React.FC<{ kpiCount?: number }> = ({ kpiC
 
       {/* KPI Cards Grid Skeleton */}
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${kpiCount > 4 ? 4 : kpiCount} gap-4`}
+        className={`grid grid-cols-2 lg:grid-cols-${kpiCount > 4 ? 4 : kpiCount} gap-3 sm:gap-4`}
       >
         {Array.from({ length: kpiCount }).map((_, i) => (
           <div key={i} className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">

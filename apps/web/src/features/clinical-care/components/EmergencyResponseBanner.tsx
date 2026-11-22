@@ -75,7 +75,7 @@ export const EmergencyResponseBanner: React.FC<EmergencyResponseBannerProps> = (
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 self-end md:self-center">
+            <div className="flex flex-wrap gap-2 self-stretch md:self-center [&>button]:w-full md:[&>button]:w-auto">
               {isInitiated && (
                 <Button
                   size="sm"

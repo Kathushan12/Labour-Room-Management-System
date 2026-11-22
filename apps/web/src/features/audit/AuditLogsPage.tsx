@@ -167,7 +167,7 @@ export const AuditLogsPage: React.FC = () => {
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="stack-table w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                     <th className="pb-3">Timestamp</th>
@@ -181,10 +181,10 @@ export const AuditLogsPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {filteredLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 font-mono text-slate-600">
+                      <td data-label="Timestamp" className="py-3 font-mono text-slate-600">
                         {formatColomboDateTime(log.createdAt)}
                       </td>
-                      <td className="py-3">
+                      <td data-label="Actor / Role" className="py-3">
                         <div className="font-semibold text-slate-900">
                           {log.actorFullName ?? log.actorUsername ?? 'System'}
                         </div>
@@ -194,17 +194,17 @@ export const AuditLogsPage: React.FC = () => {
                           </div>
                         )}
                       </td>
-                      <td className="py-3">
+                      <td data-label="Action Event" className="py-3">
                         <span className="font-mono font-bold text-teal-800 text-[11px] bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                           {log.action}
                         </span>
                       </td>
-                      <td className="py-3 text-slate-700">
+                      <td data-label="Target Entity" className="py-3 text-slate-700">
                         <span className="font-semibold">{log.entityName}</span>
                         <div className="text-[11px] font-mono text-slate-500">{log.entityId}</div>
                       </td>
-                      <td className="py-3 text-[11px] text-slate-500 font-mono">{log.ipAddress}</td>
-                      <td className="py-3 text-right">
+                      <td data-label="Terminal Origin" className="py-3 text-[11px] text-slate-500 font-mono">{log.ipAddress}</td>
+                      <td data-label="Integrity Status" className="py-3 text-right">
                         {isWarning(log.action) ? (
                           <span className="inline-flex items-center text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
                             <AlertTriangle className="w-3 h-3 mr-1 text-amber-700" />

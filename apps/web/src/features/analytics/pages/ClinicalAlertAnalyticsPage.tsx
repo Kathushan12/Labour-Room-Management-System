@@ -145,7 +145,7 @@ export const ClinicalAlertAnalyticsPage: React.FC = () => {
           return (
             <div className="space-y-6 animate-fadeIn">
               {/* Top KPIs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <AnalyticsKpiCard
                   title="Total Emergency Alerts"
                   value={data.totalEmergencyAlerts}
@@ -193,7 +193,7 @@ export const ClinicalAlertAnalyticsPage: React.FC = () => {
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-2xl font-black text-emerald-700">{compliance ?? 0}%</span>
-                    <span className="text-[11px] text-slate-400 block font-medium">
+                    <span className="text-[11px] text-slate-500 block font-medium">
                       Compliance Rate
                     </span>
                   </div>

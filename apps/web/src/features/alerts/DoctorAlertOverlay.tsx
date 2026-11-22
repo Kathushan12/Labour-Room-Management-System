@@ -102,9 +102,9 @@ export const DoctorAlertOverlay: React.FC = () => {
       aria-modal="true"
       aria-labelledby="doctor-alert-title"
       aria-describedby="doctor-alert-reason"
-      className="fixed inset-0 z-[9999] flex flex-col bg-red-700 text-white overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex flex-col overflow-y-auto bg-red-700 pt-safe pl-safe pr-safe text-white"
     >
-      <div className="flex-1 flex flex-col w-full max-w-2xl mx-auto px-4 py-6 sm:py-10 gap-5">
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 pt-6 sm:pt-10">
         <div className="flex items-center gap-3">
           <AlertTriangle className="w-10 h-10 shrink-0 animate-pulse" aria-hidden="true" />
           <div>
@@ -165,7 +165,7 @@ export const DoctorAlertOverlay: React.FC = () => {
         </p>
 
         {error && (
-          <p role="status" className="rounded-lg bg-white text-red-800 px-4 py-3 text-sm font-semibold">
+          <p role="alert" className="rounded-lg bg-white text-red-800 px-4 py-3 text-sm font-semibold">
             {error}
           </p>
         )}
@@ -175,7 +175,7 @@ export const DoctorAlertOverlay: React.FC = () => {
           type="button"
           onClick={acknowledge}
           disabled={submitting}
-          className="mt-auto w-full min-h-[72px] rounded-2xl bg-white text-red-800 text-2xl font-black shadow-lg flex items-center justify-center gap-3 hover:bg-red-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/70 disabled:opacity-80"
+          className="sticky bottom-0 mt-auto mb-4 w-full min-h-[72px] rounded-2xl bg-white text-red-800 text-2xl font-black shadow-lg flex items-center justify-center gap-3 hover:bg-red-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/70 disabled:opacity-80"
         >
           {submitting ? (
             <Loader2 className="w-7 h-7 animate-spin" aria-hidden="true" />
@@ -184,6 +184,7 @@ export const DoctorAlertOverlay: React.FC = () => {
           )}
           Acknowledge
         </button>
+        <div className="pb-safe" />
       </div>
     </div>
   );

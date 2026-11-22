@@ -20,7 +20,7 @@ import { PermissionGuard } from '../../components/auth/PermissionGuard.js';
 import { PageHeader, StatCard, SectionCard } from '../../components/shared/HeadersAndCards.js';
 import { FilterBar } from '../../components/shared/FilterBar.js';
 import { EmptyState } from '../../components/shared/FeedbackStates.js';
-import { AdmissionCategoryBadge } from '../../components/status/Badges.js';
+import { AdmissionCategoryBadge, RiskFlagChip } from '../../components/status/Badges.js';
 import { Button } from '../../components/ui/button.js';
 import { Input } from '../../components/ui/input.js';
 import { Badge } from '../../components/ui/badge.js';
@@ -203,7 +203,7 @@ export const AdmissionsPage: React.FC = () => {
       />
 
       {/* Register Summary KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Matching Admissions"
           value={total}
@@ -211,19 +211,19 @@ export const AdmissionsPage: React.FC = () => {
           icon={<HeartPulse className="w-5 h-5 text-teal-600" />}
         />
         <StatCard
-          title="Normal Delivery (Page)"
+          title="Normal Delivery (this list)"
           value={pageNormal}
           subtitle="Active labour intake"
           icon={<Activity className="w-5 h-5 text-emerald-600" />}
         />
         <StatCard
-          title="Cesarean Section (Page)"
+          title="Cesarean Section (this list)"
           value={pageCesarean}
           subtitle="Scheduled operative intake"
           icon={<Stethoscope className="w-5 h-5 text-blue-600" />}
         />
         <StatCard
-          title="20+ Wks Observation (Page)"
+          title="20+ Wks Observation (this list)"
           value={pageObservation}
           subtitle="Antepartum surveillance"
           icon={<AlertCircle className="w-5 h-5 text-amber-600" />}
@@ -242,7 +242,7 @@ export const AdmissionsPage: React.FC = () => {
             noValidate
           >
             <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
               <Input
                 aria-label="Exact NIC lookup"
                 value={nicSearch}
@@ -297,7 +297,7 @@ export const AdmissionsPage: React.FC = () => {
                 setSearch(val);
                 setPage(1);
               }}
-              searchPlaceholder="Search by Admission Reference ID (e.g. ADM-202611-0001)..."
+              searchPlaceholder="Search by Admission Reference ID (e.g. LR-2611-0001)..."
               filterOptions={[
                 { label: 'All Categories', value: 'ALL' },
                 { label: 'Normal Delivery', value: AdmissionCategory.NORMAL_DELIVERY },
@@ -422,7 +422,7 @@ export const AdmissionsPage: React.FC = () => {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="stack-table w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                       <th className="pb-3 pr-3">Reference ID</th>
@@ -437,7 +437,7 @@ export const AdmissionsPage: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {items.map((adm) => (
                       <tr key={adm.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3.5 pr-3 font-mono font-bold text-teal-800 whitespace-nowrap">
+                        <td data-label="Reference ID" className="py-3.5 pr-3 font-mono font-bold text-teal-800 whitespace-nowrap">
                           {isAdminDeidentifiedMode ? (
                             adm.admissionReferenceId
                           ) : (
@@ -446,14 +446,11 @@ export const AdmissionsPage: React.FC = () => {
                             </Link>
                           )}
                         </td>
-                        <td className="py-3.5 pr-3 text-slate-700 whitespace-nowrap">
+                        <td data-label="Admitted Date & Time" className="py-3.5 pr-3 text-slate-700 whitespace-nowrap">
                           {formatColomboDateTime(adm.admittedAt)}
                         </td>
-                        <td className="py-3.5 pr-3">
+                        <td data-label="Patient Record" className="py-3.5 pr-3">
                           <div className="flex items-center space-x-1.5">
-                            <span className="font-mono text-[11px] text-slate-700">
-                              {adm.patientId ? `PT-${adm.patientId.slice(0, 8)}` : '—'}
-                            </span>
                             {adm.hasPii ? (
                               <Badge
                                 variant="outline"
@@ -463,25 +460,20 @@ export const AdmissionsPage: React.FC = () => {
                                 Identity recorded
                               </Badge>
                             ) : (
-                              <span className="text-[11px] text-slate-400 italic">
+                              <span className="text-[11px] text-slate-500 italic">
                                 No identity details
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className="py-3.5 pr-3">
+                        <td data-label="Category" className="py-3.5 pr-3">
                           <AdmissionCategoryBadge category={adm.admissionCategory} />
                         </td>
-                        <td className="py-3.5 pr-3">
+                        <td data-label="Clinical Risk Flags" className="py-3.5 pr-3">
                           {adm.riskFlags.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
                               {adm.riskFlags.map((flag) => (
-                                <span
-                                  key={flag.id}
-                                  className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium"
-                                >
-                                  {flag.label}
-                                </span>
+                                <RiskFlagChip key={flag.id} label={flag.label} />
                               ))}
                             </div>
                           ) : adm.noListedRiskFlagsConfirmed ? (
@@ -489,15 +481,15 @@ export const AdmissionsPage: React.FC = () => {
                               Confirmed: No Listed Flags
                             </span>
                           ) : (
-                            <span className="text-[11px] text-slate-400">Pending screening</span>
+                            <span className="text-[11px] text-slate-500">Pending screening</span>
                           )}
                         </td>
-                        <td className="py-3.5 pr-3">
+                        <td data-label="Status" className="py-3.5 pr-3">
                           <Badge variant="outline" className="text-[10px] font-semibold">
                             {humanizeEnum(adm.status)}
                           </Badge>
                         </td>
-                        <td className="py-3.5 text-right whitespace-nowrap">
+                        <td data-label="Actions" className="py-3.5 text-right whitespace-nowrap">
                           {!isAdminDeidentifiedMode ? (
                             <div className="inline-flex items-center gap-1.5">
                               <Link to={`/admissions/${adm.id}`}>
@@ -521,7 +513,7 @@ export const AdmissionsPage: React.FC = () => {
                               </PermissionGuard>
                             </div>
                           ) : (
-                            <span className="text-[11px] text-slate-400 italic">
+                            <span className="text-[11px] text-slate-500 italic">
                               De-identified summary
                             </span>
                           )}

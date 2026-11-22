@@ -181,7 +181,7 @@ export const PatientDetailPage: React.FC = () => {
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Admissions', href: '/admissions' },
-          { label: `PT-${patient.id.slice(0, 8)}`, active: true },
+          { label: 'Patient record', active: true },
         ]}
         badge={
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-300">

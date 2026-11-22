@@ -1,7 +1,7 @@
 import React from 'react';
 import { PageHeader, StatCard, SectionCard } from '../../components/shared/HeadersAndCards.js';
 import { Stethoscope, BellRing, HeartPulse, Baby, AlertTriangle } from 'lucide-react';
-import { AdmissionCategoryBadge, AlertReceiptBadge } from '../../components/status/Badges.js';
+import { AdmissionCategoryBadge, AlertReceiptBadge, RiskFlagChip } from '../../components/status/Badges.js';
 import { WardDutyStatusBanner } from './components/WardDutyStatusBanner.js';
 import { Button } from '../../components/ui/button.js';
 import { Link } from 'react-router-dom';
@@ -42,7 +42,7 @@ export const DoctorDashboard: React.FC = () => {
 
       {pendingAlerts.length > 0 && (
         <div className="rounded-xl border border-red-300 bg-red-50/70 p-4 shadow-sm animate-in fade-in-50">
-          <div className="flex items-start space-x-3">
+          <div className="flex flex-wrap items-start gap-3">
             <div className="rounded-full bg-red-100 p-2 text-red-600 shrink-0">
               <AlertTriangle className="h-5 w-5" />
             </div>
@@ -60,8 +60,8 @@ export const DoctorDashboard: React.FC = () => {
                 , Ref: {pendingAlerts[0].admissionReferenceId})
               </p>
             </div>
-            <Link to="/alerts">
-              <Button size="sm" variant="destructive" className="text-xs shrink-0 font-semibold">
+            <Link to="/alerts" className="w-full sm:w-auto">
+              <Button size="sm" variant="destructive" className="w-full text-xs shrink-0 font-semibold sm:w-auto">
                 Review & Acknowledge
               </Button>
             </Link>
@@ -71,7 +71,7 @@ export const DoctorDashboard: React.FC = () => {
 
       <WardDutyStatusBanner />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Assigned Patients"
           value={loading ? '…' : admissions.length}
@@ -138,12 +138,7 @@ export const DoctorDashboard: React.FC = () => {
                       {admission.riskFlags
                         .filter((f) => f.isActive)
                         .map((flag) => (
-                          <span
-                            key={flag.id}
-                            className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-medium"
-                          >
-                            {flag.label}
-                          </span>
+                          <RiskFlagChip key={flag.id} label={flag.label} />
                         ))}
                     </div>
                   </div>

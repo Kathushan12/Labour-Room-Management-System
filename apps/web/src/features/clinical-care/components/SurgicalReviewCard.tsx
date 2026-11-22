@@ -101,6 +101,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
             Request Urgent Obstetric Surgical Consultation
           </span>
           <textarea
+            aria-label="Clinical indication for surgical review"
             rows={2}
             value={indication}
             onChange={(e) => setIndication(e.target.value)}

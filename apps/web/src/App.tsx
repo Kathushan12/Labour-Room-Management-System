@@ -7,18 +7,21 @@ import { EmergencyAlertBanner } from './features/notifications/EmergencyAlertBan
 import { ClinicalEscalationToast } from './features/notifications/ClinicalEscalationToast.js';
 import { DoctorAlertOverlay } from './features/alerts/DoctorAlertOverlay.js';
 import { AppRoutes } from './app/AppRoutes.js';
+import { ToastProvider } from './components/ui/toast.js';
 
 export const App: React.FC = () => {
   return (
     <AuthProvider>
       <RolePreviewProvider>
         <NotificationProvider>
-          <BrowserRouter>
-            <EmergencyAlertBanner />
-            <ClinicalEscalationToast />
-            <DoctorAlertOverlay />
-            <AppRoutes />
-          </BrowserRouter>
+          <ToastProvider>
+            <BrowserRouter>
+              <EmergencyAlertBanner />
+              <ClinicalEscalationToast />
+              <DoctorAlertOverlay />
+              <AppRoutes />
+            </BrowserRouter>
+          </ToastProvider>
         </NotificationProvider>
       </RolePreviewProvider>
     </AuthProvider>

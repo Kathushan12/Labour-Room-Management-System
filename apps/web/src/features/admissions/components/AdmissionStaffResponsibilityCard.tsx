@@ -256,7 +256,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
                   @{attendingDoctor.staff?.username}
                 </div>
                 <div className="text-slate-500 text-[11px] flex items-center pt-1">
-                  <Clock className="w-3 h-3 mr-1 text-slate-400" />
+                  <Clock className="w-3 h-3 mr-1 text-slate-500" />
                   <span>Assigned: {formatColomboDateTime(attendingDoctor.assignedAt)}</span>
                 </div>
               </div>
@@ -323,7 +323,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
                   @{primaryNurse.staff?.username}
                 </div>
                 <div className="text-slate-500 text-[11px] flex items-center pt-1">
-                  <Clock className="w-3 h-3 mr-1 text-slate-400" />
+                  <Clock className="w-3 h-3 mr-1 text-slate-500" />
                   <span>Assigned: {formatColomboDateTime(primaryNurse.assignedAt)}</span>
                 </div>
               </div>
@@ -445,10 +445,11 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
 
           <form onSubmit={handleTransferSubmit} className="space-y-3 text-xs">
             <div>
-              <Label className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="transfer-new-clinician" className="text-xs font-semibold text-slate-700">
                 New Responsible Clinician <span className="text-red-500">*</span>
               </Label>
               <select
+                id="transfer-new-clinician"
                 value={newStaffId}
                 onChange={(e) => setNewStaffId(e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 bg-white p-2 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-teal-600"
@@ -467,10 +468,11 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="transfer-reason" className="text-xs font-semibold text-slate-700">
                 Reason / Shift Handover Notes
               </Label>
               <Input
+                id="transfer-reason"
                 value={transferReason}
                 onChange={(e) => setTransferReason(e.target.value)}
                 placeholder="e.g. End of shift handover to Dr. Silva"
@@ -534,10 +536,11 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
 
           <form onSubmit={handleAssignSubmit} className="space-y-3 text-xs">
             <div>
-              <Label className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="assign-clinician" className="text-xs font-semibold text-slate-700">
                 Clinician <span className="text-red-500">*</span>
               </Label>
               <select
+                id="assign-clinician"
                 value={assignStaffId}
                 onChange={(e) => setAssignStaffId(e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 bg-white p-2 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-teal-600"

@@ -180,7 +180,7 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
                       : 'bg-slate-600 text-white'
                 }
               >
-                {escalation.priority}
+                {humanizeEnum(escalation.priority)}
               </Badge>
               <Badge className="bg-primary text-primary-foreground">
                 {humanizeEnum(escalation.status)}
