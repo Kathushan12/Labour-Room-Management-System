@@ -6,6 +6,7 @@ import {
   AuthorizeNewbornDischargeInput,
   BedCleaningStatus,
   BedOccupancyStatus,
+  CarePlanState,
   CreateDeliveryInput,
   CreatePostpartumMaternalAssessmentInput,
   CreatePostpartumNewbornAssessmentInput,
@@ -54,6 +55,8 @@ import {
 } from './delivery.dto.js';
 import { outboxService } from '../realtime/outbox.service.js';
 import { notificationDispatcherService } from '../realtime/notification-dispatcher.service.js';
+import { emitBedUpdated } from '../realtime/realtime.server.js';
+import { changeCarePlanState } from '../admissions/care-plan-state.service.js';
 
 export class DeliveryService {
   constructor(private dataSource: DataSource = AppDataSource) {}
@@ -133,6 +136,18 @@ export class DeliveryService {
       });
 
       const saved = await tm.save(newDelivery);
+
+      // REQ-8.1: recording the delivery mode and time moves the care plan to DELIVERED.
+      if (admission.currentCarePlan !== CarePlanState.DELIVERED) {
+        await changeCarePlanState(
+          tm,
+          admission,
+          CarePlanState.DELIVERED,
+          actor.id,
+          `Delivery recorded (${saved.deliveryMode})`,
+          { ipAddress, requestId },
+        );
+      }
 
       // Audit Log
       await tm.save(
@@ -836,13 +851,7 @@ export class DeliveryService {
     ipAddress: string | null,
     requestId: string | null,
   ): Promise<PostpartumDischargeAuthorizationDto> {
-    if (actor.role !== UserRole.DOCTOR) {
-      throw new ForbiddenError(
-        'Maternal discharge must be clinically authorized by an attending DOCTOR.',
-        'DOCTOR_AUTHORIZATION_REQUIRED',
-      );
-    }
-
+    let releasedBed: Bed | null = null;
     const savedAuth = await this.dataSource.transaction(async (tm) => {
       const admission = await tm.findOne(Admission, {
         where: { id: admissionId },
@@ -865,11 +874,9 @@ export class DeliveryService {
 
       const now = input.dischargedAt ? new Date(input.dischargedAt) : new Date();
 
-      // Check if patient currently occupies a bed and release it
+      // REQ-8.3: discharge always frees the bed for cleaning.
       let bedReleasedId: string | null = null;
-      const shouldReleaseBed = input.releaseBed !== false;
-
-      if (shouldReleaseBed) {
+      {
         const activeAllocation = await tm.findOne(BedAllocationHistory, {
           where: { admissionId, releasedAt: IsNull() },
           lock: { mode: 'pessimistic_write' },
@@ -892,6 +899,7 @@ export class DeliveryService {
             lockedBed.cleaningStatus = BedCleaningStatus.CLEANING_REQUIRED;
             lockedBed.updatedAt = now;
             await tm.save(lockedBed);
+            releasedBed = lockedBed;
           }
 
           await tm.save(
@@ -913,7 +921,14 @@ export class DeliveryService {
         }
       }
 
-      // Update admission status to DISCHARGED
+      await changeCarePlanState(
+        tm,
+        admission,
+        CarePlanState.DISCHARGED,
+        actor.id,
+        `Discharged to ${input.dischargeDestination}`,
+        { ipAddress, requestId },
+      );
       admission.status = AdmissionStatus.DISCHARGED;
       admission.dischargedAt = now;
       await tm.save(admission);
@@ -969,6 +984,9 @@ export class DeliveryService {
     });
 
     notificationDispatcherService.dispatchNow().catch(() => {});
+    // Assigned inside the transaction callback, which TypeScript cannot follow.
+    const bed = releasedBed as Bed | null;
+    if (bed) emitBedUpdated(bed.wardId, bed.id);
     const reloaded = await this.dataSource
       .getRepository(PostpartumDischargeAuthorization)
       .findOneOrFail({

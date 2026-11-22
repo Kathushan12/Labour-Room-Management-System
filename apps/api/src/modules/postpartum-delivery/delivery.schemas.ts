@@ -11,6 +11,7 @@ import {
   NewbornFeedingStatus,
   NewbornGeneralCondition,
   NewbornJaundiceStatus,
+  DischargeDestination,
   NewbornSex,
   UterineTone,
 } from '@lrms/shared';
@@ -147,7 +148,9 @@ export const createPostpartumNewbornAssessmentSchema = z.object({
 
 export const authorizeMaternalDischargeSchema = z.object({
   dischargedAt: z.string().datetime().optional(),
-  dischargeDestination: z.string().min(2).max(100),
+  dischargeDestination: z.nativeEnum(DischargeDestination, {
+    errorMap: () => ({ message: 'Destination must be POSTNATAL, ANTENATAL, THEATRE, ICU or OTHER' }),
+  }),
   maternalCondition: z.string().min(2).max(50),
   dischargeSummary: z.string().min(10, 'Discharge summary must be at least 10 characters'),
   followUpInstructions: z.string().min(5, 'Follow-up instructions must be at least 5 characters'),
