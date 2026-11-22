@@ -10,12 +10,6 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import {
-  PREVIEW_ADMISSIONS,
-  PREVIEW_BEDS,
-  PREVIEW_ALERTS,
-} from '../../mocks/ui-preview/preview-data.js';
-import { BedOccupancyStatus, BedFunctioningStatus } from '@lrms/shared';
-import {
   AdmissionCategoryBadge,
   BedStatusBadge,
   AlertReceiptBadge,
@@ -23,17 +17,16 @@ import {
 import { WardDutyStatusBanner } from './components/WardDutyStatusBanner.js';
 import { Button } from '../../components/ui/button.js';
 import { Link } from 'react-router-dom';
+import { useClinicalDashboardData } from './useClinicalDashboardData.js';
+import { categoryLabel, isPendingAlert, receiptStateOf } from '../alerts/alert-feed.js';
+import { formatColomboTime } from '../../lib/datetime.js';
 
 export const NurseDashboard: React.FC = () => {
-  const activeAlerts = PREVIEW_ALERTS.filter((a) => a.acknowledgedAt === null);
-  const cleaningBeds = PREVIEW_BEDS.filter(
-    (b) => b.occupancyStatus === BedOccupancyStatus.CLEANING,
-  ).length;
-  const availableBeds = PREVIEW_BEDS.filter(
-    (b) =>
-      b.functioningStatus === BedFunctioningStatus.FUNCTIONING &&
-      b.occupancyStatus === BedOccupancyStatus.AVAILABLE,
-  ).length;
+  const { admissions, bedBoard, alerts, loading, error, reload } = useClinicalDashboardData();
+  const activeAlerts = alerts.filter(isPendingAlert);
+  const beds = bedBoard?.beds ?? [];
+  const cleaningBeds = bedBoard?.cleaningBedsCount ?? 0;
+  const availableBeds = bedBoard?.availableBedsCount ?? 0;
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -44,12 +37,19 @@ export const NurseDashboard: React.FC = () => {
           { label: 'Home', href: '/' },
           { label: 'Nurse Dashboard', active: true },
         ]}
-        badge={
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-            NURSE / MIDWIFE VIEW (UI PREVIEW)
-          </span>
-        }
       />
+
+      {error && (
+        <div
+          role="alert"
+          className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700"
+        >
+          <span>{error}</span>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={reload}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Critical Alert Ribbon if unacknowledged */}
       {activeAlerts.length > 0 && (
@@ -68,8 +68,8 @@ export const NurseDashboard: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-red-800 mt-1">
-                {activeAlerts[0].message} (Bed: {activeAlerts[0].bedNumber}, Ref:{' '}
-                {activeAlerts[0].admissionRef})
+                {activeAlerts[0].clinicalReason} (Bed: {activeAlerts[0].bedNumber ?? 'Unassigned'},
+                Ref: {activeAlerts[0].admissionReferenceId})
               </p>
             </div>
             <Link to="/alerts">
@@ -88,25 +88,25 @@ export const NurseDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Active Labour Inpatients"
-          value={PREVIEW_ADMISSIONS.length}
+          value={loading ? '…' : admissions.length}
           subtitle="Currently admitted in ward"
           icon={<HeartPulse className="w-5 h-5 text-teal-600" />}
         />
         <StatCard
           title="Available Ready Beds"
-          value={availableBeds}
+          value={loading ? '…' : availableBeds}
           subtitle="Cleaned & sanitized"
           icon={<BedDouble className="w-5 h-5 text-emerald-600" />}
         />
         <StatCard
           title="Beds in Turnover"
-          value={cleaningBeds}
+          value={loading ? '…' : cleaningBeds}
           subtitle="Awaiting sanitization & check"
           icon={<Sparkles className="w-5 h-5 text-amber-600" />}
         />
         <StatCard
           title="Doctor Escalations"
-          value={PREVIEW_ALERTS.length}
+          value={loading ? '…' : alerts.length}
           subtitle={`${activeAlerts.length} pending acknowledgement`}
           icon={<BellRing className="w-5 h-5 text-red-600" />}
         />
@@ -187,37 +187,48 @@ export const NurseDashboard: React.FC = () => {
                     <th className="pb-2.5">Bed / Ref</th>
                     <th className="pb-2.5">Category</th>
                     <th className="pb-2.5">Care Plan</th>
+                    <th className="pb-2.5">Admitted</th>
                     <th className="pb-2.5">Risk Flags</th>
                     <th className="pb-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {PREVIEW_ADMISSIONS.map((adm) => (
+                  {!loading && admissions.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-4 text-slate-500">
+                        No active admissions are assigned to you.
+                      </td>
+                    </tr>
+                  )}
+                  {admissions.map((adm) => (
                     <tr key={adm.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3">
-                        <div className="font-bold text-slate-900">{adm.bedNumber}</div>
+                        <div className="font-bold text-slate-900">{adm.bedNumber ?? 'No bed'}</div>
                         <div className="text-[11px] text-slate-500 font-mono">
-                          {adm.referenceId}
+                          {adm.admissionReferenceId}
                         </div>
                       </td>
                       <td className="py-3">
-                        <AdmissionCategoryBadge category={adm.category} />
+                        <AdmissionCategoryBadge category={adm.admissionCategory} />
                       </td>
                       <td className="py-3">
                         <span className="font-medium text-slate-700">
-                          {adm.carePlan.replace(/_/g, ' ')}
+                          {adm.currentCarePlan.replace(/_/g, ' ')}
                         </span>
                       </td>
+                      <td className="py-3 text-slate-600">{formatColomboTime(adm.admittedAt)}</td>
                       <td className="py-3">
                         <div className="flex flex-wrap gap-1">
-                          {adm.riskFlags.map((rf, i) => (
-                            <span
-                              key={i}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium"
-                            >
-                              {rf}
-                            </span>
-                          ))}
+                          {adm.riskFlags
+                            .filter((rf) => rf.isActive)
+                            .map((rf) => (
+                              <span
+                                key={rf.id}
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium"
+                              >
+                                {rf.label}
+                              </span>
+                            ))}
                         </div>
                       </td>
                       <td className="py-3 text-right space-x-1">
@@ -249,7 +260,7 @@ export const NurseDashboard: React.FC = () => {
             }
           >
             <div className="space-y-3">
-              {PREVIEW_BEDS.slice(0, 5).map((bed) => (
+              {beds.slice(0, 5).map((bed) => (
                 <div
                   key={bed.id}
                   className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 bg-slate-50/60 text-xs"
@@ -257,13 +268,10 @@ export const NurseDashboard: React.FC = () => {
                   <div>
                     <div className="font-bold text-slate-900">{bed.bedNumber}</div>
                     <div className="text-[11px] text-slate-500">
-                      {bed.currentAdmissionRef || 'No active patient'}
+                      {bed.currentAllocation?.admissionReferenceId || 'No active patient'}
                     </div>
                   </div>
-                  <BedStatusBadge
-                    functioning={bed.functioningStatus}
-                    occupancy={bed.occupancyStatus}
-                  />
+                  <BedStatusBadge displayStatus={bed.displayStatus} />
                 </div>
               ))}
             </div>
@@ -274,18 +282,25 @@ export const NurseDashboard: React.FC = () => {
             description="Proof-of-receipt from assigned doctors"
           >
             <div className="space-y-2.5">
-              {PREVIEW_ALERTS.map((alert) => (
+              {!loading && alerts.length === 0 && (
+                <p className="text-xs text-slate-500">No alerts for your patients.</p>
+              )}
+              {alerts.slice(0, 5).map((alert) => (
                 <div
                   key={alert.id}
                   className="p-2.5 rounded border border-slate-100 bg-slate-50 text-xs space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-800">{alert.bedNumber}</span>
-                    <AlertReceiptBadge state={alert.receiptState} />
+                    <span className="font-semibold text-slate-800">
+                      {alert.bedNumber ?? alert.admissionReferenceId}
+                    </span>
+                    <AlertReceiptBadge state={receiptStateOf(alert)} />
                   </div>
-                  <p className="text-[11px] text-slate-600">{alert.message}</p>
+                  <p className="text-[11px] text-slate-600">
+                    {categoryLabel(alert.category)}: {alert.clinicalReason}
+                  </p>
                   <div className="text-[10px] text-slate-400">
-                    Dispatched: {new Date(alert.dispatchedAt).toLocaleTimeString()}
+                    Dispatched: {formatColomboTime(alert.createdAt)}
                   </div>
                 </div>
               ))}

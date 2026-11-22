@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageHeader, StatCard, SectionCard } from '../../components/shared/HeadersAndCards.js';
 import { FilterBar } from '../../components/shared/FilterBar.js';
-import { PREVIEW_BEDS, PreviewBed } from '../../mocks/ui-preview/preview-data.js';
 import {
-  AdmissionCategory,
   AdmissionStatus,
   AdmissionSummaryDto,
   BedCleaningStatus,
@@ -11,7 +9,6 @@ import {
   BedDto,
   BedFunctioningStatus,
   BedOccupancyStatus,
-  CarePlanState,
   Permission,
   WardDto,
 } from '@lrms/shared';
@@ -57,74 +54,10 @@ import {
 import { fetchAdmissions } from '../../services/admissions.api.js';
 import { Link } from 'react-router-dom';
 
-function mapPreviewBedToBedDto(pb: PreviewBed, wardId: string = 'ward-18'): BedDto {
-  let displayStatus = BedDisplayStatus.AVAILABLE;
-  if (pb.functioningStatus === BedFunctioningStatus.OUT_OF_SERVICE) {
-    displayStatus = BedDisplayStatus.OUT_OF_SERVICE;
-  } else if (pb.occupancyStatus === BedOccupancyStatus.OCCUPIED) {
-    displayStatus = BedDisplayStatus.OCCUPIED;
-  } else if (pb.occupancyStatus === BedOccupancyStatus.CLEANING) {
-    displayStatus = BedDisplayStatus.CLEANING;
-  }
-
-  let cleaningStatus = BedCleaningStatus.CLEAN;
-  if (pb.occupancyStatus === BedOccupancyStatus.CLEANING) {
-    cleaningStatus = BedCleaningStatus.CLEANING_REQUIRED;
-  }
-
-  return {
-    id: pb.id,
-    wardId,
-    wardCode: 'WARD-18',
-    wardName: 'Ward 18 — Labour Room',
-    bedNumber: pb.bedNumber,
-    functioningStatus: pb.functioningStatus,
-    occupancyStatus: pb.occupancyStatus,
-    cleaningStatus,
-    displayStatus,
-    currentAllocation: pb.currentAdmissionRef
-      ? {
-          id: `alloc-${pb.id}`,
-          admissionId: `adm-${pb.id}`,
-          admissionReferenceId: pb.currentAdmissionRef,
-          patientId: null,
-          patientDisplayName: pb.patientNameMasked || 'Patient',
-          admissionCategory: pb.category || AdmissionCategory.NORMAL_DELIVERY,
-          currentCarePlan: CarePlanState.NORMAL_DELIVERY,
-          admittedAt: new Date().toISOString(),
-          allocatedAt: new Date().toISOString(),
-          assignedByUserId: 'nurse-1',
-          assignedByUserName: 'Staff Midwife Silva',
-          riskFlags: [],
-        }
-      : null,
-    lastCleaning: pb.lastCleaned
-      ? {
-          id: `clean-${pb.id}`,
-          bedId: pb.id,
-          startedByUserId: 'staff-1',
-          startedByUserName: 'Staff Midwife Silva',
-          startedAt: pb.lastCleaned,
-          completedByUserId: 'staff-1',
-          completedByUserName: 'Staff Midwife Silva',
-          completedAt: pb.lastCleaned,
-          status: 'COMPLETED',
-          notes: 'Routine turnover sanitization',
-          createdAt: pb.lastCleaned,
-          updatedAt: pb.lastCleaned,
-        }
-      : null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-const DEFAULT_PREVIEW_BEDS: BedDto[] = PREVIEW_BEDS.map((pb) => mapPreviewBedToBedDto(pb));
-
 export const BedBoardPage: React.FC = () => {
   const [wards, setWards] = useState<WardDto[]>([]);
   const [activeWardId, setActiveWardId] = useState<string>('');
-  const [beds, setBeds] = useState<BedDto[]>(DEFAULT_PREVIEW_BEDS);
+  const [beds, setBeds] = useState<BedDto[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [filter, setFilter] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
@@ -170,9 +103,11 @@ export const BedBoardPage: React.FC = () => {
         const ward18 = res.data.items.find((w) => w.code === 'WARD-18');
         const defaultWard = ward18 || res.data.items[0];
         setActiveWardId(defaultWard.id);
+      } else if (!res.success) {
+        setActionError(res.error?.message || 'Could not load wards.');
       }
     } catch {
-      // Fallback to preview data if API is unavailable
+      setActionError('Could not reach the server to load wards.');
     }
   }, []);
 
@@ -185,9 +120,11 @@ export const BedBoardPage: React.FC = () => {
       const res = await fetchWardBedBoard(wardId);
       if (res.success && res.data) {
         setBeds(res.data.beds);
+      } else {
+        setActionError(res.error?.message || 'Could not load the bed board.');
       }
     } catch {
-      // Keep existing beds on error
+      setActionError('Could not reach the server to load the bed board.');
     } finally {
       setLoading(false);
     }
@@ -362,78 +299,28 @@ export const BedBoardPage: React.FC = () => {
     setActionError(null);
     try {
       const res = await startBedCleaning(bedId);
-      if (res.success && activeWardId) {
-        await loadBedBoard(activeWardId);
-      } else {
-        // Fallback local update
-        setBeds((prev) =>
-          prev.map((b) =>
-            b.id === bedId
-              ? {
-                  ...b,
-                  cleaningStatus: BedCleaningStatus.IN_PROGRESS,
-                  displayStatus: BedDisplayStatus.CLEANING,
-                }
-              : b,
-          ),
-        );
+      if (!res.success) {
+        setActionError(res.error?.message || 'Failed to start cleaning.');
+        return;
       }
+      if (activeWardId) await loadBedBoard(activeWardId);
     } catch {
-      // Local fallback for offline/preview
-      setBeds((prev) =>
-        prev.map((b) =>
-          b.id === bedId
-            ? {
-                ...b,
-                cleaningStatus: BedCleaningStatus.IN_PROGRESS,
-                displayStatus: BedDisplayStatus.CLEANING,
-              }
-            : b,
-        ),
-      );
+      setActionError('Network error starting bed cleaning.');
     }
   };
 
-  // Complete Cleaning / Mark Sanitized (retains compatibility with existing tests)
   const handleMarkCleaned = async (bedId: string) => {
     setActionError(null);
     try {
       const res = await completeBedCleaning(bedId, 'Sanitization completed.');
-      if (res.success && activeWardId) {
-        await loadBedBoard(activeWardId);
+      if (!res.success) {
+        setActionError(res.error?.message || 'Failed to mark bed as cleaned.');
         return;
       }
+      if (activeWardId) await loadBedBoard(activeWardId);
     } catch {
-      // Fallback
+      setActionError('Network error completing bed cleaning.');
     }
-
-    // Local fallback ensures test compatibility
-    setBeds((prev) =>
-      prev.map((b) =>
-        b.id === bedId
-          ? {
-              ...b,
-              occupancyStatus: BedOccupancyStatus.AVAILABLE,
-              cleaningStatus: BedCleaningStatus.CLEAN,
-              displayStatus: BedDisplayStatus.AVAILABLE,
-              lastCleaning: {
-                id: `clean-${Date.now()}`,
-                bedId,
-                startedByUserId: 'nurse-1',
-                startedByUserName: 'Staff Midwife Silva',
-                startedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-                completedByUserId: 'nurse-1',
-                completedByUserName: 'Staff Midwife Silva',
-                completedAt: new Date().toISOString(),
-                status: 'COMPLETED',
-                notes: 'Sanitization completed',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              },
-            }
-          : b,
-      ),
-    );
   };
 
   // Maintenance Toggle Action
@@ -974,14 +861,6 @@ export const BedBoardPage: React.FC = () => {
                         <td className="py-2.5 text-teal-800 font-semibold">Occupied</td>
                       </tr>
                     ))}
-                  <tr className="hover:bg-slate-50">
-                    <td className="py-2.5 font-bold">BED-04</td>
-                    <td className="py-2.5 font-mono text-slate-500">ADM-2026-0000</td>
-                    <td className="py-2.5 font-medium text-slate-500">De-identified Patient</td>
-                    <td className="py-2.5 text-slate-500">2026-11-10 14:00</td>
-                    <td className="py-2.5 text-slate-500">2026-11-11 07:45</td>
-                    <td className="py-2.5 text-amber-700 font-semibold">Cleaning Required</td>
-                  </tr>
                 </tbody>
               </table>
             </div>
