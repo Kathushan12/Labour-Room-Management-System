@@ -16,6 +16,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { ApgarScoreCard } from './ApgarScoreCard.js';
+import { formatColomboDateTime } from '../../../lib/datetime.js';
 
 interface NewbornCardProps {
   newborns: NewbornDto[];
@@ -163,7 +164,7 @@ export const NewbornCard: React.FC<NewbornCardProps> = ({
                         {getDischargeBadge(baby.dischargeStatus)}
                       </div>
                       <span className="text-[11px] text-muted-foreground">
-                        Born at {new Date(baby.birthTimestamp).toLocaleString()} · Delivered by{' '}
+                        Born at {formatColomboDateTime(baby.birthTimestamp)} · Delivered by{' '}
                         {baby.deliveredByFullName || 'Clinician'}
                       </span>
                     </div>

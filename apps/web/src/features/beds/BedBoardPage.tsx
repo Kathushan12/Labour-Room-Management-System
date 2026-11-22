@@ -55,6 +55,7 @@ import {
 } from '../../services/beds.api.js';
 import { fetchAdmissions } from '../../services/admissions.api.js';
 import { Link } from 'react-router-dom';
+import { formatColomboDate, formatColomboDateTime, formatColomboTime } from '../../lib/datetime.js';
 
 export const BedBoardPage: React.FC = () => {
   const [wards, setWards] = useState<WardDto[]>([]);
@@ -661,10 +662,7 @@ export const BedBoardPage: React.FC = () => {
                           {bed.currentAllocation?.allocatedAt && (
                             <div className="text-[10px] text-teal-700 pt-0.5">
                               Assigned{' '}
-                              {new Date(bed.currentAllocation.allocatedAt).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}{' '}
+                              {formatColomboTime(bed.currentAllocation.allocatedAt)}{' '}
                               by {bed.currentAllocation.assignedByUserName}
                             </div>
                           )}
@@ -709,10 +707,7 @@ export const BedBoardPage: React.FC = () => {
                           {bed.lastCleaning?.completedAt && (
                             <p className="text-[10px] text-emerald-700 mt-0.5">
                               Sanitized:{' '}
-                              {new Date(bed.lastCleaning.completedAt).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              {formatColomboTime(bed.lastCleaning.completedAt)}
                             </p>
                           )}
                         </div>
@@ -863,7 +858,7 @@ export const BedBoardPage: React.FC = () => {
                         </td>
                         <td className="py-2.5 text-slate-600">
                           {b.currentAllocation?.allocatedAt
-                            ? new Date(b.currentAllocation.allocatedAt).toLocaleString()
+                            ? formatColomboDateTime(b.currentAllocation.allocatedAt)
                             : '—'}
                         </td>
                         <td className="py-2.5 text-slate-400">Active (Current)</td>
@@ -919,7 +914,7 @@ export const BedBoardPage: React.FC = () => {
                 {admissionsList.map((adm) => (
                   <option key={adm.id} value={adm.id}>
                     {adm.admissionReferenceId} — {adm.admissionCategory} (
-                    {new Date(adm.admittedAt).toLocaleDateString()})
+                    {formatColomboDate(adm.admittedAt)})
                   </option>
                 ))}
               </select>

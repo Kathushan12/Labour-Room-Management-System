@@ -30,6 +30,7 @@ import {
   UserCheck,
   UserX,
 } from 'lucide-react';
+import { formatColomboDateTime } from '../../../lib/datetime.js';
 
 export interface EphemeralCredentialPayload {
   username: string;
@@ -99,7 +100,7 @@ export const TemporaryCredentialDialog: React.FC<TemporaryCredentialDialogProps>
             <div className="flex items-center justify-between text-[11px] text-slate-400">
               <span>Temporary Password (One-Time)</span>
               <Badge variant="outline" className="text-[10px] border-teal-500/40 text-teal-300">
-                Expires {new Date(credential.temporaryPasswordExpiresAt).toLocaleString()}
+                Expires {formatColomboDateTime(credential.temporaryPasswordExpiresAt)}
               </Badge>
             </div>
             <div className="flex items-center justify-between gap-2 bg-slate-950/60 px-3 py-2 rounded border border-slate-800">

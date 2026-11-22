@@ -66,6 +66,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { formatColomboDate } from '../../lib/datetime.js';
 
 export const StaffManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -579,7 +580,7 @@ export const StaffManagementPage: React.FC = () => {
                                 </div>
                               </td>
                               <td className="py-3.5 pr-3 text-slate-600 whitespace-nowrap">
-                                {new Date(staff.createdAt).toLocaleDateString()}
+                                {formatColomboDate(staff.createdAt)}
                               </td>
                               <td className="py-3.5 text-right">
                                 <div className="inline-flex items-center gap-1.5 flex-wrap justify-end">
@@ -787,7 +788,7 @@ export const StaffManagementPage: React.FC = () => {
                           {item.userId.substring(0, 8)}
                         </td>
                         <td className="py-2.5 px-3 text-slate-600">
-                          {new Date(item.assignedAt).toLocaleDateString()}
+                          {formatColomboDate(item.assignedAt)}
                         </td>
                         <td className="py-2.5 px-3">
                           <Badge

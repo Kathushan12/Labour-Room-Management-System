@@ -6,6 +6,7 @@ import { Badge } from '../../../components/ui/badge.js';
 import { SurgicalDecisionDialog } from './SurgicalDecisionDialog.js';
 import { SurgicalReadinessDialog } from './SurgicalReadinessDialog.js';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { formatColomboTime } from '../../../lib/datetime.js';
 
 interface SurgicalReviewCardProps {
   admissionId: string;
@@ -162,7 +163,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Requested: {new Date(sr.createdAt).toLocaleTimeString()}
+                    Requested: {formatColomboTime(sr.createdAt)}
                   </span>
                 </div>
 
@@ -206,7 +207,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                     </strong>
                     {sr.theatreReadyAt && (
                       <span className="text-emerald-700 dark:text-emerald-400 text-[10px] block">
-                        Theatre Ready: {new Date(sr.theatreReadyAt).toLocaleTimeString()}
+                        Theatre Ready: {formatColomboTime(sr.theatreReadyAt)}
                       </span>
                     )}
                   </div>
@@ -226,7 +227,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                     )}
                     {sr.handedOverAt && (
                       <span className="text-emerald-700 dark:text-emerald-400 font-semibold ml-3">
-                        ✓ Handed over to Theatre at {new Date(sr.handedOverAt).toLocaleTimeString()}
+                        ✓ Handed over to Theatre at {formatColomboTime(sr.handedOverAt)}
                       </span>
                     )}
                   </div>

@@ -9,6 +9,7 @@ import {
 import { Badge } from '../../../components/ui/badge.js';
 import { Button } from '../../../components/ui/button.js';
 import { Activity, AlertTriangle, Clock, Heart, Plus, Thermometer, UserCheck } from 'lucide-react';
+import { formatColomboDateTime } from '../../../lib/datetime.js';
 
 interface MaternalPostpartumTimelineProps {
   assessments: PostpartumMaternalAssessmentDto[];
@@ -110,7 +111,7 @@ export const MaternalPostpartumTimeline: React.FC<MaternalPostpartumTimelineProp
                   <div className="flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5 text-teal-600" />
                     <span className="font-semibold text-slate-900 dark:text-slate-100">
-                      {new Date(item.assessmentTimestamp).toLocaleString()}
+                      {formatColomboDateTime(item.assessmentTimestamp)}
                     </span>
                     {getReviewBadge(item.clinicalReviewStatus)}
                   </div>

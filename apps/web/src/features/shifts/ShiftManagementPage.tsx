@@ -49,6 +49,7 @@ import {
   UserX,
   ArrowRightLeft,
 } from 'lucide-react';
+import { formatColomboDateTime, formatColomboTime } from '../../lib/datetime.js';
 
 export const ShiftManagementPage: React.FC = () => {
   const { user, permissions } = useAuth();
@@ -486,15 +487,9 @@ export const ShiftManagementPage: React.FC = () => {
                   <div className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600 flex items-center justify-between">
                     <ShiftTypeBadge type={staff.shiftType} />
                     <span className="text-[11px] font-mono text-slate-500">
-                      {new Date(staff.shiftStartsAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}{' '}
+                      {formatColomboTime(staff.shiftStartsAt)}{' '}
                       -{' '}
-                      {new Date(staff.shiftEndsAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatColomboTime(staff.shiftEndsAt)}
                     </span>
                   </div>
                 )}
@@ -559,19 +554,9 @@ export const ShiftManagementPage: React.FC = () => {
                   <div className="flex items-center space-x-2 text-xs text-slate-500 font-mono">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span>
-                      {new Date(shift.startsAt).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}{' '}
+                      {formatColomboDateTime(shift.startsAt)}{' '}
                       —{' '}
-                      {new Date(shift.endsAt).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatColomboDateTime(shift.endsAt)}
                     </span>
                   </div>
                 </div>
@@ -951,9 +936,9 @@ export const ShiftManagementPage: React.FC = () => {
                     )}
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[11px] text-slate-500">
-                      <span>Logged: {new Date(ho.createdAt).toLocaleString()}</span>
+                      <span>Logged: {formatColomboDateTime(ho.createdAt)}</span>
                       {ho.acknowledgedAt && (
-                        <span>Acknowledged: {new Date(ho.acknowledgedAt).toLocaleString()}</span>
+                        <span>Acknowledged: {formatColomboDateTime(ho.acknowledgedAt)}</span>
                       )}
                     </div>
 

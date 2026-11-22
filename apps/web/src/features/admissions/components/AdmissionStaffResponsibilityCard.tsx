@@ -32,6 +32,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react';
+import { formatColomboDateTime } from '../../../lib/datetime.js';
 
 interface Props {
   admissionId: string;
@@ -255,7 +256,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
                 </div>
                 <div className="text-slate-500 text-[11px] flex items-center pt-1">
                   <Clock className="w-3 h-3 mr-1 text-slate-400" />
-                  <span>Assigned: {new Date(attendingDoctor.assignedAt).toLocaleString()}</span>
+                  <span>Assigned: {formatColomboDateTime(attendingDoctor.assignedAt)}</span>
                 </div>
               </div>
             ) : (
@@ -322,7 +323,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
                 </div>
                 <div className="text-slate-500 text-[11px] flex items-center pt-1">
                   <Clock className="w-3 h-3 mr-1 text-slate-400" />
-                  <span>Assigned: {new Date(primaryNurse.assignedAt).toLocaleString()}</span>
+                  <span>Assigned: {formatColomboDateTime(primaryNurse.assignedAt)}</span>
                 </div>
               </div>
             ) : (
@@ -393,9 +394,9 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    From {new Date(h.assignedAt).toLocaleString()}
+                    From {formatColomboDateTime(h.assignedAt)}
                     {h.unassignedAt
-                      ? ` to ${new Date(h.unassignedAt).toLocaleString()}`
+                      ? ` to ${formatColomboDateTime(h.unassignedAt)}`
                       : ' (Active)'}
                   </div>
                   {h.endReason && (

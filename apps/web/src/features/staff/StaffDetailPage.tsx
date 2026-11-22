@@ -35,6 +35,7 @@ import {
   Loader2,
   ClipboardList,
 } from 'lucide-react';
+import { formatColomboDateTime } from '../../lib/datetime.js';
 
 export const StaffDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -266,15 +267,15 @@ export const StaffDetailPage: React.FC = () => {
             <dt className="text-slate-500">Last Password Change</dt>
             <dd className="text-slate-700">
               {detail.passwordChangedAt
-                ? new Date(detail.passwordChangedAt).toLocaleString()
+                ? formatColomboDateTime(detail.passwordChangedAt)
                 : 'Pending first login'}
             </dd>
 
             <dt className="text-slate-500">Account Created</dt>
-            <dd className="text-slate-700">{new Date(detail.createdAt).toLocaleString()}</dd>
+            <dd className="text-slate-700">{formatColomboDateTime(detail.createdAt)}</dd>
 
             <dt className="text-slate-500">Last Updated</dt>
-            <dd className="text-slate-700">{new Date(detail.updatedAt).toLocaleString()}</dd>
+            <dd className="text-slate-700">{formatColomboDateTime(detail.updatedAt)}</dd>
           </dl>
         </SectionCard>
 
@@ -352,10 +353,10 @@ export const StaffDetailPage: React.FC = () => {
                     </td>
                     <td className="py-2.5">{item.assignmentRole}</td>
                     <td className="py-2.5 text-slate-600">
-                      {new Date(item.assignedAt).toLocaleString()}
+                      {formatColomboDateTime(item.assignedAt)}
                     </td>
                     <td className="py-2.5 text-slate-600">
-                      {item.unassignedAt ? new Date(item.unassignedAt).toLocaleString() : 'Active'}
+                      {item.unassignedAt ? formatColomboDateTime(item.unassignedAt) : 'Active'}
                     </td>
                   </tr>
                 ))}
@@ -391,7 +392,7 @@ export const StaffDetailPage: React.FC = () => {
                 {detail.auditHistory.map((log) => (
                   <tr key={log.id}>
                     <td className="py-2.5 text-slate-600 whitespace-nowrap">
-                      {new Date(log.createdAt).toLocaleString()}
+                      {formatColomboDateTime(log.createdAt)}
                     </td>
                     <td className="py-2.5">
                       <Badge variant="outline" className="font-mono text-[10px] bg-slate-50">

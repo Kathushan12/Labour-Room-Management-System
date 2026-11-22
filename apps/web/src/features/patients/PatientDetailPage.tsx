@@ -33,6 +33,7 @@ import {
   Pencil,
   ShieldCheck,
 } from 'lucide-react';
+import { formatColomboDateTime } from '../../lib/datetime.js';
 
 export const PatientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -308,7 +309,7 @@ export const PatientDetailPage: React.FC = () => {
             </div>
             <div className="flex justify-between py-1.5 border-b border-slate-100">
               <span className="text-slate-500">Record Created:</span>
-              <span className="text-slate-700">{new Date(patient.createdAt).toLocaleString()}</span>
+              <span className="text-slate-700">{formatColomboDateTime(patient.createdAt)}</span>
             </div>
             <div className="flex justify-between py-1.5">
               <span className="text-slate-500">Total Admissions:</span>
@@ -340,7 +341,7 @@ export const PatientDetailPage: React.FC = () => {
                         </Badge>
                       </div>
                       <span className="text-[11px] text-slate-500">
-                        Admitted {new Date(adm.admittedAt).toLocaleString()}
+                        Admitted {formatColomboDateTime(adm.admittedAt)}
                       </span>
                     </div>
 
@@ -399,7 +400,7 @@ export const PatientDetailPage: React.FC = () => {
                       <span className="text-slate-500">by {log.actorUsername || 'system'}</span>
                     </div>
                     <span className="text-[11px] text-slate-500">
-                      {new Date(log.createdAt).toLocaleString()}
+                      {formatColomboDateTime(log.createdAt)}
                     </span>
                   </div>
                 ))}

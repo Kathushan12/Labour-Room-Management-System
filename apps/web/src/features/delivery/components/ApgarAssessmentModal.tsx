@@ -13,6 +13,7 @@ import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
 import { Badge } from '../../../components/ui/badge.js';
 import { AlertCircle, Award, CheckCircle2, Loader2 } from 'lucide-react';
+import { formatColomboTime } from '../../../lib/datetime.js';
 
 interface ApgarAssessmentModalProps {
   open: boolean;
@@ -373,7 +374,7 @@ export const ApgarAssessmentModal: React.FC<ApgarAssessmentModalProps> = ({
                       {existingAssessments.map((a) => (
                         <option key={a.id} value={a.id}>
                           {a.assessmentMinute.replace(/_/g, ' ')} ({a.totalScore}/10) -{' '}
-                          {new Date(a.assessedAt).toLocaleTimeString()} by{' '}
+                          {formatColomboTime(a.assessedAt)} by{' '}
                           {a.assessedByFullName || 'Clinician'}
                         </option>
                       ))}

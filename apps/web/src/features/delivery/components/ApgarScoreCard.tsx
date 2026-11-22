@@ -3,6 +3,7 @@ import { ApgarAssessmentDto, ApgarMinute } from '@lrms/shared';
 import { Badge } from '../../../components/ui/badge.js';
 import { Button } from '../../../components/ui/button.js';
 import { AlertCircle, Award, CheckCircle, Clock } from 'lucide-react';
+import { formatColomboTime } from '../../../lib/datetime.js';
 
 interface ApgarScoreCardProps {
   newbornId: string;
@@ -99,10 +100,7 @@ export const ApgarScoreCard: React.FC<ApgarScoreCardProps> = ({
                 <div className="text-[10px] text-muted-foreground flex items-center justify-between">
                   <span>{getScoreLabel(match.totalScore)}</span>
                   <span>
-                    {new Date(match.assessedAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {formatColomboTime(match.assessedAt)}
                   </span>
                 </div>
 
