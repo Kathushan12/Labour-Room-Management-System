@@ -12,6 +12,7 @@ import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, ArrowRightLeft, ShieldCheck } from 'lucide-react';
 import { CarePlanLifecycleState, UserRole } from '@lrms/shared';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface CarePlanTransitionDialogProps {
   admissionId: string;
@@ -115,7 +116,7 @@ export const CarePlanTransitionDialog: React.FC<CarePlanTransitionDialogProps> =
             <DialogTitle>Transition Care Plan State</DialogTitle>
           </div>
           <DialogDescription className="text-left text-xs">
-            Current State: <strong className="uppercase">{currentState.replace(/_/g, ' ')}</strong>
+            Current State: <strong className="uppercase">{humanizeEnum(currentState)}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -140,7 +141,7 @@ export const CarePlanTransitionDialog: React.FC<CarePlanTransitionDialogProps> =
             >
               {available.map((st) => (
                 <option key={st} value={st}>
-                  {st.replace(/_/g, ' ')}
+                  {humanizeEnum(st)}
                 </option>
               ))}
             </select>

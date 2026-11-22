@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BirthOutcome, NewbornSex, RegisterNewbornInput } from '@lrms/shared';
 import {
   Dialog,
@@ -12,12 +12,14 @@ import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, Baby, Loader2 } from 'lucide-react';
+import { StaffSelect, StaffOption } from './StaffSelect.js';
 
 interface NewbornRegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   nextBirthOrder: number;
   deliveryReferenceId: string;
+  clinicians: StaffOption[];
   defaultDeliveredByUserId: string;
   onSubmit: (input: RegisterNewbornInput) => Promise<void>;
 }
@@ -27,6 +29,7 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
   onOpenChange,
   nextBirthOrder,
   deliveryReferenceId,
+  clinicians,
   defaultDeliveredByUserId,
   onSubmit,
 }) => {
@@ -45,6 +48,14 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!open) return;
+    setBirthOrder(nextBirthOrder);
+    setProvisionalName(`Baby #${nextBirthOrder}`);
+    setDeliveredByUserId(defaultDeliveredByUserId);
+    setErrorMsg(null);
+  }, [open, nextBirthOrder, defaultDeliveredByUserId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -58,7 +69,7 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
       }
 
       if (!deliveredByUserId) {
-        setErrorMsg('Delivering clinician identifier is required.');
+        setErrorMsg('Select who delivered the baby.');
         return;
       }
 
@@ -215,14 +226,13 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Delivering Clinician ID *</Label>
-            <Input
-              type="text"
+            <Label className="text-xs">Delivered By *</Label>
+            <StaffSelect
               value={deliveredByUserId}
-              onChange={(e) => setDeliveredByUserId(e.target.value)}
-              placeholder="Doctor or midwife staff ID"
+              onChange={setDeliveredByUserId}
+              options={clinicians}
+              placeholder="Select doctor or midwife"
               required
-              className="h-8 text-xs font-mono"
             />
           </div>
 

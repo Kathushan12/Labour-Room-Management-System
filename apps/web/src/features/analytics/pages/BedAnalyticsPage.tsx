@@ -21,6 +21,7 @@ import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { BedDouble, Sparkles, CheckCircle2, Clock, Download } from 'lucide-react';
 import { Badge } from '../../../components/ui/badge.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const BedAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
@@ -77,7 +78,7 @@ export const BedAnalyticsPage: React.FC = () => {
                 : 'bg-slate-100 text-slate-800';
         return (
           <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${color}`}>
-            {row.currentStatus}
+            {humanizeEnum(row.currentStatus)}
           </span>
         );
       },

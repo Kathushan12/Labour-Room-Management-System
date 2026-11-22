@@ -49,7 +49,7 @@ export const AdminDashboard: React.FC = () => {
         }
       })
       .catch(() => {
-        if (mounted) setError('Could not reach the server. Check your connection and try again.');
+        if (mounted) setError('Could not connect. Check your connection and try again.');
       });
     return () => {
       mounted = false;

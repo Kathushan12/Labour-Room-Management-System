@@ -23,6 +23,7 @@ import { clinicalCareApi } from '../../../services/clinical-care.api.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { formatColomboTime } from '../../../lib/datetime.js';
 import { AlertReceiptStepper } from '../../alerts/components/AlertReceiptStepper.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface ClinicalEscalationPanelProps {
   admissionId: string;
@@ -139,7 +140,7 @@ export const ClinicalEscalationPanel: React.FC<ClinicalEscalationPanelProps> = (
                     {getPriorityBadge(esc.priority)}
                     {getStatusBadge(esc.status)}
                     <Badge variant="outline" className="text-[11px]">
-                      {esc.category.replace(/_/g, ' ')}
+                      {humanizeEnum(esc.category)}
                     </Badge>
                     {esc.sourceObservationId && (
                       <Badge

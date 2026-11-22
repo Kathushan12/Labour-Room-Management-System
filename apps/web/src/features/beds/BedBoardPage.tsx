@@ -56,6 +56,7 @@ import {
 import { fetchAdmissions } from '../../services/admissions.api.js';
 import { Link } from 'react-router-dom';
 import { formatColomboDate, formatColomboDateTime, formatColomboTime } from '../../lib/datetime.js';
+import { humanizeEnum } from '../../lib/labels.js';
 
 export const BedBoardPage: React.FC = () => {
   const [wards, setWards] = useState<WardDto[]>([]);
@@ -110,7 +111,7 @@ export const BedBoardPage: React.FC = () => {
         setActionError(res.error?.message || 'Could not load wards.');
       }
     } catch {
-      setActionError('Could not reach the server to load wards.');
+      setActionError('Could not load wards. Check your connection and try again.');
     }
   }, []);
 
@@ -127,7 +128,7 @@ export const BedBoardPage: React.FC = () => {
         setActionError(res.error?.message || 'Could not load the bed board.');
       }
     } catch {
-      setActionError('Could not reach the server to load the bed board.');
+      setActionError('Could not load the bed board. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -913,7 +914,7 @@ export const BedBoardPage: React.FC = () => {
                 <option value="">-- Choose an admission awaiting bed --</option>
                 {admissionsList.map((adm) => (
                   <option key={adm.id} value={adm.id}>
-                    {adm.admissionReferenceId} — {adm.admissionCategory} (
+                    {adm.admissionReferenceId} — {humanizeEnum(adm.admissionCategory)} (
                     {formatColomboDate(adm.admittedAt)})
                   </option>
                 ))}

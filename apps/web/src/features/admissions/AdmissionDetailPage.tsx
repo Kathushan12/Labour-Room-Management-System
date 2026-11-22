@@ -697,7 +697,10 @@ export const AdmissionDetailPage: React.FC = () => {
         {clinicalTab === 'observations' && <ClinicalObservationPanel admissionId={admission.id} />}
 
         {clinicalTab === 'delivery' && (
-          <PostpartumDeliveryTab admissionId={admission.id} userRole={role || undefined} />
+          <PostpartumDeliveryTab
+            admissionId={admission.id}
+            wardId={admission.wardId}
+            userRole={role || undefined} />
         )}
       </div>
 

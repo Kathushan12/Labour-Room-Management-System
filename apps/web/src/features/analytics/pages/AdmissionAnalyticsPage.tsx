@@ -21,6 +21,7 @@ import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/Ana
 import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { Activity, UserCheck, ArrowRightLeft, UserMinus, Download } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const AdmissionAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
@@ -131,7 +132,7 @@ export const AdmissionAnalyticsPage: React.FC = () => {
               <AnalyticsBarChart
                 data={data.admissionsByCategory.map(
                   (c: { category: string; count: number; percentage: number }) => ({
-                    label: c.category.replace(/_/g, ' '),
+                    label: humanizeEnum(c.category),
                     value: c.count,
                     sublabel: `${c.percentage}%`,
                   }),
@@ -146,7 +147,7 @@ export const AdmissionAnalyticsPage: React.FC = () => {
             >
               <AnalyticsDonutChart
                 data={data.admissionsByStatus.map((s: { status: string; count: number }) => ({
-                  label: s.status.replace(/_/g, ' '),
+                  label: humanizeEnum(s.status),
                   value: s.count,
                 }))}
                 totalLabel="Total"

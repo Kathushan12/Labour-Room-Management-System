@@ -20,6 +20,7 @@ import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/Ana
 import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { Clock, Baby, HeartPulse, Info, Download } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const AlosAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
@@ -103,7 +104,7 @@ export const AlosAnalyticsPage: React.FC = () => {
             Clinical Methodology: Strict ALOS Independence
           </h4>
           <p className="mt-1 leading-relaxed text-teal-800">
-            In compliance with Sri Lanka Ministry of Health maternity guidelines and Caldicott
+            In line with Sri Lanka Ministry of Health maternity guidelines and patient-privacy
             principles,
             <strong> maternal length of stay</strong> (admission to postpartum discharge) and
             <strong> newborn length of stay</strong> (birth timestamp to neonatal release) are
@@ -165,7 +166,7 @@ export const AlosAnalyticsPage: React.FC = () => {
             <AnalyticsBarChart
               data={data.maternalAlosByCategory.map(
                 (cp: { category: string; count: number; alosDays: number | null }) => ({
-                  label: cp.category.replace(/_/g, ' '),
+                  label: humanizeEnum(cp.category),
                   value: cp.alosDays ?? 0,
                   sublabel: `${cp.count} pts`,
                 }),

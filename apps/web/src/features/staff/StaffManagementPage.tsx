@@ -67,6 +67,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { formatColomboDate } from '../../lib/datetime.js';
+import { roleLabel } from '../../lib/labels.js';
 
 export const StaffManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -248,7 +249,7 @@ export const StaffManagementPage: React.FC = () => {
       throw new Error(res.error?.message || 'Failed to update role');
     }
     setActionBanner(
-      `Role changed to ${role} for ${res.data?.username}. All active sessions revoked.`,
+      `Role changed to ${roleLabel(role)} for ${res.data?.username}. All active sessions revoked.`,
     );
     await loadDirectory();
   };
@@ -889,7 +890,7 @@ export const StaffManagementPage: React.FC = () => {
                   )
                   .map((u) => (
                     <option key={u.id} value={u.id}>
-                      {u.fullName} ({u.role}) — @{u.username}
+                      {u.fullName} ({roleLabel(u.role)}) — @{u.username}
                     </option>
                   ))}
               </select>

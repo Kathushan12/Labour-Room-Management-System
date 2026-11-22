@@ -9,6 +9,7 @@ import { useClinicalDashboardData } from './useClinicalDashboardData.js';
 import { categoryLabel, isPendingAlert, receiptStateOf } from '../alerts/alert-feed.js';
 import { formatColomboTime } from '../../lib/datetime.js';
 import { useAlertStateRefresh } from '../../hooks/useRealtimeNotifications.js';
+import { humanizeEnum } from '../../lib/labels.js';
 
 export const DoctorDashboard: React.FC = () => {
   const { admissions, alerts, loading, error, wardId, reload, refresh } =
@@ -131,7 +132,7 @@ export const DoctorDashboard: React.FC = () => {
                     </div>
                     <p className="text-xs text-slate-600">
                       Admitted {formatColomboTime(admission.admittedAt)} &bull;{' '}
-                      {admission.currentCarePlan.replace(/_/g, ' ')}
+                      {humanizeEnum(admission.currentCarePlan)}
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {admission.riskFlags

@@ -39,7 +39,7 @@ export const AlertTimeoutCard: React.FC<{ ward: WardDto }> = ({ ward }) => {
         setMessage({ kind: 'error', text: res.error?.message || 'Could not save the timeout.' });
       }
     } catch {
-      setMessage({ kind: 'error', text: 'Could not reach the server. Try again.' });
+      setMessage({ kind: 'error', text: 'Could not connect. Try again.' });
     } finally {
       setSaving(false);
     }

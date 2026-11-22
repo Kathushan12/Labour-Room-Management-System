@@ -31,6 +31,7 @@ import { ContractionObservationForm } from './ContractionObservationForm.js';
 import { ObservationAmendmentDialog } from './ObservationAmendmentDialog.js';
 import { PartographView } from './PartographView.js';
 import { EscalationCreateDialog } from '../../clinical-care/components/EscalationCreateDialog.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 const HIGHLIGHT_LABELS: Record<ObservationHighlight, string> = {
   SYSTOLIC_HIGH: 'Systolic high',
@@ -669,7 +670,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                           )}
                           {obs.membraneStatus && (
                             <Badge variant="outline" className="text-[10px] text-slate-700">
-                              {obs.membraneStatus}
+                              {humanizeEnum(obs.membraneStatus)}
                             </Badge>
                           )}
                         </div>
@@ -833,7 +834,7 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                             variant="outline"
                             className="text-[10px] bg-amber-50 text-amber-900 border-amber-300"
                           >
-                            {amd.observationType} AMENDED
+                            {humanizeEnum(amd.observationType)} amended
                           </Badge>
                           <span className="font-mono text-slate-500 text-[11px]">
                             {new Date(amd.createdAt).toLocaleString('en-GB', {

@@ -67,7 +67,7 @@ export function useClinicalDashboardData(): ClinicalDashboardData {
       setBedBoard(board);
       setAlerts(alertsRes);
     } catch {
-      setError('Could not reach the server. Check your connection and try again.');
+      setError('Could not connect. Check your connection and try again.');
     } finally {
       setLoading(false);
     }

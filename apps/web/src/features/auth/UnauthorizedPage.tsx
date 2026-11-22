@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, ArrowLeft, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../../components/ui/button.js';
+import { roleLabel } from '../../lib/labels.js';
 
 export const UnauthorizedPage: React.FC = () => {
   const { user, role, logout } = useAuth();
@@ -36,7 +37,7 @@ export const UnauthorizedPage: React.FC = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Role:</span>
-              <span className="font-bold text-teal-700">{role}</span>
+              <span className="font-bold text-teal-700">{roleLabel(role)}</span>
             </div>
           </div>
         )}

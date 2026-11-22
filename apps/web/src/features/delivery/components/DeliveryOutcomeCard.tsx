@@ -4,6 +4,7 @@ import { Badge } from '../../../components/ui/badge.js';
 import { Button } from '../../../components/ui/button.js';
 import { Calendar, Clock, Edit2, CheckCircle2, Lock, AlertTriangle, UserCheck } from 'lucide-react';
 import { formatColomboDate, formatColomboDateTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface DeliveryOutcomeCardProps {
   delivery: DeliveryDto | null;
@@ -64,7 +65,7 @@ export const DeliveryOutcomeCard: React.FC<DeliveryOutcomeCardProps> = ({
                     : 'bg-amber-100 text-amber-800 border-amber-200'
                 }
               >
-                {delivery.status}
+                {humanizeEnum(delivery.status)}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -107,7 +108,7 @@ export const DeliveryOutcomeCard: React.FC<DeliveryOutcomeCardProps> = ({
             {formatColomboDateTime(delivery.deliveryTimestamp)}
           </div>
           <Badge variant="outline" className="mt-1 font-mono uppercase text-[10px]">
-            {delivery.deliveryMode.replace(/_/g, ' ')}
+            {humanizeEnum(delivery.deliveryMode)}
           </Badge>
         </div>
 

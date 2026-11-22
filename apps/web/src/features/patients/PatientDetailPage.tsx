@@ -34,6 +34,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { formatColomboDateTime } from '../../lib/datetime.js';
+import { humanizeEnum } from '../../lib/labels.js';
 
 export const PatientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -336,7 +337,7 @@ export const PatientDetailPage: React.FC = () => {
                         </span>
                         <AdmissionCategoryBadge category={adm.admissionCategory} />
                         <Badge variant="outline" className="text-[10px]">
-                          {adm.status}
+                          {humanizeEnum(adm.status)}
                         </Badge>
                       </div>
                       <span className="text-[11px] text-slate-500">

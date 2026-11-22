@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { ApgarScoreCard } from './ApgarScoreCard.js';
 import { formatColomboDateTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface NewbornCardProps {
   newborns: NewbornDto[];
@@ -66,7 +67,7 @@ export const NewbornCard: React.FC<NewbornCardProps> = ({
       default:
         return (
           <Badge variant="outline" className="text-[10px]">
-            {outcome}
+            {humanizeEnum(outcome)}
           </Badge>
         );
     }
@@ -90,12 +91,12 @@ export const NewbornCard: React.FC<NewbornCardProps> = ({
       case NewbornDischargeStatus.TRANSFERRED_SCBU:
       case NewbornDischargeStatus.TRANSFERRED_NICU:
         return (
-          <Badge className="bg-amber-600 text-white text-[10px]">{status.replace(/_/g, ' ')}</Badge>
+          <Badge className="bg-amber-600 text-white text-[10px]">{humanizeEnum(status)}</Badge>
         );
       default:
         return (
           <Badge variant="outline" className="text-[10px]">
-            {status.replace(/_/g, ' ')}
+            {humanizeEnum(status)}
           </Badge>
         );
     }
@@ -233,7 +234,7 @@ export const NewbornCard: React.FC<NewbornCardProps> = ({
                       Discharge Status
                     </span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {baby.dischargeStatus.replace(/_/g, ' ')}
+                      {humanizeEnum(baby.dischargeStatus)}
                     </span>
                   </div>
                 </div>

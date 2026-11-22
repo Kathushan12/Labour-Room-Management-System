@@ -36,6 +36,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { formatColomboDateTime } from '../../lib/datetime.js';
+import { assignmentRoleLabel } from '../../lib/labels.js';
 
 export const StaffDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -351,7 +352,7 @@ export const StaffDetailPage: React.FC = () => {
                     <td className="py-2.5 font-mono font-semibold text-slate-800">
                       {item.admissionReferenceId || item.admissionId}
                     </td>
-                    <td className="py-2.5">{item.assignmentRole}</td>
+                    <td className="py-2.5">{assignmentRoleLabel(item.assignmentRole)}</td>
                     <td className="py-2.5 text-slate-600">
                       {formatColomboDateTime(item.assignedAt)}
                     </td>

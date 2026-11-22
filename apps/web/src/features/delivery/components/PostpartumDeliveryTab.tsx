@@ -16,6 +16,9 @@ import {
   UserRole,
 } from '@lrms/shared';
 import { postpartumDeliveryApi } from '../../../services/postpartum-delivery.api.js';
+import { wardStaffApi } from '../../../services/ward-staff.api.js';
+import { staffAssignmentsApi } from '../../../services/staff-assignments.api.js';
+import { StaffOption } from './StaffSelect.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { DeliveryOutcomeCard } from './DeliveryOutcomeCard.js';
 import { DeliveryRegistrationModal } from './DeliveryRegistrationModal.js';
@@ -35,14 +38,57 @@ import { formatColomboDateTime } from '../../../lib/datetime.js';
 
 interface PostpartumDeliveryTabProps {
   admissionId: string;
+  wardId: string;
   userRole?: string;
 }
 
 export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
   admissionId,
+  wardId,
   userRole,
 }) => {
   const { user } = useAuth();
+
+  const [doctors, setDoctors] = useState<StaffOption[]>([]);
+  const [nurses, setNurses] = useState<StaffOption[]>([]);
+  const [attendingDoctorId, setAttendingDoctorId] = useState('');
+  const [primaryNurseId, setPrimaryNurseId] = useState('');
+
+  useEffect(() => {
+    if (!wardId) return;
+    let cancelled = false;
+    Promise.all([
+      wardStaffApi.listWardStaff(wardId, true),
+      staffAssignmentsApi.getAdmissionStaffResponsibility(admissionId).catch(() => null),
+    ])
+      .then(([staff, responsibility]) => {
+        if (cancelled) return;
+        const toOption = (ws: (typeof staff)[number]): StaffOption => ({
+          id: ws.userId,
+          fullName: ws.user?.fullName || ws.user?.username || 'Unnamed staff',
+          role: ws.user?.role || '',
+        });
+        setDoctors(staff.filter((ws) => ws.user?.role === UserRole.DOCTOR).map(toOption));
+        setNurses(staff.filter((ws) => ws.user?.role === UserRole.NURSE_STAFF).map(toOption));
+        setAttendingDoctorId(responsibility?.attendingDoctor?.staffId ?? '');
+        setPrimaryNurseId(responsibility?.primaryNurse?.staffId ?? '');
+      })
+      .catch(() => {
+        // Pickers stay empty; the forms explain that no staff are available.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wardId, admissionId]);
+
+  const defaultDoctorId =
+    user?.role === UserRole.DOCTOR && doctors.some((d) => d.id === user.id)
+      ? user.id
+      : attendingDoctorId || doctors[0]?.id || '';
+  const defaultNurseId =
+    user?.role === UserRole.NURSE_STAFF && nurses.some((n) => n.id === user.id)
+      ? user.id
+      : primaryNurseId;
 
   const [delivery, setDelivery] = useState<DeliveryDto | null>(null);
   const [newborns, setNewborns] = useState<NewbornDto[]>([]);
@@ -194,7 +240,7 @@ export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
           <ShieldCheck className="w-5 h-5" />
         </div>
         <h3 className="font-bold text-sm text-amber-900 dark:text-amber-200">
-          Caldicott Data Protection Restriction
+          Access restricted to clinical staff
         </h3>
         <p className="text-xs text-amber-800 dark:text-amber-300 max-w-md mx-auto">
           Administrative accounts are strictly prohibited from viewing identifiable maternal
@@ -325,9 +371,10 @@ export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
         }}
         existingDelivery={editDeliveryOpen ? delivery : null}
         onSubmit={editDeliveryOpen ? handleUpdateDelivery : handleCreateDelivery}
-        attendingStaffList={
-          user ? [{ id: user.id, fullName: user.fullName || user.username, role: user.role }] : []
-        }
+        doctors={doctors}
+        nurses={nurses}
+        defaultDoctorId={defaultDoctorId}
+        defaultMidwifeId={defaultNurseId}
       />
 
       {delivery && (
@@ -345,7 +392,10 @@ export const PostpartumDeliveryTab: React.FC<PostpartumDeliveryTabProps> = ({
           onOpenChange={setRegisterNewbornOpen}
           nextBirthOrder={newborns.length + 1}
           deliveryReferenceId={delivery.deliveryReferenceId}
-          defaultDeliveredByUserId={user?.id || ''}
+          clinicians={[...doctors, ...nurses]}
+          defaultDeliveredByUserId={
+            [...doctors, ...nurses].some((c) => c.id === user?.id) ? user!.id : defaultDoctorId
+          }
           onSubmit={handleRegisterNewborn}
         />
       )}

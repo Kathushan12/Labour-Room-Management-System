@@ -40,6 +40,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { formatColomboDateTime } from '../../lib/datetime.js';
+import { humanizeEnum } from '../../lib/labels.js';
 
 const CORE_RISK_KEYS: RiskFlagKey[] = [
   RiskFlagKey.HYPERTENSION,
@@ -493,7 +494,7 @@ export const AdmissionsPage: React.FC = () => {
                         </td>
                         <td className="py-3.5 pr-3">
                           <Badge variant="outline" className="text-[10px] font-semibold">
-                            {adm.status}
+                            {humanizeEnum(adm.status)}
                           </Badge>
                         </td>
                         <td className="py-3.5 text-right whitespace-nowrap">

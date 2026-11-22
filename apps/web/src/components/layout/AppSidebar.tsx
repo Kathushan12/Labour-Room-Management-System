@@ -187,7 +187,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       {/* Sidebar Footer info */}
       {!collapsed && (
         <div className="p-3 border-t border-slate-800 text-[10px] text-slate-500 text-center">
-          CO2307 Group 07
+          Colombo South Teaching Hospital · Ward 18
         </div>
       )}
     </aside>

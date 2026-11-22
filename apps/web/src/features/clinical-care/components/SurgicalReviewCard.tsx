@@ -7,6 +7,7 @@ import { SurgicalDecisionDialog } from './SurgicalDecisionDialog.js';
 import { SurgicalReadinessDialog } from './SurgicalReadinessDialog.js';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
 import { formatColomboTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface SurgicalReviewCardProps {
   admissionId: string;
@@ -159,7 +160,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                     </span>
                     {getDecisionBadge(sr.caesareanDecision)}
                     <Badge variant="outline" className="text-xs">
-                      {sr.status.replace(/_/g, ' ')}
+                      {humanizeEnum(sr.status)}
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
@@ -189,7 +190,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                       Anaesthetic Review:
                     </span>
                     <strong className="text-foreground">
-                      {sr.anaesthesiaReviewStatus.replace(/_/g, ' ')}
+                      {humanizeEnum(sr.anaesthesiaReviewStatus)}
                     </strong>
                     {sr.anaesthesiaNotes && (
                       <p className="text-muted-foreground text-[10px] mt-0.5">
@@ -203,7 +204,7 @@ export const SurgicalReviewCard: React.FC<SurgicalReviewCardProps> = ({
                       Operating Theatre Readiness:
                     </span>
                     <strong className="text-foreground">
-                      {sr.theatreReadinessStatus.replace(/_/g, ' ')}
+                      {humanizeEnum(sr.theatreReadinessStatus)}
                     </strong>
                     {sr.theatreReadyAt && (
                       <span className="text-emerald-700 dark:text-emerald-400 text-[10px] block">

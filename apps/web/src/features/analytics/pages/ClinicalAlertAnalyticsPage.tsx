@@ -22,6 +22,7 @@ import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { AnalyticsDataTable, ColumnDef } from '../components/AnalyticsDataTable.js';
 import { fetchWards } from '../../../services/wards.api.js';
 import { formatColomboTimeWithSeconds } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 const timeOrDash = (iso: string | null) => (iso ? formatColomboTimeWithSeconds(iso) : '—');
 const secondsOrDash = (s: number | null) => (s == null ? '—' : `${s}s`);
@@ -233,7 +234,7 @@ export const ClinicalAlertAnalyticsPage: React.FC = () => {
                 >
                   <AnalyticsDonutChart
                     data={data.alertsBySeverity.map((s: { severity: string; count: number }) => ({
-                      label: s.severity.replace(/_/g, ' '),
+                      label: humanizeEnum(s.severity),
                       value: s.count,
                       color:
                         s.severity === 'CRITICAL' || s.severity === 'EMERGENCY'

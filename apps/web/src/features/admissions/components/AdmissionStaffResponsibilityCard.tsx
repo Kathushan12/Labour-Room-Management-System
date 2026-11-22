@@ -33,6 +33,7 @@ import {
   Users,
 } from 'lucide-react';
 import { formatColomboDateTime } from '../../../lib/datetime.js';
+import { assignmentRoleLabel } from '../../../lib/labels.js';
 
 interface Props {
   admissionId: string;
@@ -369,7 +370,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
           <div className="flex flex-wrap gap-2">
             {supportingStaff.map((s) => (
               <Badge key={s.id} variant="secondary" className="text-xs py-1 px-2">
-                {s.staff?.fullName || s.staff?.username} ({s.assignmentRole.replace('_', ' ')})
+                {s.staff?.fullName || s.staff?.username} ({assignmentRoleLabel(s.assignmentRole)})
               </Badge>
             ))}
           </div>
@@ -390,7 +391,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
                   <div className="font-semibold text-slate-800">
                     {h.staff?.fullName || h.staff?.username}{' '}
                     <span className="text-[10px] text-slate-500 font-normal">
-                      ({h.assignmentRole.replace('_', ' ')})
+                      ({assignmentRoleLabel(h.assignmentRole)})
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500">
@@ -425,7 +426,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900">
-              Transfer {transferRole.replace('_', ' ')} Responsibility
+              Transfer {assignmentRoleLabel(transferRole).toLowerCase()} responsibility
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-600">
               Select an active Ward 18 clinician to assume responsibility for this patient episode.
@@ -514,7 +515,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900">
-              Assign {assignRole.replace('_', ' ')}
+              Assign {assignmentRoleLabel(assignRole).toLowerCase()}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-600">
               Nominate an active Ward 18 clinician to assume primary responsibility.

@@ -13,6 +13,7 @@ import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, History, Loader2 } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface ObservationAmendmentDialogProps {
   isOpen: boolean;
@@ -114,7 +115,7 @@ export const ObservationAmendmentDialog: React.FC<ObservationAmendmentDialogProp
           {/* Type-specific editable fields */}
           <div className="space-y-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs">
             <div className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] mb-1">
-              Correct Observation Values ({observationType})
+              Correct Observation Values ({humanizeEnum(observationType)})
             </div>
 
             {observationType === ClinicalObservationType.MATERNAL && (

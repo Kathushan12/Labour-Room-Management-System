@@ -4,6 +4,7 @@ import { Badge } from '../../../components/ui/badge.js';
 import { Button } from '../../../components/ui/button.js';
 import { AlertCircle, Award, CheckCircle, Clock } from 'lucide-react';
 import { formatColomboTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface ApgarScoreCardProps {
   newbornId: string;
@@ -73,7 +74,7 @@ export const ApgarScoreCard: React.FC<ApgarScoreCardProps> = ({
                   className="p-3 rounded-lg border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-center"
                 >
                   <span className="font-semibold text-slate-600 dark:text-slate-400 block text-[11px]">
-                    {minute.replace(/_/g, ' ')}
+                    {humanizeEnum(minute)}
                   </span>
                   <span className="text-[10px] text-muted-foreground">Pending</span>
                 </div>
@@ -87,7 +88,7 @@ export const ApgarScoreCard: React.FC<ApgarScoreCardProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px]">
-                    {match.assessmentMinute.replace(/_/g, ' ')}
+                    {humanizeEnum(match.assessmentMinute)}
                   </span>
                   <Badge
                     variant="outline"

@@ -7,6 +7,7 @@ import { ClinicalObservationPanel } from './components/ClinicalObservationPanel.
 import { Activity, Loader2, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../../components/ui/button.js';
+import { humanizeEnum } from '../../lib/labels.js';
 
 export const FetalObservationsPage: React.FC = () => {
   const [admissions, setAdmissions] = useState<AdmissionSummaryDto[]>([]);
@@ -100,7 +101,7 @@ export const FetalObservationsPage: React.FC = () => {
                 >
                   {admissions.map((adm) => (
                     <option key={adm.id} value={adm.id}>
-                      {adm.admissionReferenceId} ({adm.admissionCategory})
+                      {adm.admissionReferenceId} ({humanizeEnum(adm.admissionCategory)})
                     </option>
                   ))}
                 </select>

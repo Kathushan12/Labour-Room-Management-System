@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (outcome.status !== 'unavailable' || !mounted) return;
           if (Date.now() > deadline) {
             setError(
-              'Cannot reach the LRMS server. Check that it is running and that this device is online.',
+              'Cannot connect to the system. Check that this device is online.',
             );
             return;
           }

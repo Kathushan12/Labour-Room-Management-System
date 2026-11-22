@@ -23,6 +23,7 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
+import { humanizeEnum } from '../../lib/labels.js';
 
 export const RoleBadge: React.FC<{ role: UserRole | string; className?: string }> = ({
   role,
@@ -89,7 +90,7 @@ export const AdmissionCategoryBadge: React.FC<{
     default:
       return (
         <Badge variant="outline" className={className}>
-          {category}
+          {humanizeEnum(category)}
         </Badge>
       );
   }
@@ -182,7 +183,7 @@ export const AlertReceiptBadge: React.FC<{
     default:
       return (
         <Badge variant="outline" className={className}>
-          {state}
+          {humanizeEnum(state)}
         </Badge>
       );
   }

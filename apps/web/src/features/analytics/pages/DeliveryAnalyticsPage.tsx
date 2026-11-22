@@ -19,6 +19,7 @@ import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/Ana
 import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { Baby, Scissors, HeartPulse, Download, Activity } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const DeliveryAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
@@ -123,7 +124,7 @@ export const DeliveryAnalyticsPage: React.FC = () => {
               <AnalyticsDonutChart
                 data={data.deliveriesByMode.map(
                   (dm: { mode: string; count: number; percentage: number }) => ({
-                    label: dm.mode.replace(/_/g, ' '),
+                    label: humanizeEnum(dm.mode),
                     value: dm.count,
                   }),
                 )}
@@ -139,7 +140,7 @@ export const DeliveryAnalyticsPage: React.FC = () => {
               <AnalyticsBarChart
                 data={data.perinealTraumaDistribution.map(
                   (pt: { status: string; count: number }) => ({
-                    label: pt.status.replace(/_/g, ' '),
+                    label: humanizeEnum(pt.status),
                     value: pt.count,
                   }),
                 )}
@@ -156,7 +157,7 @@ export const DeliveryAnalyticsPage: React.FC = () => {
             <AnalyticsBarChart
               data={data.placentaDeliveryStatusDistribution.map(
                 (pd: { status: string; count: number }) => ({
-                  label: pd.status.replace(/_/g, ' '),
+                  label: humanizeEnum(pd.status),
                   value: pd.count,
                 }),
               )}

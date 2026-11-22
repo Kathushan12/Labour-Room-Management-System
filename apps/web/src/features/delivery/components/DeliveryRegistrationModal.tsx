@@ -12,13 +12,17 @@ import { Button } from '../../../components/ui/button.js';
 import { Input } from '../../../components/ui/input.js';
 import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { StaffSelect, StaffOption } from './StaffSelect.js';
 
 interface DeliveryRegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   existingDelivery?: DeliveryDto | null;
   onSubmit: (input: CreateDeliveryInput | UpdateDeliveryInput) => Promise<void>;
-  attendingStaffList?: Array<{ id: string; fullName: string; role: string }>;
+  doctors: StaffOption[];
+  nurses: StaffOption[];
+  defaultDoctorId: string;
+  defaultMidwifeId: string;
 }
 
 export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps> = ({
@@ -26,7 +30,10 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
   onOpenChange,
   existingDelivery,
   onSubmit,
-  attendingStaffList = [],
+  doctors,
+  nurses,
+  defaultDoctorId,
+  defaultMidwifeId,
 }) => {
   const isEditing = Boolean(existingDelivery);
 
@@ -68,8 +75,8 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
       setDeliveryTimestamp(new Date().toISOString().slice(0, 16));
       setDeliveryMode(DeliveryMode.NORMAL);
       setDeliveryLocation('Ward 18 - Labour Room');
-      setAttendingDoctorId(attendingStaffList[0]?.id || '');
-      setResponsibleMidwifeId('');
+      setAttendingDoctorId(defaultDoctorId);
+      setResponsibleMidwifeId(defaultMidwifeId);
       setEstimatedBloodLossMl('250');
       setPerinealTraumaStatus('Intact');
       setPlacentaStatus('Complete');
@@ -77,7 +84,7 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
       setAmendmentReason('');
     }
     setErrorMsg(null);
-  }, [existingDelivery, open, attendingStaffList]);
+  }, [existingDelivery, open, defaultDoctorId, defaultMidwifeId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +95,7 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
       return;
     }
     if (!attendingDoctorId) {
-      setErrorMsg('Attending Doctor identifier is required.');
+      setErrorMsg('Select the attending doctor.');
       return;
     }
 
@@ -183,25 +190,23 @@ export const DeliveryRegistrationModal: React.FC<DeliveryRegistrationModalProps>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Attending Doctor ID *</Label>
-              <Input
-                type="text"
-                placeholder="Doctor staff ID"
+              <Label className="text-xs">Attending Doctor *</Label>
+              <StaffSelect
                 value={attendingDoctorId}
-                onChange={(e) => setAttendingDoctorId(e.target.value)}
+                onChange={setAttendingDoctorId}
+                options={doctors}
+                placeholder="Select doctor"
                 required
-                className="h-8 text-xs font-mono"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Responsible Midwife ID (Optional)</Label>
-              <Input
-                type="text"
-                placeholder="Midwife staff ID"
+              <Label className="text-xs">Responsible Nurse / Midwife (Optional)</Label>
+              <StaffSelect
                 value={responsibleMidwifeId}
-                onChange={(e) => setResponsibleMidwifeId(e.target.value)}
-                className="h-8 text-xs font-mono"
+                onChange={setResponsibleMidwifeId}
+                options={nurses}
+                placeholder="None selected"
               />
             </div>
           </div>

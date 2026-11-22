@@ -25,6 +25,7 @@ import { clinicalCareApi } from '../../../services/clinical-care.api.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { AlertReceiptStepper } from '../../alerts/components/AlertReceiptStepper.js';
 import { formatColomboDateTime, formatColomboTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface EscalationDetailModalProps {
   admissionId: string;
@@ -168,7 +169,7 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
           <div className="p-3 bg-muted/40 border rounded-md flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="font-semibold">
-                {escalation.category.replace(/_/g, ' ')}
+                {humanizeEnum(escalation.category)}
               </Badge>
               <Badge
                 className={
@@ -182,7 +183,7 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
                 {escalation.priority}
               </Badge>
               <Badge className="bg-primary text-primary-foreground">
-                {escalation.status.replace(/_/g, ' ')}
+                {humanizeEnum(escalation.status)}
               </Badge>
             </div>
             <span className="text-[11px] text-muted-foreground">
@@ -278,8 +279,8 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
                   >
                     <div>
                       <span className="font-medium">
-                        {h.fromStatus ? `${h.fromStatus} → ` : ''}
-                        <strong>{h.toStatus}</strong>
+                        {h.fromStatus ? `${humanizeEnum(h.fromStatus)} → ` : ''}
+                        <strong>{humanizeEnum(h.toStatus)}</strong>
                       </span>
                       {h.reason && <span className="text-muted-foreground ml-2">({h.reason})</span>}
                       {h.notes && <p className="text-muted-foreground mt-0.5">{h.notes}</p>}

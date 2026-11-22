@@ -21,6 +21,7 @@ import { CarePlanTransitionDialog } from './CarePlanTransitionDialog.js';
 import { CarePlanAmendDialog } from './CarePlanAmendDialog.js';
 import { CarePlanReviewDialog } from './CarePlanReviewDialog.js';
 import { formatColomboDateTime, formatColomboTime } from '../../../lib/datetime.js';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 interface ClinicalCarePlanCardProps {
   admissionId: string;
@@ -279,7 +280,7 @@ export const ClinicalCarePlanCard: React.FC<ClinicalCarePlanCardProps> = ({
               <div key={rev.id} className="p-2 border rounded bg-background space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <Badge variant="outline" className="text-[10px]">
-                    {rev.reviewOutcome.replace(/_/g, ' ')}
+                    {humanizeEnum(rev.reviewOutcome)}
                   </Badge>
                   <span className="text-muted-foreground">
                     {formatColomboDateTime(rev.createdAt)} by {rev.reviewedByUser?.fullName}

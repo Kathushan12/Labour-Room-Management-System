@@ -66,7 +66,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <NetworkStatusIndicator state={liveState} />
 
         {/* Development-Only Role Preview Switcher (hidden when genuinely signed in) */}
-        {import.meta.env.DEV && !isAuthenticated && (
+        {import.meta.env.VITE_SHOW_DEV_TOOLS === 'true' && !isAuthenticated && (
           <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
             <span className="text-[10px] font-semibold text-slate-500 uppercase px-1.5 hidden md:inline">
               Preview Role:

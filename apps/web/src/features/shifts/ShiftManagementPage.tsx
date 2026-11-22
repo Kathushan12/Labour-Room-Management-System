@@ -50,6 +50,7 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import { formatColomboDateTime, formatColomboTime } from '../../lib/datetime.js';
+import { humanizeEnum, roleLabel } from '../../lib/labels.js';
 
 export const ShiftManagementPage: React.FC = () => {
   const { user, permissions } = useAuth();
@@ -199,7 +200,7 @@ export const ShiftManagementPage: React.FC = () => {
     setError(null);
     try {
       await shiftsApi.updateShift(wardId, shift.id, { status: newStatus });
-      setSuccessMsg(`Shift marked as ${newStatus.replace('_', ' ')}.`);
+      setSuccessMsg(`Shift marked as ${humanizeEnum(newStatus).toLowerCase()}.`);
       await loadData();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : `Failed to update shift status`;
@@ -452,7 +453,7 @@ export const ShiftManagementPage: React.FC = () => {
               <p className="text-xs text-slate-600 font-medium">Active Shift Window</p>
               <p className="text-xs font-semibold text-slate-800">
                 {onDutyRoster[0]?.shiftType
-                  ? `${onDutyRoster[0].shiftType} Shift`
+                  ? `${humanizeEnum(onDutyRoster[0].shiftType)} shift`
                   : 'No active shift'}
               </p>
             </div>
@@ -515,7 +516,7 @@ export const ShiftManagementPage: React.FC = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {filter === 'ALL' ? 'All Shifts' : filter.replace('_', ' ')}
+                {filter === 'ALL' ? 'All Shifts' : humanizeEnum(filter)}
               </button>
             ))}
           </div>
@@ -604,7 +605,7 @@ export const ShiftManagementPage: React.FC = () => {
                                 {sa.user?.fullName}
                               </p>
                               <p className="text-[10px] text-slate-500 font-mono">
-                                {sa.user?.role} • {sa.status}
+                                {roleLabel(sa.user?.role)} • {humanizeEnum(sa.status)}
                               </p>
                             </div>
                           </div>
@@ -826,7 +827,7 @@ export const ShiftManagementPage: React.FC = () => {
                 <option value="">-- Choose active Ward 18 staff --</option>
                 {wardStaff.map((ws) => (
                   <option key={ws.userId} value={ws.userId}>
-                    {ws.user?.fullName} ({ws.user?.role})
+                    {ws.user?.fullName} ({roleLabel(ws.user?.role)})
                   </option>
                 ))}
               </select>
@@ -917,7 +918,7 @@ export const ShiftManagementPage: React.FC = () => {
                             : 'bg-amber-50 text-amber-800 border-amber-300'
                         }
                       >
-                        {ho.status}
+                        {humanizeEnum(ho.status)}
                       </Badge>
                     </div>
 
@@ -985,7 +986,7 @@ export const ShiftManagementPage: React.FC = () => {
                     .filter((ws) => ws.userId !== user?.id)
                     .map((ws) => (
                       <option key={ws.userId} value={ws.userId}>
-                        {ws.user?.fullName} ({ws.user?.role})
+                        {ws.user?.fullName} ({roleLabel(ws.user?.role)})
                       </option>
                     ))}
                 </select>

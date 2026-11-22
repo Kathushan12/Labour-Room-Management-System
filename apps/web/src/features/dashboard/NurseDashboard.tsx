@@ -30,6 +30,7 @@ import {
   AlertReceiptStepper,
   CallDoctorWarning,
 } from '../alerts/components/AlertReceiptStepper.js';
+import { humanizeEnum } from '../../lib/labels.js';
 
 export const NurseDashboard: React.FC = () => {
   const { admissions, bedBoard, alerts, loading, error, wardId, reload, refresh } =
@@ -238,7 +239,7 @@ export const NurseDashboard: React.FC = () => {
                       </td>
                       <td className="py-3">
                         <span className="font-medium text-slate-700">
-                          {adm.currentCarePlan.replace(/_/g, ' ')}
+                          {humanizeEnum(adm.currentCarePlan)}
                         </span>
                       </td>
                       <td className="py-3 text-slate-600">{formatColomboTime(adm.admittedAt)}</td>

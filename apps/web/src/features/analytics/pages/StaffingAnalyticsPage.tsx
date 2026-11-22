@@ -19,6 +19,7 @@ import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/Ana
 import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { Users, Stethoscope, Clock, ShieldCheck, Download, CalendarCheck } from 'lucide-react';
+import { humanizeEnum } from '../../../lib/labels.js';
 
 export const StaffingAnalyticsPage: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
@@ -159,7 +160,7 @@ export const StaffingAnalyticsPage: React.FC = () => {
           >
             <AnalyticsBarChart
               data={data.shiftsByType.map((st: { shiftType: string; count: number }) => ({
-                label: st.shiftType.replace(/_/g, ' '),
+                label: humanizeEnum(st.shiftType),
                 value: st.count,
                 color: st.shiftType.includes('MORNING')
                   ? '#0d9488'

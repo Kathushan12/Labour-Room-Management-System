@@ -285,7 +285,7 @@ function describeLoginFailure(status: number, body: ApiResponse<unknown> | null)
     return 'Your security token is out of date. Reload the page and try again.';
   }
   if (status >= 500) {
-    return `The LRMS server could not complete sign-in (error ${status}). Try again in a moment.`;
+    return `Sign-in could not be completed (error ${status}). Try again in a moment.`;
   }
   if (message) return message;
   return `Sign-in failed (HTTP ${status}). Please try again.`;
@@ -303,7 +303,7 @@ export async function loginRequest(username: string, password: string): Promise<
     });
   } catch {
     throw new Error(
-      'Cannot reach the LRMS server. Check that it is running and that this device is online, then try again.',
+      'Cannot connect to the system. Check that this device is online, then try again.',
     );
   }
 

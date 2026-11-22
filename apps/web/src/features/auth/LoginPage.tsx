@@ -171,12 +171,9 @@ export const LoginPage: React.FC = () => {
 
           {/* Academic / Security Notice */}
           <div className="mt-6 pt-5 border-t border-slate-100 text-center">
-            <p className="text-[11px] text-slate-400">
-              CO2307 - Software Engineering Project · Group 07
-            </p>
             <Link
               to="/privacy"
-              className="inline-block mt-2 text-xs font-semibold text-teal-700 hover:underline"
+              className="inline-block text-xs font-semibold text-teal-700 hover:underline"
             >
               Privacy notice
             </Link>
