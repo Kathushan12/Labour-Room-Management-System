@@ -14,6 +14,7 @@ import {
   MaternalObservation,
   User,
 } from '../../database/entities/index.js';
+import { fetalHighlights, maternalHighlights } from './observation-highlights.js';
 
 export function toUserSummaryDto(user?: User | null): UserSummaryDto | undefined {
   if (!user) return undefined;
@@ -30,6 +31,9 @@ export function toUserSummaryDto(user?: User | null): UserSummaryDto | undefined
 }
 
 export function toMaternalObservationDto(entity: MaternalObservation): MaternalObservationDto {
+  const systolicBp = entity.systolicBp !== null ? Number(entity.systolicBp) : null;
+  const diastolicBp = entity.diastolicBp !== null ? Number(entity.diastolicBp) : null;
+  const pulseRateBpm = entity.pulseRateBpm !== null ? Number(entity.pulseRateBpm) : null;
   return {
     id: entity.id,
     admissionId: entity.admissionId,
@@ -59,6 +63,7 @@ export function toMaternalObservationDto(entity: MaternalObservation): MaternalO
     supersededObservation: entity.supersededObservation
       ? toMaternalObservationDto(entity.supersededObservation)
       : null,
+    highlights: maternalHighlights({ systolicBp, diastolicBp, pulseRateBpm }),
   };
 }
 
@@ -82,6 +87,7 @@ export function toFetalObservationDto(entity: FetalObservation): FetalObservatio
     supersededObservation: entity.supersededObservation
       ? toFetalObservationDto(entity.supersededObservation)
       : null,
+    highlights: fetalHighlights({ fetalHeartRateBpm: Number(entity.fetalHeartRateBpm) }),
   };
 }
 

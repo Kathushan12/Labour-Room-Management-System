@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  AmnioticFluid,
   CaputGrade,
   ContractionIntensity,
   FetalPosition,
@@ -7,6 +8,7 @@ import {
   LiquorAppearance,
   MembraneStatus,
   MouldingGrade,
+  OBSERVATION_LIMITS as L,
 } from '@lrms/shared';
 
 function validateNotFutureDate(val: string | undefined): boolean {
@@ -22,21 +24,20 @@ export const createMaternalObservationSchema = z
     systolicBp: z
       .number()
       .int({ message: 'Systolic BP must be an integer' })
-      .min(40, { message: 'Systolic BP must be at least 40 mmHg' })
-      .max(300, { message: 'Systolic BP cannot exceed 300 mmHg' })
+      .min(L.systolicBp.min, { message: `Systolic BP must be at least ${L.systolicBp.min} mmHg` })
+      .max(L.systolicBp.max, { message: `Systolic BP cannot exceed ${L.systolicBp.max} mmHg` })
       .nullable()
       .optional(),
     diastolicBp: z
       .number()
       .int({ message: 'Diastolic BP must be an integer' })
-      .min(20, { message: 'Diastolic BP must be at least 20 mmHg' })
-      .max(200, { message: 'Diastolic BP cannot exceed 200 mmHg' })
+      .min(L.diastolicBp.min, { message: `Diastolic BP must be at least ${L.diastolicBp.min} mmHg` })
+      .max(L.diastolicBp.max, { message: `Diastolic BP cannot exceed ${L.diastolicBp.max} mmHg` })
       .nullable()
       .optional(),
     bloodGlucoseValue: z
       .number()
       .positive({ message: 'Blood glucose must be positive' })
-      .max(50, { message: 'Blood glucose value out of clinical range' })
       .nullable()
       .optional(),
     bloodGlucoseUnit: z.nativeEnum(GlucoseUnit).nullable().optional(),
@@ -49,15 +50,15 @@ export const createMaternalObservationSchema = z
     pulseRateBpm: z
       .number()
       .int({ message: 'Pulse rate must be an integer' })
-      .min(30, { message: 'Pulse rate must be at least 30 bpm' })
-      .max(240, { message: 'Pulse rate cannot exceed 240 bpm' })
+      .min(L.pulseRateBpm.min, { message: `Pulse rate must be at least ${L.pulseRateBpm.min} bpm` })
+      .max(L.pulseRateBpm.max, { message: `Pulse rate cannot exceed ${L.pulseRateBpm.max} bpm` })
       .nullable()
       .optional(),
     pulseRate: z
       .number()
       .int({ message: 'Pulse rate must be an integer' })
-      .min(30, { message: 'Pulse rate must be at least 30 bpm' })
-      .max(240, { message: 'Pulse rate cannot exceed 240 bpm' })
+      .min(L.pulseRateBpm.min, { message: `Pulse rate must be at least ${L.pulseRateBpm.min} bpm` })
+      .max(L.pulseRateBpm.max, { message: `Pulse rate cannot exceed ${L.pulseRateBpm.max} bpm` })
       .nullable()
       .optional(),
     respiratoryRate: z
@@ -107,19 +108,43 @@ export const createMaternalObservationSchema = z
       message: 'Blood glucose unit (MMOL_L or MG_DL) is required when glucose value is recorded',
       path: ['bloodGlucoseUnit'],
     },
+  )
+  .refine(
+    (data) => {
+      if (data.bloodGlucoseValue == null || data.bloodGlucoseUnit == null) return true;
+      const range =
+        data.bloodGlucoseUnit === GlucoseUnit.MG_DL ? L.bloodGlucoseMgDl : L.bloodGlucoseMmolL;
+      return data.bloodGlucoseValue >= range.min && data.bloodGlucoseValue <= range.max;
+    },
+    { message: 'Blood glucose value is outside the possible range', path: ['bloodGlucoseValue'] },
+  )
+  .refine(
+    (data) =>
+      data.systolicBp != null ||
+      data.pulseRateBpm != null ||
+      data.pulseRate != null ||
+      data.bloodGlucoseValue != null ||
+      data.temperatureCelsius != null ||
+      data.respiratoryRate != null ||
+      data.oxygenSaturationPercent != null,
+    { message: 'Record at least one observation value', path: ['systolicBp'] },
   );
 
 export const createFetalObservationSchema = z.object({
   fetalHeartRateBpm: z
     .number()
     .int({ message: 'Fetal heart rate must be an integer' })
-    .min(40, { message: 'Fetal heart rate must be at least 40 bpm' })
-    .max(260, { message: 'Fetal heart rate cannot exceed 260 bpm' }),
+    .min(L.fetalHeartRateBpm.min, {
+      message: `Fetal heart rate must be at least ${L.fetalHeartRateBpm.min} bpm`,
+    })
+    .max(L.fetalHeartRateBpm.max, {
+      message: `Fetal heart rate cannot exceed ${L.fetalHeartRateBpm.max} bpm`,
+    }),
   fetalHeartRateUnit: z.string().default('BPM').optional(),
   variability: z.string().max(50).nullable().optional(),
   decelerations: z.string().max(50).nullable().optional(),
   accelerations: z.string().max(50).nullable().optional(),
-  liquorStatus: z.string().max(50).nullable().optional(),
+  liquorStatus: z.nativeEnum(AmnioticFluid).nullable().optional(),
   clinicalNotes: z.string().max(2000).nullable().optional(),
   observationTimestamp: z
     .string()
