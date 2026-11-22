@@ -66,8 +66,7 @@ export const recordCarePlanReviewSchema = z.object({
 export const createEscalationSchema = z.object({
   reason: z.nativeEnum(EscalationReason, {
     errorMap: () => ({
-      message:
-        'Reason must be FETAL_DISTRESS, FAILURE_TO_PROGRESS, MATERNAL_COMPLICATION or OTHER',
+      message: 'Reason must be FETAL_DISTRESS, FAILURE_TO_PROGRESS, MATERNAL_COMPLICATION or OTHER',
     }),
   }),
   category: z

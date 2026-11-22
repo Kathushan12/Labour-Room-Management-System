@@ -67,9 +67,24 @@ export const AlertReceiptStepper: React.FC<{ alert: StepperAlert; className?: st
   className,
 }) => {
   const steps: Step[] = [
-    { label: 'Dispatched', at: alert.dispatchedAt, icon: Send, doneClass: 'text-blue-700 dark:text-blue-300' },
-    { label: 'Delivered', at: alert.deliveredAt, icon: CheckCircle2, doneClass: 'text-blue-700 dark:text-blue-300' },
-    { label: 'Acknowledged', at: alert.acknowledgedAt, icon: UserCheck, doneClass: 'text-emerald-700 dark:text-emerald-300' },
+    {
+      label: 'Dispatched',
+      at: alert.dispatchedAt,
+      icon: Send,
+      doneClass: 'text-blue-700 dark:text-blue-300',
+    },
+    {
+      label: 'Delivered',
+      at: alert.deliveredAt,
+      icon: CheckCircle2,
+      doneClass: 'text-blue-700 dark:text-blue-300',
+    },
+    {
+      label: 'Acknowledged',
+      at: alert.acknowledgedAt,
+      icon: UserCheck,
+      doneClass: 'text-emerald-700 dark:text-emerald-300',
+    },
   ];
 
   const isOpen = alert.status === EscalationStatus.OPEN && !alert.acknowledgedAt;

@@ -488,8 +488,7 @@ export const ShiftManagementPage: React.FC = () => {
                   <div className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600 flex items-center justify-between">
                     <ShiftTypeBadge type={staff.shiftType} />
                     <span className="text-[11px] font-mono text-slate-500">
-                      {formatColomboTime(staff.shiftStartsAt)}{' '}
-                      -{' '}
+                      {formatColomboTime(staff.shiftStartsAt)} -{' '}
                       {formatColomboTime(staff.shiftEndsAt)}
                     </span>
                   </div>
@@ -556,8 +555,7 @@ export const ShiftManagementPage: React.FC = () => {
                   <div className="flex items-center space-x-2 text-xs text-slate-500 font-mono">
                     <Clock className="w-3.5 h-3.5 text-slate-500" />
                     <span>
-                      {formatColomboDateTime(shift.startsAt)}{' '}
-                      —{' '}
+                      {formatColomboDateTime(shift.startsAt)} —{' '}
                       {formatColomboDateTime(shift.endsAt)}
                     </span>
                   </div>

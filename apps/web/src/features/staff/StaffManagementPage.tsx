@@ -541,7 +541,10 @@ export const StaffManagementPage: React.FC = () => {
                                   {staff.email ? ` · ${staff.email}` : ''}
                                 </div>
                               </td>
-                              <td data-label="Staff ID" className="py-3.5 pr-3 font-mono text-slate-700">
+                              <td
+                                data-label="Staff ID"
+                                className="py-3.5 pr-3 font-mono text-slate-700"
+                              >
                                 {staff.staffProfile?.staffId || (
                                   <span className="text-slate-500 italic">—</span>
                                 )}
@@ -580,7 +583,10 @@ export const StaffManagementPage: React.FC = () => {
                                   )}
                                 </div>
                               </td>
-                              <td data-label="Created" className="py-3.5 pr-3 text-slate-600 whitespace-nowrap">
+                              <td
+                                data-label="Created"
+                                className="py-3.5 pr-3 text-slate-600 whitespace-nowrap"
+                              >
                                 {formatColomboDate(staff.createdAt)}
                               </td>
                               <td data-label="Actions" className="py-3.5 text-right">
@@ -776,7 +782,10 @@ export const StaffManagementPage: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {wardRoster.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/60">
-                        <td data-label="Clinician Name" className="py-2.5 px-3 font-medium text-slate-900">
+                        <td
+                          data-label="Clinician Name"
+                          className="py-2.5 px-3 font-medium text-slate-900"
+                        >
                           {item.user?.fullName}
                           <div className="text-[11px] text-slate-500 font-mono">
                             @{item.user?.username}

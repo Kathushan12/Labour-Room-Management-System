@@ -52,7 +52,8 @@ export const LabourAssessmentForm: React.FC<LabourAssessmentFormProps> = ({
     setError(null);
 
     const dilationProblem =
-      dilation.trim() !== '' && (isNaN(Number(dilation)) || Number(dilation) < 0 || Number(dilation) > 10)
+      dilation.trim() !== '' &&
+      (isNaN(Number(dilation)) || Number(dilation) < 0 || Number(dilation) > 10)
         ? 'Enter cervical dilation from 0 to 10 cm (10 is fully dilated).'
         : null;
     const effacementProblem =

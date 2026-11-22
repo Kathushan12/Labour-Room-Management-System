@@ -245,7 +245,6 @@ export async function getWardBedBoard(
     // Determine patient display name
     let activeAllocationDto = null;
     if (activeAllocation) {
-
       const activeFlags = (activeAllocation.admission?.riskFlags || [])
         .filter((f) => f.isActive && f.definition)
         .map((f) => f.definition.label);

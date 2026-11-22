@@ -216,10 +216,7 @@ export class EscalationAlertService {
         });
         if (!escalation) throw new NotFoundError('Clinical escalation not found');
         if (escalation.assignedRecipientUserId !== actor.id) {
-          throw new ForbiddenError(
-            'This alert was not sent to you',
-            'ALERT_RECEIPT_NOT_RECIPIENT',
-          );
+          throw new ForbiddenError('This alert was not sent to you', 'ALERT_RECEIPT_NOT_RECIPIENT');
         }
         return false;
       }
@@ -403,7 +400,9 @@ export class EscalationAlertService {
   /**
    * Latest not-yet-closed alert per admission, for the ward bed board.
    */
-  async getActiveAlertsByAdmission(admissionIds: string[]): Promise<Map<string, BedActiveAlertDto>> {
+  async getActiveAlertsByAdmission(
+    admissionIds: string[],
+  ): Promise<Map<string, BedActiveAlertDto>> {
     const result = new Map<string, BedActiveAlertDto>();
     if (admissionIds.length === 0) return result;
 
@@ -446,7 +445,10 @@ export class EscalationAlertService {
     this.timer = setInterval(() => {
       void this.tick();
     }, intervalMs);
-    logger.info({ service: 'escalation-alert', intervalMs }, 'Alert timeout/resend monitor started');
+    logger.info(
+      { service: 'escalation-alert', intervalMs },
+      'Alert timeout/resend monitor started',
+    );
   }
 
   stop(): void {

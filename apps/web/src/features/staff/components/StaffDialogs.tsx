@@ -234,8 +234,8 @@ export const ProvisionStaffDialog: React.FC<ProvisionStaffDialogProps> = ({
             <span>Provision New Staff Account</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-600">
-            Creates a hospital staff account with a temporary password that must be changed on
-            first sign-in.
+            Creates a hospital staff account with a temporary password that must be changed on first
+            sign-in.
           </DialogDescription>
         </DialogHeader>
 

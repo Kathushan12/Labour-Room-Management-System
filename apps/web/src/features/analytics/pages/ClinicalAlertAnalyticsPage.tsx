@@ -272,9 +272,7 @@ export const ClinicalAlertAnalyticsPage: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-1">
-                      <span className="text-slate-600 font-medium">
-                        Failed Deliveries
-                      </span>
+                      <span className="text-slate-600 font-medium">Failed Deliveries</span>
                       <span className="font-bold text-slate-900">
                         {data.notificationOutboxStats.deadLetterEvents}
                       </span>

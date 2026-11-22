@@ -1,7 +1,11 @@
 import React from 'react';
 import { PageHeader, StatCard, SectionCard } from '../../components/shared/HeadersAndCards.js';
 import { Stethoscope, BellRing, HeartPulse, Baby, AlertTriangle } from 'lucide-react';
-import { AdmissionCategoryBadge, AlertReceiptBadge, RiskFlagChip } from '../../components/status/Badges.js';
+import {
+  AdmissionCategoryBadge,
+  AlertReceiptBadge,
+  RiskFlagChip,
+} from '../../components/status/Badges.js';
 import { WardDutyStatusBanner } from './components/WardDutyStatusBanner.js';
 import { Button } from '../../components/ui/button.js';
 import { Link } from 'react-router-dom';
@@ -61,7 +65,11 @@ export const DoctorDashboard: React.FC = () => {
               </p>
             </div>
             <Link to="/alerts" className="w-full sm:w-auto">
-              <Button size="sm" variant="destructive" className="w-full text-xs shrink-0 font-semibold sm:w-auto">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="w-full text-xs shrink-0 font-semibold sm:w-auto"
+              >
                 Review & Acknowledge
               </Button>
             </Link>

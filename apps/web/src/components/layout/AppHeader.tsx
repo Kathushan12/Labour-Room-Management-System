@@ -98,18 +98,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
           <div className="max-w-[6.5rem] sm:max-w-none text-left">
             <p className="text-xs font-semibold text-slate-900 leading-tight truncate">
-              {isAuthenticated && user
-                ? (
-                    <>
-                      <span className="sm:hidden">{shortName(user.fullName)}</span>
-                      <span className="hidden sm:inline">{user.fullName}</span>
-                    </>
-                  )
-                : currentRole === UserRole.ADMIN
-                  ? 'System Admin'
-                  : currentRole === UserRole.DOCTOR
-                    ? 'Dr. Jayawardena'
-                    : 'Staff Midwife Silva'}
+              {isAuthenticated && user ? (
+                <>
+                  <span className="sm:hidden">{shortName(user.fullName)}</span>
+                  <span className="hidden sm:inline">{user.fullName}</span>
+                </>
+              ) : currentRole === UserRole.ADMIN ? (
+                'System Admin'
+              ) : currentRole === UserRole.DOCTOR ? (
+                'Dr. Jayawardena'
+              ) : (
+                'Staff Midwife Silva'
+              )}
             </p>
             <p className="text-[11px] text-slate-600 leading-tight truncate">
               {isAuthenticated && user

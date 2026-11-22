@@ -13,8 +13,8 @@ export const PrivacyNoticePage: React.FC = () => (
       </p>
       <ul className="list-disc pl-5 space-y-1.5">
         <li>
-          Patient name, NIC and phone number are optional. When entered they are stored securely
-          and are shown only to the nurses and doctors caring for the patient.
+          Patient name, NIC and phone number are optional. When entered they are stored securely and
+          are shown only to the nurses and doctors caring for the patient.
         </li>
         <li>Ward boards and reports never show names, NIC or phone numbers.</li>
         <li>Administrators manage beds and staff accounts and cannot see patient details.</li>

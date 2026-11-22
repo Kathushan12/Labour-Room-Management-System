@@ -203,7 +203,12 @@ export const AuditLogsPage: React.FC = () => {
                         <span className="font-semibold">{log.entityName}</span>
                         <div className="text-[11px] font-mono text-slate-500">{log.entityId}</div>
                       </td>
-                      <td data-label="Terminal Origin" className="py-3 text-[11px] text-slate-500 font-mono">{log.ipAddress}</td>
+                      <td
+                        data-label="Terminal Origin"
+                        className="py-3 text-[11px] text-slate-500 font-mono"
+                      >
+                        {log.ipAddress}
+                      </td>
                       <td data-label="Integrity Status" className="py-3 text-right">
                         {isWarning(log.action) ? (
                           <span className="inline-flex items-center text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">

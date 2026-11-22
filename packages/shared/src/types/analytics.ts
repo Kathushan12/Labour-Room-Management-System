@@ -284,4 +284,3 @@ export interface ExportReportQuery {
   endDate?: string;
   wardId?: string;
 }
-

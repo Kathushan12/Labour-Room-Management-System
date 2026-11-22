@@ -100,9 +100,7 @@ export const ApgarScoreCard: React.FC<ApgarScoreCardProps> = ({
 
                 <div className="text-[10px] text-muted-foreground flex items-center justify-between">
                   <span>{getScoreLabel(match.totalScore)}</span>
-                  <span>
-                    {formatColomboTime(match.assessedAt)}
-                  </span>
+                  <span>{formatColomboTime(match.assessedAt)}</span>
                 </div>
 
                 <div className="grid grid-cols-5 gap-1 pt-1 border-t border-slate-100 dark:border-slate-800 text-[9px] text-center font-mono">

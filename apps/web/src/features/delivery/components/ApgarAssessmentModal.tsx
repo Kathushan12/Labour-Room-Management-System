@@ -375,8 +375,7 @@ export const ApgarAssessmentModal: React.FC<ApgarAssessmentModalProps> = ({
                       {existingAssessments.map((a) => (
                         <option key={a.id} value={a.id}>
                           {humanizeEnum(a.assessmentMinute)} ({a.totalScore}/10) -{' '}
-                          {formatColomboTime(a.assessedAt)} by{' '}
-                          {a.assessedByFullName || 'Clinician'}
+                          {formatColomboTime(a.assessedAt)} by {a.assessedByFullName || 'Clinician'}
                         </option>
                       ))}
                     </select>

@@ -77,7 +77,8 @@ export const MaternalObservationsPage: React.FC = () => {
                 >
                   {admissions.map((adm) => (
                     <option key={adm.id} value={adm.id}>
-                      {adm.admissionReferenceId} · {adm.bedNumber ?? 'No bed'} ({humanizeEnum(adm.admissionCategory)})
+                      {adm.admissionReferenceId} · {adm.bedNumber ?? 'No bed'} (
+                      {humanizeEnum(adm.admissionCategory)})
                     </option>
                   ))}
                 </select>

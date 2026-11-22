@@ -349,10 +349,15 @@ export const StaffDetailPage: React.FC = () => {
               <tbody className="divide-y divide-slate-100">
                 {detail.assignmentHistory.map((item) => (
                   <tr key={item.id}>
-                    <td data-label="Admission Reference" className="py-2.5 font-mono font-semibold text-slate-800">
+                    <td
+                      data-label="Admission Reference"
+                      className="py-2.5 font-mono font-semibold text-slate-800"
+                    >
                       {item.admissionReferenceId || item.admissionId}
                     </td>
-                    <td data-label="Duty Role" className="py-2.5">{assignmentRoleLabel(item.assignmentRole)}</td>
+                    <td data-label="Duty Role" className="py-2.5">
+                      {assignmentRoleLabel(item.assignmentRole)}
+                    </td>
                     <td data-label="Assigned At" className="py-2.5 text-slate-600">
                       {formatColomboDateTime(item.assignedAt)}
                     </td>
@@ -403,7 +408,10 @@ export const StaffDetailPage: React.FC = () => {
                     <td data-label="Actor" className="py-2.5 font-mono text-slate-700">
                       {log.actorUsername || 'SYSTEM'}
                     </td>
-                    <td data-label="Metadata" className="py-2.5 font-mono text-[11px] text-slate-500 max-w-md truncate">
+                    <td
+                      data-label="Metadata"
+                      className="py-2.5 font-mono text-[11px] text-slate-500 max-w-md truncate"
+                    >
                       {log.details ? JSON.stringify(log.details) : '—'}
                     </td>
                   </tr>

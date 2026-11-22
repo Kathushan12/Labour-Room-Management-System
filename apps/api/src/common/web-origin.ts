@@ -1,6 +1,7 @@
 import { env } from '../config/env.js';
 
-const PRIVATE_IPV4 = /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
+const PRIVATE_IPV4 =
+  /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
 
 // Outside production the app is also opened from phones on the same Wi-Fi, so the web port is
 // accepted on any private-network address. Production only accepts WEB_ORIGIN.

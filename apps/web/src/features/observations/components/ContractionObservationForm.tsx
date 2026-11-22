@@ -46,7 +46,8 @@ export const ContractionObservationForm: React.FC<ContractionObservationFormProp
           : null;
     const seconds = Number(duration);
     const durationProblem =
-      duration.trim() !== '' && (isNaN(seconds) || !Number.isInteger(seconds) || seconds < 0 || seconds > 300)
+      duration.trim() !== '' &&
+      (isNaN(seconds) || !Number.isInteger(seconds) || seconds < 0 || seconds > 300)
         ? 'Enter the average duration as whole seconds from 0 to 300.'
         : null;
     setCountError(countProblem);

@@ -149,7 +149,9 @@ export const createPostpartumNewbornAssessmentSchema = z.object({
 export const authorizeMaternalDischargeSchema = z.object({
   dischargedAt: z.string().datetime().optional(),
   dischargeDestination: z.nativeEnum(DischargeDestination, {
-    errorMap: () => ({ message: 'Destination must be POSTNATAL, ANTENATAL, THEATRE, ICU or OTHER' }),
+    errorMap: () => ({
+      message: 'Destination must be POSTNATAL, ANTENATAL, THEATRE, ICU or OTHER',
+    }),
   }),
   maternalCondition: z.string().min(2).max(50),
   dischargeSummary: z.string().min(10, 'Discharge summary must be at least 10 characters'),
@@ -168,4 +170,3 @@ export const authorizeNewbornDischargeSchema = z.object({
   feedingPlan: z.string().nullable().optional(),
   followUpInstructions: z.string().min(5, 'Follow-up instructions must be at least 5 characters'),
 });
-

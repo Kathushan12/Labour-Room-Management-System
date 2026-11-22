@@ -160,7 +160,11 @@ const ADMISSIONS: AdmissionSpec[] = [
       {
         minutesAgo: 95,
         maternal: { systolicBp: 148, diastolicBp: 96, pulseRateBpm: 94, temperatureCelsius: 37.0 },
-        fetal: { fetalHeartRateBpm: 150, variability: 'Moderate', liquorStatus: AmnioticFluid.CLEAR },
+        fetal: {
+          fetalHeartRateBpm: 150,
+          variability: 'Moderate',
+          liquorStatus: AmnioticFluid.CLEAR,
+        },
       },
       {
         minutesAgo: 50,
@@ -170,7 +174,11 @@ const ADMISSIONS: AdmissionSpec[] = [
           pulseRateBpm: 101,
           temperatureCelsius: 37.2,
         },
-        fetal: { fetalHeartRateBpm: 163, variability: 'Moderate', liquorStatus: AmnioticFluid.CLEAR },
+        fetal: {
+          fetalHeartRateBpm: 163,
+          variability: 'Moderate',
+          liquorStatus: AmnioticFluid.CLEAR,
+        },
         contraction: {
           contractionsCount: 4,
           observationWindowMinutes: 10,
@@ -253,7 +261,11 @@ const ADMISSIONS: AdmissionSpec[] = [
       {
         minutesAgo: 70,
         maternal: { systolicBp: 112, diastolicBp: 70, pulseRateBpm: 78, temperatureCelsius: 36.8 },
-        fetal: { fetalHeartRateBpm: 138, variability: 'Moderate', liquorStatus: AmnioticFluid.CLEAR },
+        fetal: {
+          fetalHeartRateBpm: 138,
+          variability: 'Moderate',
+          liquorStatus: AmnioticFluid.CLEAR,
+        },
         contraction: {
           contractionsCount: 2,
           observationWindowMinutes: 10,
@@ -264,7 +276,11 @@ const ADMISSIONS: AdmissionSpec[] = [
       {
         minutesAgo: 25,
         maternal: { systolicBp: 114, diastolicBp: 72, pulseRateBpm: 80, temperatureCelsius: 36.9 },
-        fetal: { fetalHeartRateBpm: 140, variability: 'Moderate', liquorStatus: AmnioticFluid.CLEAR },
+        fetal: {
+          fetalHeartRateBpm: 140,
+          variability: 'Moderate',
+          liquorStatus: AmnioticFluid.CLEAR,
+        },
         labour: {
           cervicalDilationCm: 3,
           cervicalEffacementPercent: 50,

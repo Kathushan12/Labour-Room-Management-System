@@ -123,7 +123,10 @@ export class ClinicalEscalationService {
         throw new NotFoundError('Admission episode not found');
       }
       if (admission.status !== AdmissionStatus.ADMITTED) {
-        throw new ConflictError('Only an active admission can be escalated', 'ADMISSION_NOT_ACTIVE');
+        throw new ConflictError(
+          'Only an active admission can be escalated',
+          'ADMISSION_NOT_ACTIVE',
+        );
       }
       if (admission.currentCarePlan === CarePlanState.EMERGENCY_CESAREAN) {
         throw await this.alreadyEscalatedError(manager, admission.id);
@@ -364,7 +367,9 @@ export class ClinicalEscalationService {
       throw new NotFoundError('Clinical escalation not found');
     }
 
-    const [dto] = await escalationAlertService.attachRecipientContact([toEscalationDto(escalation)]);
+    const [dto] = await escalationAlertService.attachRecipientContact([
+      toEscalationDto(escalation),
+    ]);
     return dto;
   }
 

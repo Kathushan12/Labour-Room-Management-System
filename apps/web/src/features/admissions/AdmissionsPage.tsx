@@ -437,7 +437,10 @@ export const AdmissionsPage: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {items.map((adm) => (
                       <tr key={adm.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td data-label="Reference ID" className="py-3.5 pr-3 font-mono font-bold text-teal-800 whitespace-nowrap">
+                        <td
+                          data-label="Reference ID"
+                          className="py-3.5 pr-3 font-mono font-bold text-teal-800 whitespace-nowrap"
+                        >
                           {isAdminDeidentifiedMode ? (
                             adm.admissionReferenceId
                           ) : (
@@ -446,7 +449,10 @@ export const AdmissionsPage: React.FC = () => {
                             </Link>
                           )}
                         </td>
-                        <td data-label="Admitted Date & Time" className="py-3.5 pr-3 text-slate-700 whitespace-nowrap">
+                        <td
+                          data-label="Admitted Date & Time"
+                          className="py-3.5 pr-3 text-slate-700 whitespace-nowrap"
+                        >
                           {formatColomboDateTime(adm.admittedAt)}
                         </td>
                         <td data-label="Patient Record" className="py-3.5 pr-3">

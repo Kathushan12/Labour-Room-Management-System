@@ -44,11 +44,16 @@ export const FetalObservationForm: React.FC<FetalObservationFormProps> = ({
 
     const fhr = Number(fhrBpm);
     let problem: string | null = null;
-    if (hasFhr && (isNaN(fhr) || !Number.isInteger(fhr) || fhr < L.fetalHeartRateBpm.min || fhr > L.fetalHeartRateBpm.max)) {
+    if (
+      hasFhr &&
+      (isNaN(fhr) ||
+        !Number.isInteger(fhr) ||
+        fhr < L.fetalHeartRateBpm.min ||
+        fhr > L.fetalHeartRateBpm.max)
+    ) {
       problem = `Fetal heart rate must be a whole number from ${L.fetalHeartRateBpm.min} to ${L.fetalHeartRateBpm.max} bpm.`;
     } else if (!hasFhr && !liquorStatus) {
-      problem =
-        'Enter a fetal heart rate or choose an amniotic fluid status. One value is enough.';
+      problem = 'Enter a fetal heart rate or choose an amniotic fluid status. One value is enough.';
     }
     setFhrError(problem);
     if (problem) return;

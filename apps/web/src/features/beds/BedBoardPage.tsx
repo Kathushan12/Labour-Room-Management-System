@@ -684,9 +684,8 @@ export const BedBoardPage: React.FC = () => {
 
                           {bed.currentAllocation?.allocatedAt && (
                             <div className="text-[10px] text-teal-700 pt-0.5">
-                              Assigned{' '}
-                              {formatColomboTime(bed.currentAllocation.allocatedAt)}{' '}
-                              by {bed.currentAllocation.assignedByUserName}
+                              Assigned {formatColomboTime(bed.currentAllocation.allocatedAt)} by{' '}
+                              {bed.currentAllocation.assignedByUserName}
                             </div>
                           )}
                         </div>
@@ -729,8 +728,7 @@ export const BedBoardPage: React.FC = () => {
                           </div>
                           {bed.lastCleaning?.completedAt && (
                             <p className="text-[10px] text-emerald-700 mt-0.5">
-                              Sanitized:{' '}
-                              {formatColomboTime(bed.lastCleaning.completedAt)}
+                              Sanitized: {formatColomboTime(bed.lastCleaning.completedAt)}
                             </p>
                           )}
                         </div>
@@ -872,8 +870,13 @@ export const BedBoardPage: React.FC = () => {
                     .filter((b) => b.currentAllocation)
                     .map((b) => (
                       <tr key={b.id} className="hover:bg-slate-50">
-                        <td data-label="Bed Number" className="py-2.5 font-bold">{b.bedNumber}</td>
-                        <td data-label="Admission Reference" className="py-2.5 font-mono text-teal-700">
+                        <td data-label="Bed Number" className="py-2.5 font-bold">
+                          {b.bedNumber}
+                        </td>
+                        <td
+                          data-label="Admission Reference"
+                          className="py-2.5 font-mono text-teal-700"
+                        >
                           {b.currentAllocation?.admissionReferenceId}
                         </td>
                         <td data-label="Patient Details" className="py-2.5 font-medium">
@@ -884,8 +887,15 @@ export const BedBoardPage: React.FC = () => {
                             ? formatColomboDateTime(b.currentAllocation.allocatedAt)
                             : '—'}
                         </td>
-                        <td data-label="Released Time" className="py-2.5 text-slate-500">Active (Current)</td>
-                        <td data-label="Turnover State" className="py-2.5 text-teal-800 font-semibold">Occupied</td>
+                        <td data-label="Released Time" className="py-2.5 text-slate-500">
+                          Active (Current)
+                        </td>
+                        <td
+                          data-label="Turnover State"
+                          className="py-2.5 text-teal-800 font-semibold"
+                        >
+                          Occupied
+                        </td>
                       </tr>
                     ))}
                 </tbody>

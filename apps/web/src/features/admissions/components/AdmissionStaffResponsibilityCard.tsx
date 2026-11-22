@@ -396,9 +396,7 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
                   </div>
                   <div className="text-[11px] text-slate-500">
                     From {formatColomboDateTime(h.assignedAt)}
-                    {h.unassignedAt
-                      ? ` to ${formatColomboDateTime(h.unassignedAt)}`
-                      : ' (Active)'}
+                    {h.unassignedAt ? ` to ${formatColomboDateTime(h.unassignedAt)}` : ' (Active)'}
                   </div>
                   {h.endReason && (
                     <div className="text-[11px] text-slate-600 mt-1 italic">
@@ -445,7 +443,10 @@ export const AdmissionStaffResponsibilityCard: React.FC<Props> = ({ admissionId,
 
           <form onSubmit={handleTransferSubmit} className="space-y-3 text-xs">
             <div>
-              <Label htmlFor="transfer-new-clinician" className="text-xs font-semibold text-slate-700">
+              <Label
+                htmlFor="transfer-new-clinician"
+                className="text-xs font-semibold text-slate-700"
+              >
                 New Responsible Clinician <span className="text-red-500">*</span>
               </Label>
               <select

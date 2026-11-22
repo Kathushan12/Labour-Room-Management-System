@@ -210,8 +210,7 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
             </div>
             {escalation.acknowledgedAt && (
               <div>
-                Acknowledged:{' '}
-                <strong>{formatColomboTime(escalation.acknowledgedAt)}</strong> by{' '}
+                Acknowledged: <strong>{formatColomboTime(escalation.acknowledgedAt)}</strong> by{' '}
                 {escalation.acknowledgedByUser?.fullName}
               </div>
             )}
@@ -300,18 +299,18 @@ export const EscalationDetailModal: React.FC<EscalationDetailModalProps> = ({
               <div className="flex gap-2">
                 {escalation.status === EscalationStatus.OPEN &&
                   escalation.assignedRecipientUserId === user?.id && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="bg-amber-600 hover:bg-amber-700 text-white"
-                    onClick={handleAcknowledge}
-                    disabled={loading}
-                    data-testid="btn-ack-in-modal"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Acknowledge Escalation
-                  </Button>
-                )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                      onClick={handleAcknowledge}
+                      disabled={loading}
+                      data-testid="btn-ack-in-modal"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Acknowledge Escalation
+                    </Button>
+                  )}
                 <Button
                   type="button"
                   size="sm"

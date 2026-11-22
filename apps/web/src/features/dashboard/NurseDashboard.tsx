@@ -9,7 +9,12 @@ import {
   Sparkles,
   AlertTriangle,
 } from 'lucide-react';
-import { AdmissionCategoryBadge, BedStatusBadge, AlertReceiptBadge, RiskFlagChip } from '../../components/status/Badges.js';
+import {
+  AdmissionCategoryBadge,
+  BedStatusBadge,
+  AlertReceiptBadge,
+  RiskFlagChip,
+} from '../../components/status/Badges.js';
 import { WardDutyStatusBanner } from './components/WardDutyStatusBanner.js';
 import { Button } from '../../components/ui/button.js';
 import { Link } from 'react-router-dom';
@@ -238,7 +243,9 @@ export const NurseDashboard: React.FC = () => {
                           {humanizeEnum(adm.currentCarePlan)}
                         </span>
                       </td>
-                      <td data-label="Admitted" className="py-3 text-slate-600">{formatColomboTime(adm.admittedAt)}</td>
+                      <td data-label="Admitted" className="py-3 text-slate-600">
+                        {formatColomboTime(adm.admittedAt)}
+                      </td>
                       <td data-label="Risk Flags" className="py-3">
                         <div className="flex flex-wrap gap-1">
                           {adm.riskFlags

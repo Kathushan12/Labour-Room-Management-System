@@ -257,7 +257,9 @@ export async function performRapidTriage(
         throw await bedUnavailableError(tm, lockedBed);
       }
 
-      const activeWard = await tm.findOne(Ward, { where: { id: lockedBed.wardId, isActive: true } });
+      const activeWard = await tm.findOne(Ward, {
+        where: { id: lockedBed.wardId, isActive: true },
+      });
       if (!activeWard) {
         throw new BadRequestError('The selected bed belongs to an inactive ward', 'WARD_INACTIVE');
       }

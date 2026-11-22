@@ -35,43 +35,46 @@ export function useClinicalDashboardData(): ClinicalDashboardData {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (quiet = false) => {
-    if (!quiet) setLoading(true);
-    setError(null);
-    try {
-      const [admissionsRes, boardRes, alertsRes] = await Promise.all([
-        fetchAdmissions({ status: AdmissionStatus.ADMITTED, limit: 50 }),
-        ward ? fetchWardBedBoard(ward.id) : Promise.resolve(null),
-        clinicalCareApi.getVisibleEscalations().catch(() => [] as EscalationFeedItemDto[]),
-      ]);
+  const load = useCallback(
+    async (quiet = false) => {
+      if (!quiet) setLoading(true);
+      setError(null);
+      try {
+        const [admissionsRes, boardRes, alertsRes] = await Promise.all([
+          fetchAdmissions({ status: AdmissionStatus.ADMITTED, limit: 50 }),
+          ward ? fetchWardBedBoard(ward.id) : Promise.resolve(null),
+          clinicalCareApi.getVisibleEscalations().catch(() => [] as EscalationFeedItemDto[]),
+        ]);
 
-      if (!admissionsRes.success || !admissionsRes.data) {
-        setError(admissionsRes.error?.message || 'Could not load admissions.');
-        return;
-      }
-
-      const board = boardRes && boardRes.success && boardRes.data ? boardRes.data : null;
-      const bedByAdmission = new Map<string, string>();
-      for (const bed of board?.beds ?? []) {
-        if (bed.currentAllocation) {
-          bedByAdmission.set(bed.currentAllocation.admissionId, bed.bedNumber);
+        if (!admissionsRes.success || !admissionsRes.data) {
+          setError(admissionsRes.error?.message || 'Could not load admissions.');
+          return;
         }
-      }
 
-      setAdmissions(
-        admissionsRes.data.items.map((a) => ({
-          ...a,
-          bedNumber: bedByAdmission.get(a.id) ?? null,
-        })),
-      );
-      setBedBoard(board);
-      setAlerts(alertsRes);
-    } catch {
-      setError('Could not connect. Check your connection and try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [ward]);
+        const board = boardRes && boardRes.success && boardRes.data ? boardRes.data : null;
+        const bedByAdmission = new Map<string, string>();
+        for (const bed of board?.beds ?? []) {
+          if (bed.currentAllocation) {
+            bedByAdmission.set(bed.currentAllocation.admissionId, bed.bedNumber);
+          }
+        }
+
+        setAdmissions(
+          admissionsRes.data.items.map((a) => ({
+            ...a,
+            bedNumber: bedByAdmission.get(a.id) ?? null,
+          })),
+        );
+        setBedBoard(board);
+        setAlerts(alertsRes);
+      } catch {
+        setError('Could not connect. Check your connection and try again.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [ward],
+  );
 
   useEffect(() => {
     if (!wardLoading) void load();

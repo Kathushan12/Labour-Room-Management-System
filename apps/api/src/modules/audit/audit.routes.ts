@@ -27,11 +27,15 @@ export const auditRouter = Router();
 // REQ-9.6: audit logs are admin-only.
 auditRouter.use(authenticate, requireRole([UserRole.ADMIN]));
 
-auditRouter.get('/', requirePermission(Permission.REPORTS_VIEW_AUDIT_LOGS), async (req, res, next) => {
-  try {
-    const filter = querySchema.parse(req.query);
-    res.status(200).json({ success: true, data: await listAuditLogs(filter) });
-  } catch (err) {
-    next(err);
-  }
-});
+auditRouter.get(
+  '/',
+  requirePermission(Permission.REPORTS_VIEW_AUDIT_LOGS),
+  async (req, res, next) => {
+    try {
+      const filter = querySchema.parse(req.query);
+      res.status(200).json({ success: true, data: await listAuditLogs(filter) });
+    } catch (err) {
+      next(err);
+    }
+  },
+);

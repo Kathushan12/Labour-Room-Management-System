@@ -30,7 +30,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     (kind: ToastKind, message: string) => {
       const id = nextId.current++;
       setItems((prev) => [...prev.slice(-2), { id, kind, message }]);
-      window.setTimeout(() => dismiss(id), kind === 'error' ? AUTO_DISMISS_MS * 2 : AUTO_DISMISS_MS);
+      window.setTimeout(
+        () => dismiss(id),
+        kind === 'error' ? AUTO_DISMISS_MS * 2 : AUTO_DISMISS_MS,
+      );
     },
     [dismiss],
   );
@@ -61,7 +64,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }`}
           >
             {t.kind === 'success' ? (
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" aria-hidden="true" />
+              <CheckCircle2
+                className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700"
+                aria-hidden="true"
+              />
             ) : (
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-700" aria-hidden="true" />
             )}

@@ -133,7 +133,11 @@ export function emitToWard(wardId: string, event: SocketEvent, payload: unknown)
 
 // REQ-2.7: tells every open ward board to reload its beds. Carries no patient data.
 export function emitBedUpdated(wardId: string, bedId: string | null = null): boolean {
-  return emitToWard(wardId, SocketEvent.BED_UPDATED, { wardId, bedId, at: new Date().toISOString() });
+  return emitToWard(wardId, SocketEvent.BED_UPDATED, {
+    wardId,
+    bedId,
+    at: new Date().toISOString(),
+  });
 }
 
 /**

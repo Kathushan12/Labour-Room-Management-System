@@ -33,4 +33,3 @@ export class Phase13OperationalAnalyticsIndexes1732500000000 implements Migratio
     `);
   }
 }
-

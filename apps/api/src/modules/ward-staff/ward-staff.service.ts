@@ -26,7 +26,9 @@ export class WardStaffService {
 
     if (activeOnly) {
       // REQ-4.3: pickers list only active accounts.
-      qb.andWhere('assignment.isActive = true AND assignment.endedAt IS NULL AND user.isActive = true');
+      qb.andWhere(
+        'assignment.isActive = true AND assignment.endedAt IS NULL AND user.isActive = true',
+      );
     }
 
     const assignments = await qb.getMany();

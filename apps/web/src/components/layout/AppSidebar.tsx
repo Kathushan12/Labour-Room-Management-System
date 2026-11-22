@@ -48,7 +48,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const { isAuthenticated, permissions } = useAuth();
 
-  const effectivePermissions = isAuthenticated ? permissions : (ROLE_PERMISSIONS[currentRole] ?? []);
+  const effectivePermissions = isAuthenticated
+    ? permissions
+    : (ROLE_PERMISSIONS[currentRole] ?? []);
 
   // Each item mirrors the guard on its route in AppRoutes so no menu entry leads to /unauthorized.
   const allItems: NavItem[] = [

@@ -305,7 +305,9 @@ export const EmergencyAlertsPage: React.FC = () => {
 
           <form onSubmit={handleCreateAlert} className="space-y-4 py-2 text-xs">
             <div>
-              <Label htmlFor="alert-admission" className="text-xs font-semibold text-slate-700">Target Patient / Bed</Label>
+              <Label htmlFor="alert-admission" className="text-xs font-semibold text-slate-700">
+                Target Patient / Bed
+              </Label>
               <select
                 id="alert-admission"
                 value={selectedAdmission}
@@ -324,7 +326,9 @@ export const EmergencyAlertsPage: React.FC = () => {
             </div>
 
             <div>
-              <Label htmlFor="alert-reason" className="text-xs font-semibold text-slate-700">Reason</Label>
+              <Label htmlFor="alert-reason" className="text-xs font-semibold text-slate-700">
+                Reason
+              </Label>
               <select
                 id="alert-reason"
                 value={reason}
@@ -343,7 +347,9 @@ export const EmergencyAlertsPage: React.FC = () => {
             </div>
 
             <div>
-              <Label htmlFor="alert-note" className="text-xs font-semibold text-slate-700">Note (optional)</Label>
+              <Label htmlFor="alert-note" className="text-xs font-semibold text-slate-700">
+                Note (optional)
+              </Label>
               <Input
                 id="alert-note"
                 value={message}
@@ -356,9 +362,9 @@ export const EmergencyAlertsPage: React.FC = () => {
             <div className="rounded-md bg-red-50 border border-red-200 p-2.5 text-[11px] text-red-900">
               <strong>Emergency Notification Channel: </strong>
               <span>
-                Sent to the attending doctor (or the on-duty ward doctor). If it is not
-                acknowledged within the ward alert timeout, this screen shows TIMED-OUT with the
-                doctor's phone number.
+                Sent to the attending doctor (or the on-duty ward doctor). If it is not acknowledged
+                within the ward alert timeout, this screen shows TIMED-OUT with the doctor's phone
+                number.
               </span>
             </div>
 

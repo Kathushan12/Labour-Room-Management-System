@@ -12,12 +12,7 @@ import {
 
 // REQ-5.4 out-of-range markers, computed by the API from OBSERVATION_HIGHLIGHT.
 export type ObservationHighlight =
-  | 'SYSTOLIC_HIGH'
-  | 'DIASTOLIC_HIGH'
-  | 'PULSE_LOW'
-  | 'PULSE_HIGH'
-  | 'FHR_LOW'
-  | 'FHR_HIGH';
+  'SYSTOLIC_HIGH' | 'DIASTOLIC_HIGH' | 'PULSE_LOW' | 'PULSE_HIGH' | 'FHR_LOW' | 'FHR_HIGH';
 
 export interface UserSummaryDto {
   id: string;

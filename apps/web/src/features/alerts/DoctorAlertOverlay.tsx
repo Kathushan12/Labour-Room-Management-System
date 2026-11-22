@@ -18,7 +18,10 @@ import { playAlertTone, unlockAlertAudio, vibrateAlert } from '../../lib/alert-s
 const REPEAT_TONE_MS = 5000;
 
 function humanise(value: string): string {
-  return value.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+  return value
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
 }
 
 function errorMessage(err: unknown): string {
@@ -126,7 +129,9 @@ export const DoctorAlertOverlay: React.FC = () => {
           </div>
           <div className="rounded-xl bg-red-800/70 p-4">
             <dt className="text-xs font-semibold uppercase tracking-wide text-red-100">Bed</dt>
-            <dd className="text-xl sm:text-2xl font-black">{current.bedNumber ?? 'Not allocated'}</dd>
+            <dd className="text-xl sm:text-2xl font-black">
+              {current.bedNumber ?? 'Not allocated'}
+            </dd>
           </div>
         </dl>
 
@@ -160,12 +165,16 @@ export const DoctorAlertOverlay: React.FC = () => {
         </div>
 
         <p className="text-sm text-red-100">
-          Sent {formatColomboTimeWithSeconds(current.dispatchedAt)} · {current.escalationReferenceId}
+          Sent {formatColomboTimeWithSeconds(current.dispatchedAt)} ·{' '}
+          {current.escalationReferenceId}
           {queue.length > 1 && ` · ${queue.length - 1} more alert(s) waiting`}
         </p>
 
         {error && (
-          <p role="alert" className="rounded-lg bg-white text-red-800 px-4 py-3 text-sm font-semibold">
+          <p
+            role="alert"
+            className="rounded-lg bg-white text-red-800 px-4 py-3 text-sm font-semibold"
+          >
             {error}
           </p>
         )}

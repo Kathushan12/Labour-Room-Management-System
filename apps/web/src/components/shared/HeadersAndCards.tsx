@@ -33,9 +33,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{title}</h1>
             {badge}
           </div>
-          {description && (
-            <p className="text-sm text-slate-600 mt-1 max-w-3xl">{description}</p>
-          )}
+          {description && <p className="text-sm text-slate-600 mt-1 max-w-3xl">{description}</p>}
         </div>
         {actionContent && (
           <div className="flex flex-wrap items-center gap-2 sm:shrink-0 max-sm:[&>button]:flex-1">

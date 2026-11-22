@@ -125,10 +125,7 @@ export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   ...props
 }) => (
-  <div
-    className={cn('flex flex-col space-y-1.5 pr-10 text-left mb-4', className)}
-    {...props}
-  />
+  <div className={cn('flex flex-col space-y-1.5 pr-10 text-left mb-4', className)} {...props} />
 );
 
 export const DialogTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
@@ -151,7 +148,10 @@ export const DialogFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <div
-    className={cn('sticky bottom-0 z-10 -mx-4 mt-auto flex flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-3 pb-safe sm:static sm:mx-0 sm:mt-6 sm:flex-row sm:justify-end sm:border-0 sm:p-0 [&>button]:w-full sm:[&>button]:w-auto', className)}
+    className={cn(
+      'sticky bottom-0 z-10 -mx-4 mt-auto flex flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-3 pb-safe sm:static sm:mx-0 sm:mt-6 sm:flex-row sm:justify-end sm:border-0 sm:p-0 [&>button]:w-full sm:[&>button]:w-auto',
+      className,
+    )}
     {...props}
   />
 );

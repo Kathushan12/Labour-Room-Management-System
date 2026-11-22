@@ -31,7 +31,9 @@ export const createMaternalObservationSchema = z
     diastolicBp: z
       .number()
       .int({ message: 'Diastolic BP must be an integer' })
-      .min(L.diastolicBp.min, { message: `Diastolic BP must be at least ${L.diastolicBp.min} mmHg` })
+      .min(L.diastolicBp.min, {
+        message: `Diastolic BP must be at least ${L.diastolicBp.min} mmHg`,
+      })
       .max(L.diastolicBp.max, { message: `Diastolic BP cannot exceed ${L.diastolicBp.max} mmHg` })
       .nullable()
       .optional(),
@@ -132,28 +134,28 @@ export const createMaternalObservationSchema = z
 
 export const createFetalObservationSchema = z
   .object({
-  fetalHeartRateBpm: z
-    .number()
-    .int({ message: 'Fetal heart rate must be an integer' })
-    .min(L.fetalHeartRateBpm.min, {
-      message: `Fetal heart rate must be at least ${L.fetalHeartRateBpm.min} bpm`,
-    })
-    .max(L.fetalHeartRateBpm.max, {
-      message: `Fetal heart rate cannot exceed ${L.fetalHeartRateBpm.max} bpm`,
-    })
-    .nullable()
-    .optional(),
-  fetalHeartRateUnit: z.string().default('BPM').optional(),
-  variability: z.string().max(50).nullable().optional(),
-  decelerations: z.string().max(50).nullable().optional(),
-  accelerations: z.string().max(50).nullable().optional(),
-  liquorStatus: z.nativeEnum(AmnioticFluid).nullable().optional(),
-  clinicalNotes: z.string().max(2000).nullable().optional(),
-  observationTimestamp: z
-    .string()
-    .refine(validateNotFutureDate, { message: 'Observation timestamp cannot be in the future' })
-    .optional(),
-})
+    fetalHeartRateBpm: z
+      .number()
+      .int({ message: 'Fetal heart rate must be an integer' })
+      .min(L.fetalHeartRateBpm.min, {
+        message: `Fetal heart rate must be at least ${L.fetalHeartRateBpm.min} bpm`,
+      })
+      .max(L.fetalHeartRateBpm.max, {
+        message: `Fetal heart rate cannot exceed ${L.fetalHeartRateBpm.max} bpm`,
+      })
+      .nullable()
+      .optional(),
+    fetalHeartRateUnit: z.string().default('BPM').optional(),
+    variability: z.string().max(50).nullable().optional(),
+    decelerations: z.string().max(50).nullable().optional(),
+    accelerations: z.string().max(50).nullable().optional(),
+    liquorStatus: z.nativeEnum(AmnioticFluid).nullable().optional(),
+    clinicalNotes: z.string().max(2000).nullable().optional(),
+    observationTimestamp: z
+      .string()
+      .refine(validateNotFutureDate, { message: 'Observation timestamp cannot be in the future' })
+      .optional(),
+  })
   .refine((data) => data.fetalHeartRateBpm != null || data.liquorStatus != null, {
     message: 'Record at least one value: fetal heart rate or amniotic fluid',
     path: ['fetalHeartRateBpm'],

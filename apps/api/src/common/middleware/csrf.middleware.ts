@@ -19,7 +19,11 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
 
   // Origin / Referer validation if present
   const origin = req.headers.origin || req.headers.referer;
-  if (origin && !origin.startsWith(env.WEB_ORIGIN) && !isAllowedWebOrigin(originOf(origin) ?? 'null')) {
+  if (
+    origin &&
+    !origin.startsWith(env.WEB_ORIGIN) &&
+    !isAllowedWebOrigin(originOf(origin) ?? 'null')
+  ) {
     res.status(403).json({
       success: false,
       error: {

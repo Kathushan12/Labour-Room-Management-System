@@ -526,7 +526,9 @@ export const ClinicalObservationPanel: React.FC<ClinicalObservationPanelProps> =
                       <div>
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-indigo-900 text-sm">
-                            {obs.fetalHeartRateBpm != null ? `FHR: ${obs.fetalHeartRateBpm} bpm` : 'Amniotic fluid only'}
+                            {obs.fetalHeartRateBpm != null
+                              ? `FHR: ${obs.fetalHeartRateBpm} bpm`
+                              : 'Amniotic fluid only'}
                           </span>
                           <HighlightBadges highlights={obs.highlights ?? []} />
                           {obs.liquorStatus && (

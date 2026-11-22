@@ -342,7 +342,6 @@ export const AdmissionDetailPage: React.FC = () => {
       <PatientHeader
         refId={admission.admissionReferenceId}
         bedNumber={activeBedAllocation?.bedNumber}
-       
       >
         <AdmissionCategoryBadge category={admission.admissionCategory} />
       </PatientHeader>
@@ -526,7 +525,9 @@ export const AdmissionDetailPage: React.FC = () => {
                       <tbody className="divide-y divide-slate-100">
                         {bedHistory.map((bh) => (
                           <tr key={bh.id} className="hover:bg-slate-50">
-                            <td data-label="Bed Number" className="py-1.5 font-bold">{bh.bedNumber}</td>
+                            <td data-label="Bed Number" className="py-1.5 font-bold">
+                              {bh.bedNumber}
+                            </td>
                             <td data-label="Assigned At" className="py-1.5 font-mono text-[11px]">
                               {formatColomboDateTime(bh.assignedAt)}
                             </td>
@@ -537,8 +538,12 @@ export const AdmissionDetailPage: React.FC = () => {
                                 <span className="text-emerald-700 font-bold">Active Current</span>
                               )}
                             </td>
-                            <td data-label="Release Reason" className="py-1.5 text-slate-600">{bh.releaseReason || '—'}</td>
-                            <td data-label="Assigned By" className="py-1.5 text-slate-600">{bh.assignedByUserName}</td>
+                            <td data-label="Release Reason" className="py-1.5 text-slate-600">
+                              {bh.releaseReason || '—'}
+                            </td>
+                            <td data-label="Assigned By" className="py-1.5 text-slate-600">
+                              {bh.assignedByUserName}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -656,7 +661,10 @@ export const AdmissionDetailPage: React.FC = () => {
 
       {/* Clinical Subsystems: Surveillance, Partograph, Care Plans & Escalations */}
       <div className="mt-8 space-y-6">
-        <div role="tablist" className="-mx-4 flex gap-5 overflow-x-auto border-b border-slate-200 px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+        <div
+          role="tablist"
+          className="-mx-4 flex gap-5 overflow-x-auto border-b border-slate-200 px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+        >
           <button
             type="button"
             role="tab"

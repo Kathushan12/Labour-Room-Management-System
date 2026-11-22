@@ -186,7 +186,13 @@ export async function transferBed(
     where: { id: currentAllocationId },
   });
   if (current) {
-    await assertCanAccessAdmission(actor, current.admissionId, ipAddress, requestId, 'BED_TRANSFER');
+    await assertCanAccessAdmission(
+      actor,
+      current.admissionId,
+      ipAddress,
+      requestId,
+      'BED_TRANSFER',
+    );
   }
 
   try {

@@ -10,11 +10,7 @@ import {
 import { Button } from '../../../components/ui/button.js';
 import { Label } from '../../../components/ui/label.js';
 import { AlertCircle, AlertTriangle, Send } from 'lucide-react';
-import {
-  AlreadyEscalatedDetails,
-  ClinicalObservationType,
-  EscalationReason,
-} from '@lrms/shared';
+import { AlreadyEscalatedDetails, ClinicalObservationType, EscalationReason } from '@lrms/shared';
 import { clinicalCareApi } from '../../../services/clinical-care.api.js';
 import { fetchAdmissionDetail } from '../../../services/admissions.api.js';
 import { fetchAdmissionBedHistory } from '../../../services/beds.api.js';
@@ -68,7 +64,9 @@ export const EscalationCreateDialog: React.FC<EscalationCreateDialogProps> = ({
   // SAF-4 / SAF-5: the confirmation names the patient by Admission Ref ID and bed.
   useEffect(() => {
     if (!isOpen) return;
-    void fetchAdmissionDetail(admissionId).then((r) => setRefId(r.data?.admissionReferenceId ?? null));
+    void fetchAdmissionDetail(admissionId).then((r) =>
+      setRefId(r.data?.admissionReferenceId ?? null),
+    );
     void fetchAdmissionBedHistory(admissionId).then((r) => {
       const active = r.data?.items.find((a) => !a.releasedAt);
       setBedNumber(active?.bedNumber ?? null);

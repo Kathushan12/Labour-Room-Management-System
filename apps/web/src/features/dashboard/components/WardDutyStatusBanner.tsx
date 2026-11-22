@@ -87,7 +87,8 @@ export const WardDutyStatusBanner: React.FC = () => {
                 </span>
               ) : currentUserDuty ? (
                 <span>
-                  Active on {humanizeEnum(currentUserDuty.shiftType)} shift ({currentUserDuty.shiftName})
+                  Active on {humanizeEnum(currentUserDuty.shiftType)} shift (
+                  {currentUserDuty.shiftName})
                 </span>
               ) : (
                 <span className="text-slate-600 font-normal">

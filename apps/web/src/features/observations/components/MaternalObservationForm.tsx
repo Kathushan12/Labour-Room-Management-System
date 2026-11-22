@@ -16,12 +16,7 @@ interface MaternalObservationFormProps {
 }
 
 type NumberKey =
-  | 'systolic'
-  | 'diastolic'
-  | 'pulse'
-  | 'temperature'
-  | 'respiratoryRate'
-  | 'oxygenSat';
+  'systolic' | 'diastolic' | 'pulse' | 'temperature' | 'respiratoryRate' | 'oxygenSat';
 type Key = NumberKey | 'glucose' | 'glucoseUnit' | 'time';
 
 interface NumberField {

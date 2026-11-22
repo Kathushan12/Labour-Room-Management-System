@@ -109,7 +109,8 @@ export const MaternalDischargeModal: React.FC<MaternalDischargeModalProps> = ({
             {bedNumber ? ` · Bed ${bedNumber}` : ''}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Closes admission {admissionReferenceId}. {bedNumber ? `Bed ${bedNumber} is sent for cleaning.` : 'The bed is sent for cleaning.'}
+            Closes admission {admissionReferenceId}.{' '}
+            {bedNumber ? `Bed ${bedNumber} is sent for cleaning.` : 'The bed is sent for cleaning.'}
           </DialogDescription>
         </DialogHeader>
 

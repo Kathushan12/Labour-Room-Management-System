@@ -36,9 +36,7 @@ export const NewbornRegistrationModal: React.FC<NewbornRegistrationModalProps> =
   onSubmit,
 }) => {
   const [birthOrder, setBirthOrder] = useState<number>(nextBirthOrder);
-  const [birthTimestamp, setBirthTimestamp] = useState<string>(
-    toColomboInput(),
-  );
+  const [birthTimestamp, setBirthTimestamp] = useState<string>(toColomboInput());
   const [outcome, setOutcome] = useState<BirthOutcome>(BirthOutcome.LIVE_BIRTH);
   const [sex, setSex] = useState<NewbornSex>(NewbornSex.FEMALE);
   const [birthWeightGrams, setBirthWeightGrams] = useState<string>('');

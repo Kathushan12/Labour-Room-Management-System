@@ -230,7 +230,9 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
         if (res.error?.code === 'BED_UNAVAILABLE') {
           // REQ-3.11: keep everything typed so far and offer the beds that are still free.
           const details = res.error.details as BedUnavailableDetails | undefined;
-          setFreeBeds((details?.availableBeds ?? []).map((b) => ({ id: b.id, label: b.bedNumber })));
+          setFreeBeds(
+            (details?.availableBeds ?? []).map((b) => ({ id: b.id, label: b.bedNumber })),
+          );
           setBedId('');
           setFieldErrors({ bedId: `${res.error.message}` });
           return;
@@ -574,9 +576,7 @@ export const RapidTriageDialog: React.FC<RapidTriageDialogProps> = ({
                 <div className="flex items-start space-x-2">
                   <Lock className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-slate-900">
-                      3. Identity details (optional)
-                    </p>
+                    <p className="font-semibold text-slate-900">3. Identity details (optional)</p>
                     <p className="text-[11px] text-slate-500">
                       Stored securely and shown only to the care team.
                     </p>

@@ -71,13 +71,17 @@ const HELP: Record<string, HelpTopic> = {
   },
   audit: {
     title: 'Audit log',
-    points: ['Every login, account change, emergency access, plan change, alert update and discharge is recorded and cannot be changed.'],
+    points: [
+      'Every login, account change, emergency access, plan change, alert update and discharge is recorded and cannot be changed.',
+    ],
   },
 };
 
 const FALLBACK: HelpTopic = {
   title: 'Help',
-  points: ['Use the menu to move between screens. Contact the ward administrator for account problems.'],
+  points: [
+    'Use the menu to move between screens. Contact the ward administrator for account problems.',
+  ],
 };
 
 export const HelpButton: React.FC = () => {

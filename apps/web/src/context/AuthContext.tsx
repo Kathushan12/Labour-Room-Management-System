@@ -75,9 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const outcome = await refreshSharedSession(null);
           if (outcome.status !== 'unavailable' || !mounted) return;
           if (Date.now() > deadline) {
-            setError(
-              'Cannot connect to the system. Check that this device is online.',
-            );
+            setError('Cannot connect to the system. Check that this device is online.');
             return;
           }
           await new Promise((resolve) => setTimeout(resolve, RESTORE_RETRY_DELAY_MS));

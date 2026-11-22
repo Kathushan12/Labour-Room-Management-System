@@ -10,7 +10,11 @@ interface FieldErrorProps {
 export const FieldError: React.FC<FieldErrorProps> = ({ id, message }) => {
   if (!message) return null;
   return (
-    <p id={id} role="alert" className="mt-1 flex items-start gap-1 text-xs font-medium text-red-700">
+    <p
+      id={id}
+      role="alert"
+      className="mt-1 flex items-start gap-1 text-xs font-medium text-red-700"
+    >
       <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       <span>{message}</span>
     </p>

@@ -205,9 +205,7 @@ export const PatientDetailPage: React.FC = () => {
           <div className="flex items-start space-x-3">
             <Lock className="w-5 h-5 text-teal-800 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-sm font-bold text-teal-950">
-                Patient identity details
-              </h3>
+              <h3 className="text-sm font-bold text-teal-950">Patient identity details</h3>
               <p className="text-xs text-teal-800 mt-0.5">
                 Name, NIC, and contact number are optional and shown only to the care team. Each
                 time they are viewed, the access is recorded in the audit log.
@@ -266,10 +264,7 @@ export const PatientDetailPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <SectionCard
-          title="Patient Identity"
-          description="Patient reference and identity details"
-        >
+        <SectionCard title="Patient Identity" description="Patient reference and identity details">
           <div className="space-y-3 text-xs">
             <div className="flex justify-between py-1.5 border-b border-slate-100">
               <span className="text-slate-500">Patient reference:</span>
