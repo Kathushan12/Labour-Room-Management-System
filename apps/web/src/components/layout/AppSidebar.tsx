@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { UserRole, Permission } from '@lrms/shared';
+import { UserRole, Permission, ROLE_PERMISSIONS } from '@lrms/shared';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
   HeartPulse,
@@ -28,6 +28,16 @@ interface AppSidebarProps {
   className?: string;
 }
 
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: string;
+  end?: boolean;
+  roles?: UserRole[];
+  permission?: Permission;
+}
+
 export const AppSidebar: React.FC<AppSidebarProps> = ({
   currentRole,
   isMobileOpen,
@@ -37,124 +47,59 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const { isAuthenticated, permissions } = useAuth();
 
-  const canViewStaff = isAuthenticated
-    ? permissions.includes(Permission.USERS_VIEW)
-    : currentRole === UserRole.ADMIN;
-  const canViewAnalytics = isAuthenticated ? permissions.includes(Permission.ANALYTICS_VIEW) : true;
-  const canViewReports = isAuthenticated
-    ? permissions.includes(Permission.ANALYTICS_EXPORT) ||
-      permissions.includes(Permission.REPORTS_VIEW_DEIDENTIFIED) ||
-      permissions.includes(Permission.REPORTS_VIEW_BED_UTILIZATION)
-    : currentRole === UserRole.ADMIN;
-  const canViewAudit = isAuthenticated
-    ? permissions.includes(Permission.REPORTS_VIEW_AUDIT_LOGS)
-    : currentRole === UserRole.ADMIN;
+  const effectivePermissions = isAuthenticated ? permissions : (ROLE_PERMISSIONS[currentRole] ?? []);
 
-  const getNavItems = (role: UserRole) => {
-    const baseItems = [
-      {
-        to: '/dashboard',
-        label: 'Dashboard',
-        icon: LayoutDashboard,
-      },
-      {
-        to: '/admissions',
-        label: 'Admissions & Triage',
-        icon: UserPlus,
-      },
-      {
-        to: '/beds',
-        label: 'Bed Board',
-        icon: BedDouble,
-      },
-      {
-        to: '/shifts',
-        label: 'Duty Roster & Shifts',
-        icon: Clock,
-      },
-      {
-        to: '/observations/maternal',
-        label: 'Maternal Vitals',
-        icon: Activity,
-      },
-      {
-        to: '/observations/fetal',
-        label: 'Fetal Vitals',
-        icon: Baby,
-      },
-      {
-        to: '/alerts',
-        label: 'Emergency Alerts',
-        icon: BellRing,
-        badge: 'Priority',
-      },
-      ...(canViewAnalytics
-        ? [
-            {
-              to: '/analytics',
-              label: 'Operational Analytics',
-              icon: FileBarChart2,
-            },
-          ]
-        : []),
-    ];
+  // Each item mirrors the guard on its route in AppRoutes so no menu entry leads to /unauthorized.
+  const allItems: NavItem[] = [
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+    { to: '/admissions', label: 'Admissions & Triage', icon: UserPlus },
+    { to: '/beds', label: 'Bed Board', icon: BedDouble },
+    { to: '/shifts', label: 'Duty Roster & Shifts', icon: Clock },
+    { to: '/observations/maternal', label: 'Maternal Vitals', icon: Activity },
+    { to: '/observations/fetal', label: 'Fetal Vitals', icon: Baby },
+    { to: '/alerts', label: 'Emergency Alerts', icon: BellRing, badge: 'Priority' },
+    {
+      to: '/analytics',
+      label: 'Operational Analytics',
+      icon: FileBarChart2,
+      end: true,
+      permission: Permission.ANALYTICS_VIEW,
+    },
+    {
+      to: '/staff',
+      label: 'Staff Accounts',
+      icon: Users,
+      roles: [UserRole.ADMIN],
+      permission: Permission.USERS_VIEW,
+    },
+    {
+      to: '/analytics/reports',
+      label: 'Reports & Analytics',
+      icon: FileBarChart2,
+      roles: [UserRole.ADMIN],
+      permission: Permission.ANALYTICS_EXPORT,
+    },
+    {
+      to: '/analytics/reports',
+      label: 'Clinical Summaries',
+      icon: FileBarChart2,
+      roles: [UserRole.DOCTOR],
+      permission: Permission.ANALYTICS_EXPORT,
+    },
+    {
+      to: '/audit',
+      label: 'Security Audit Logs',
+      icon: ShieldCheck,
+      roles: [UserRole.ADMIN],
+      permission: Permission.REPORTS_VIEW_AUDIT_LOGS,
+    },
+  ];
 
-    if (role === UserRole.ADMIN) {
-      return [
-        ...baseItems,
-        ...(canViewStaff
-          ? [
-              {
-                to: '/staff',
-                label: 'Staff Accounts',
-                icon: Users,
-              },
-            ]
-          : []),
-        ...(canViewReports
-          ? [
-              {
-                to: '/analytics/reports',
-                label: 'Reports & Analytics',
-                icon: FileBarChart2,
-              },
-            ]
-          : []),
-        ...(canViewAudit
-          ? [
-              {
-                to: '/audit',
-                label: 'Security Audit Logs',
-                icon: ShieldCheck,
-              },
-            ]
-          : []),
-      ];
-    }
-
-    if (role === UserRole.DOCTOR) {
-      return [
-        ...baseItems,
-        {
-          to: '/analytics/reports',
-          label: 'Clinical Summaries',
-          icon: FileBarChart2,
-        },
-      ];
-    }
-
-    // NURSE_STAFF
-    return [
-      ...baseItems,
-      {
-        to: '/analytics/reports',
-        label: 'Ward Activity Log',
-        icon: Clock,
-      },
-    ];
-  };
-
-  const navItems = getNavItems(currentRole);
+  const navItems = allItems.filter(
+    (item) =>
+      (!item.roles || item.roles.includes(currentRole)) &&
+      (!item.permission || effectivePermissions.includes(item.permission)),
+  );
 
   const sidebarContent = (
     <aside
@@ -212,8 +157,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           const Icon = item.icon;
           return (
             <NavLink
-              key={item.to}
+              key={item.label}
               to={item.to}
+              end={item.end}
               onClick={onMobileClose}
               className={({ isActive }) =>
                 `flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors group ${
