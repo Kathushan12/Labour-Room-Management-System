@@ -64,6 +64,15 @@ export class ClinicalEscalation {
   @Index('idx_clinical_escalations_assigned_to')
   assignedRecipientUserId!: string | null;
 
+  @Column({ name: 'dispatched_at', type: 'timestamptz', default: () => 'now()' })
+  dispatchedAt!: Date;
+
+  @Column({ name: 'delivered_at', type: 'timestamptz', nullable: true })
+  deliveredAt!: Date | null;
+
+  @Column({ name: 'timed_out_at', type: 'timestamptz', nullable: true })
+  timedOutAt!: Date | null;
+
   @Column({ name: 'acknowledged_at', type: 'timestamptz', nullable: true })
   acknowledgedAt!: Date | null;
 
