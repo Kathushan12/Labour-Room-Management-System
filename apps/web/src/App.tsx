@@ -5,6 +5,7 @@ import { RolePreviewProvider } from './hooks/useRolePreview.js';
 import { NotificationProvider } from './features/notifications/NotificationContext.js';
 import { EmergencyAlertBanner } from './features/notifications/EmergencyAlertBanner.js';
 import { ClinicalEscalationToast } from './features/notifications/ClinicalEscalationToast.js';
+import { DoctorAlertOverlay } from './features/alerts/DoctorAlertOverlay.js';
 import { AppRoutes } from './app/AppRoutes.js';
 
 export const App: React.FC = () => {
@@ -15,6 +16,7 @@ export const App: React.FC = () => {
           <BrowserRouter>
             <EmergencyAlertBanner />
             <ClinicalEscalationToast />
+            <DoctorAlertOverlay />
             <AppRoutes />
           </BrowserRouter>
         </NotificationProvider>
