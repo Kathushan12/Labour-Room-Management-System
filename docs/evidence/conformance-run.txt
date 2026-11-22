@@ -1,0 +1,80 @@
+PASS  REQ-2.6  board counts  -- total=7 functioning=5 occupied=3 available=2
+PASS  REQ-2.2  display statuses within SRS set  -- OCCUPIED,AVAILABLE,OUT_OF_SERVICE
+PASS  REQ-3.9  risk flags on ward board  -- BED-01: Hypertension
+PASS  REQ-3.12  no PII on ward board  -- patientDisplayName=LR-2611-0001
+PASS  REQ-1.11  no self-registration route  -- POST /auth/register -> 404
+PASS  REQ-1.3/1.6  temp password >= 15 chars, shown once on create  -- status 201, temp length 16
+PASS  REQ-1.6  temp password not returned again  -- GET /users/:id has no password
+PASS  REQ-1.3  14-char password rejected  -- status 400
+PASS  REQ-1.3  17-char password accepted  -- status 200
+PASS  REQ-1.9  deactivation cuts socket and API < 5 s  -- status 200, socket closed after 49 ms, /auth/me -> 401
+PASS  REQ-1.6  reactivate  -- status 200
+PASS  REQ-3.2  gestation, bed and doctor required  -- 400 fieldErrors: gestationWeeks,bedId,attendingDoctorId
+PASS  REQ-3.4  risk flags or NONE required  -- 400 RISK_ASSESSMENT_REQUIRED
+PASS  REQ-3.3  old pathway name rejected  -- 400
+PASS  REQ-3.4  non-SRS risk flag OTHER rejected  -- 400 INVALID_RISK_FLAG
+PASS  REQ-3.8  gestation 19 rejected  -- 400 Validation failed for rapid triage submission
+PASS  REQ-3.8  gestation 45 rejected  -- 400 Validation failed for rapid triage submission
+PASS  REQ-1.10  admin cannot admit  -- 403
+PASS  REQ-3.10/PER-7  two concurrent admits to one bed: exactly one succeeds  -- statuses 201/409, loser BED_UNAVAILABLE
+PASS  REQ-3.11  loser gets list of free beds  -- availableBeds=["BED-05"]
+PASS  REQ-3.1  ref format LR-YYMM-NNNN  -- LR-2611-0004
+PASS  REQ-3.5  admission without name/NIC/phone  -- hasPii=false
+PASS  REQ-3.10  bed OCCUPIED in same transaction  -- OCCUPIED
+PASS  REQ-4.1  attending doctor + admitting nurse assigned  -- staff responsibility has both
+PASS  REQ-3.5  PII can be added later  -- PATCH pii -> 200
+PASS  REQ-1.10  admin cannot view PII / change clinical records  -- 403/403/403
+PASS  REQ-1.7  unassigned nurse cannot record  -- 403 PATIENT_ACCESS_DENIED
+PASS  SEC-4  unassigned nurse cannot add herself to care team  -- 403
+PASS  REQ-1.8  unassigned doctor denied by default  -- 403
+PASS  REQ-1.8  nurse cannot use emergency access  -- 403
+PASS  REQ-1.8  doctor emergency access with reason  -- override 201, then GET 200
+PASS  REQ-4.1  cannot remove the only attending doctor  -- 409 ATTENDING_DOCTOR_REQUIRED
+PASS  REQ-4.2  reassign attending doctor  -- 200 
+PASS  REQ-4.4  doctor "My patients" scoped list  -- 3 admissions visible
+PASS  REQ-5.2  empty observation rejected  -- 400 Record at least one observation value
+PASS  REQ-5.3  FHR 221 rejected  -- 400
+PASS  REQ-5.3  FHR 300 rejected  -- 400
+PASS  REQ-5.3  systolic 261 rejected  -- 400
+PASS  REQ-5.1  amniotic fluid limited to INTACT/CLEAR/MECONIUM/BLOOD  -- 400
+PASS  REQ-5.1  all SRS fields accepted (glucose mg/dL)  -- 201/201
+PASS  REQ-5.4  highlights FHR>=160, SBP>=140, DBP>=90, pulse>=120  -- FHR_HIGH | SYSTOLIC_HIGH,DIASTOLIC_HIGH,PULSE_HIGH
+PASS  REQ-5.5/SAF-1  abnormal observation does not auto-escalate  -- escalations 0 -> 0
+PASS  REQ-5.6  correction is a linked new entry  -- 200 
+PASS  REQ-5.7  latest first  -- 2 fetal rows newest first
+PASS  REQ-5.8  observation due flag present  -- fhrObservationDue=false, last=2026-11-22T12:10:10.435Z
+PASS  REQ-5.4  FHR < 110 highlighted  -- FHR 104 -> FHR_LOW
+PASS  REQ-6.3  reason must be one of 4 values  -- 400
+PASS  REQ-6.2/6.4  one call: plan EMERGENCY_CESAREAN + reason + user + time + alert  -- 201, plan=EMERGENCY_CESAREAN, recipient=attending, alertState=DISPATCHED
+PASS  REQ-6.5  no re-escalation; current alert status returned  -- 409 ALREADY_ESCALATED alertState=DISPATCHED
+PASS  UR-6 extra  escalation must belong to admission in URL  -- 404 NOT_FOUND
+PASS  REQ-6.6  nurse cannot reverse  -- 403 ROLE_NOT_AUTHORIZED
+PASS  REQ-6.6  reversal needs reason  -- 400
+PASS  REQ-6.6  doctor reverses with reason  -- 200, plan=NORMAL_DELIVERY
+PASS  REQ-7.5  attending doctor acknowledges  -- 200 ACKNOWLEDGED
+PASS  REQ-7.10  no edit/delete route for alerts  -- 404/404/404
+PASS  REQ-8.1  old delivery mode rejected  -- 400
+PASS  REQ-8.1  delivery mode + time -> DELIVERED  -- 201, plan=DELIVERED
+PASS  REQ-8.2  destination outside SRS list rejected  -- 400
+PASS  REQ-8.3  nurse discharge closes admission and bed -> CLEANING  -- 200, status=DISCHARGED, plan=DISCHARGED, bed=CLEANING
+PASS  REQ-8.4  closed admission read-only, doctor correction allowed  -- nurse obs 409, doctor amend 200
+PASS  REQ-2.7  bed:updated reaches ward board <= 2 s  -- cleaning start 200, event after 22 ms
+PASS  REQ-2.5  nurse CLEANING -> AVAILABLE  -- 200 AVAILABLE
+PASS  REQ-2.4  occupied bed cannot go OUT_OF_SERVICE  -- 409 BED_OCCUPIED_CONFLICT
+PASS  REQ-2.3  admin sets and restores OUT_OF_SERVICE  -- 200/200
+PASS  REQ-2.3  nurse cannot set OUT_OF_SERVICE  -- 403
+PASS  REQ-2.1  duplicate bed code rejected  -- 409 DUPLICATE_BED_NUMBER
+PASS  REQ-2.4  no bed removal route  -- 404
+PASS  REQ-9.3  alert count, avg to delivered/ack, timed-out, per-alert times  -- total=1 delivered=1 ack=1 timedOut=0 avgDel=0.2 avgAck=0.2
+PASS  REQ-9.1  admissions by pathway + daily trend  -- [{"category":"NORMAL_DELIVERY","count":3,"percentage":75},{"category":"PLANNED_CESAREAN","count":1,"percentage":25}]
+PASS  REQ-9.2  occupancy, ALOS, avg cleaning time  -- occ=60% alos=0 cleaning={"totalCleaningCyclesCompleted":1,"averageCleaningTurnaroundMins":0,"medianCleaningTurnaroundMins":0,"minCleaningTurnaroundMins":0,"maxCleaningTurnaroundMins":0}
+PASS  REQ-9.5  CSV and print-to-PDF export  -- csv 200, pdf 200
+PASS  REQ-9.4  no names/NIC/phone in reports  -- regex over exports
+PASS  REQ-9.5/9.6  export + audit admin-only  -- doctor export 403, doctor audit 403, admin audit 200
+PASS  REQ-9.6  nurse denied audit log  -- 403
+PASS  REQ-9.5  every report type exports CSV + PDF  -- 26 exports OK
+PASS  REQ-2.6  admin overview KPIs load  -- 200
+PASS  REQ-9.6  audit covers login, account, emergency access, plan change, alert, discharge  -- USER_ACCESS_DENIED,MATERNAL_DISCHARGE_AUTHORIZED,CARE_PLAN_STATE_CHANGED,CLINICAL_ESCALATION_ACKNOWLEDGED,EMERGENCY_ESCALATION_REVERSED,CLINICAL_ESCALATION_CREATED,LOGIN_SUCCESS,EMERGENCY_OVERRIDE_GRANTED,USER_ACTIVATED,USER_DEACTIVATED,USER_PASSWORD_CHANGED,USER_CREATED
+PASS  SEC-5/SEC-8  invalid input -> 400, no stack  -- 400 INVALID_UUID
+
+78/78 passed
