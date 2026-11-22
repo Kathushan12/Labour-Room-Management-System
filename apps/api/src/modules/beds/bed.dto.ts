@@ -9,7 +9,6 @@ import {
 import { Bed } from '../../database/entities/Bed.js';
 import { BedCleaningRecord } from '../../database/entities/BedCleaningRecord.js';
 import { BedAllocationHistory } from '../../database/entities/BedAllocationHistory.js';
-import { decryptPatientPii } from '../patients/patient.dto.js';
 
 export function toBedCleaningRecordDto(record: BedCleaningRecord): BedCleaningRecordDto {
   return {
@@ -33,7 +32,6 @@ export function toBedDto(
   bed: Bed,
   activeAllocation: BedAllocationHistory | null = null,
   lastCleaning: BedCleaningRecord | null = null,
-  canViewPii = false,
 ): BedDto {
   // Compute display status priority: OUT_OF_SERVICE > OCCUPIED > CLEANING > AVAILABLE
   let displayStatus: BedDisplayStatus;
@@ -52,19 +50,6 @@ export function toBedDto(
 
   let activeAllocationDto = null;
   if (activeAllocation) {
-    let displayName = 'Patient';
-    const patientPii = activeAllocation.admission?.patient?.pii;
-    if (patientPii && canViewPii) {
-      try {
-        const decrypted = decryptPatientPii(patientPii);
-        if (decrypted.fullName) {
-          displayName = decrypted.fullName;
-        }
-      } catch {
-        // Fallback to Patient
-      }
-    }
-
     const activeFlags = (activeAllocation.admission?.riskFlags || [])
       .filter((f) => f.isActive && f.definition)
       .map((f) => f.definition.label);
@@ -74,7 +59,7 @@ export function toBedDto(
       admissionId: activeAllocation.admissionId,
       admissionReferenceId: activeAllocation.admission.admissionReferenceId,
       patientId: activeAllocation.admission.patientId,
-      patientDisplayName: displayName,
+      patientDisplayName: activeAllocation.admission.admissionReferenceId,
       admissionCategory: activeAllocation.admission.admissionCategory,
       currentCarePlan: activeAllocation.admission.currentCarePlan,
       admittedAt: activeAllocation.admission.admittedAt.toISOString(),

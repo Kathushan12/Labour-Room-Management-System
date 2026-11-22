@@ -1,3 +1,4 @@
+import { In, IsNull } from 'typeorm';
 import { AppDataSource } from '../../config/database.js';
 import { PatientStaffAssignment } from '../../database/entities/PatientStaffAssignment.js';
 import { Admission } from '../../database/entities/Admission.js';
@@ -21,6 +22,21 @@ import {
   AdmissionStaffResponsibilityDto,
   UnassignedAdmissionSummaryDto,
 } from '@lrms/shared';
+import { assertCanAccessAdmission } from '../admissions/patient-authorization.service.js';
+
+// Admins manage rosters; nurses and doctors may only change the team of their own patients
+// (REQ-1.7, SEC-4).
+async function assertCanChangeCareTeam(
+  actor: RequestUser,
+  admissionId: string,
+  ipAddress: string | null,
+  requestId: string | null,
+): Promise<void> {
+  if (actor.role === UserRole.ADMIN) return;
+  await assertCanAccessAdmission(actor, admissionId, ipAddress, requestId, 'CARE_TEAM_CHANGE');
+}
+
+const NURSE_ROLES = [StaffAssignmentRole.PRIMARY_NURSE, StaffAssignmentRole.SUPPORTING_NURSE];
 
 export class PatientAssignmentService {
   public async getAdmissionStaffResponsibility(
@@ -57,6 +73,7 @@ export class PatientAssignmentService {
     ipAddress: string | null,
     requestId: string | null,
   ): Promise<PatientStaffAssignmentDto> {
+    await assertCanChangeCareTeam(actor, admissionId, ipAddress, requestId);
     return await AppDataSource.transaction(async (tm) => {
       // 1. Lock admission
       const admission = await tm.findOne(Admission, {
@@ -129,6 +146,7 @@ export class PatientAssignmentService {
           where: {
             admissionId: admission.id,
             assignmentRole: StaffAssignmentRole.ATTENDING_DOCTOR,
+            unassignedAt: IsNull(),
           },
         });
         if (existingPrimary && !existingPrimary.unassignedAt) {
@@ -144,6 +162,7 @@ export class PatientAssignmentService {
           where: {
             admissionId: admission.id,
             assignmentRole: StaffAssignmentRole.PRIMARY_NURSE,
+            unassignedAt: IsNull(),
           },
         });
         if (existingPrimary && !existingPrimary.unassignedAt) {
@@ -160,6 +179,7 @@ export class PatientAssignmentService {
           admissionId: admission.id,
           staffId: staff.id,
           assignmentRole: input.assignmentRole,
+          unassignedAt: IsNull(),
         },
       });
       if (existingUserAssignment && !existingUserAssignment.unassignedAt) {
@@ -212,6 +232,7 @@ export class PatientAssignmentService {
     ipAddress: string | null,
     requestId: string | null,
   ): Promise<PatientStaffAssignmentDto> {
+    await assertCanChangeCareTeam(actor, admissionId, ipAddress, requestId);
     return await AppDataSource.transaction(async (tm) => {
       // 1. Lock admission
       const admission = await tm.findOne(Admission, {
@@ -283,6 +304,7 @@ export class PatientAssignmentService {
         where: {
           admissionId: admission.id,
           assignmentRole: input.assignmentRole,
+          unassignedAt: IsNull(),
         },
       });
 
@@ -350,6 +372,7 @@ export class PatientAssignmentService {
     ipAddress: string | null,
     requestId: string | null,
   ): Promise<PatientStaffAssignmentDto> {
+    await assertCanChangeCareTeam(actor, admissionId, ipAddress, requestId);
     return await AppDataSource.transaction(async (tm) => {
       const assignment = await tm.findOne(PatientStaffAssignment, {
         where: { id: assignmentId, admissionId },
@@ -360,6 +383,35 @@ export class PatientAssignmentService {
       }
       if (assignment.unassignedAt) {
         throw new BadRequestError('Assignment is already ended', 'ASSIGNMENT_ALREADY_ENDED');
+      }
+
+      // REQ-4.1: an active admission always keeps an attending doctor and at least one nurse.
+      const admission = await tm.findOne(Admission, {
+        where: { id: admissionId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (admission?.status === AdmissionStatus.ADMITTED) {
+        if (assignment.assignmentRole === StaffAssignmentRole.ATTENDING_DOCTOR) {
+          throw new ConflictError(
+            'The attending doctor cannot be removed. Use reassign to hand over to another doctor.',
+            'ATTENDING_DOCTOR_REQUIRED',
+          );
+        }
+        if (NURSE_ROLES.includes(assignment.assignmentRole)) {
+          const otherNurses = await tm.count(PatientStaffAssignment, {
+            where: {
+              admissionId,
+              assignmentRole: In(NURSE_ROLES),
+              unassignedAt: IsNull(),
+            },
+          });
+          if (otherNurses <= 1) {
+            throw new ConflictError(
+              'At least one nurse must stay assigned. Assign another nurse first.',
+              'NURSE_REQUIRED',
+            );
+          }
+        }
       }
 
       const now = new Date();

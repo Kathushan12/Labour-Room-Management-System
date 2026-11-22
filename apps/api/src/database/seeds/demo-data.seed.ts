@@ -2,6 +2,7 @@ import { ILike, IsNull } from 'typeorm';
 import {
   AdmissionCategory,
   AdmissionStatus,
+  AmnioticFluid,
   BedFunctioningStatus,
   ContractionIntensity,
   FetalPosition,
@@ -134,6 +135,7 @@ interface AdmissionSpec {
   nic: string;
   contactPhone: string;
   category: AdmissionCategory;
+  gestationWeeks: number;
   riskFlags: RiskFlagKey[];
   riskNotes?: Partial<Record<RiskFlagKey, string>>;
   nurse: string;
@@ -148,6 +150,7 @@ const ADMISSIONS: AdmissionSpec[] = [
     nic: '199285601234',
     contactPhone: '+94 77 555 0101',
     category: AdmissionCategory.NORMAL_DELIVERY,
+    gestationWeeks: 39,
     riskFlags: [RiskFlagKey.HYPERTENSION],
     riskNotes: { [RiskFlagKey.HYPERTENSION]: 'BP trending up since 34 weeks' },
     nurse: 'nurse1',
@@ -157,7 +160,7 @@ const ADMISSIONS: AdmissionSpec[] = [
       {
         minutesAgo: 95,
         maternal: { systolicBp: 148, diastolicBp: 96, pulseRateBpm: 94, temperatureCelsius: 37.0 },
-        fetal: { fetalHeartRateBpm: 150, variability: 'Moderate', liquorStatus: 'Clear' },
+        fetal: { fetalHeartRateBpm: 150, variability: 'Moderate', liquorStatus: AmnioticFluid.CLEAR },
       },
       {
         minutesAgo: 50,
@@ -167,7 +170,7 @@ const ADMISSIONS: AdmissionSpec[] = [
           pulseRateBpm: 101,
           temperatureCelsius: 37.2,
         },
-        fetal: { fetalHeartRateBpm: 163, variability: 'Moderate', liquorStatus: 'Clear' },
+        fetal: { fetalHeartRateBpm: 163, variability: 'Moderate', liquorStatus: AmnioticFluid.CLEAR },
         contraction: {
           contractionsCount: 4,
           observationWindowMinutes: 10,
@@ -188,7 +191,7 @@ const ADMISSIONS: AdmissionSpec[] = [
           fetalHeartRateBpm: 172,
           variability: 'Reduced',
           decelerations: 'Variable',
-          liquorStatus: 'Clear',
+          liquorStatus: AmnioticFluid.CLEAR,
           clinicalNotes: 'FHR sustained above 160 bpm, doctor review requested',
         },
         labour: {
@@ -205,8 +208,9 @@ const ADMISSIONS: AdmissionSpec[] = [
     fullName: 'Sanduni Weerasinghe',
     nic: '199547802345',
     contactPhone: '+94 71 555 0102',
-    category: AdmissionCategory.SCHEDULED_CESAREAN,
-    riskFlags: [RiskFlagKey.GESTATIONAL_DIABETES, RiskFlagKey.PREVIOUS_CESAREAN],
+    category: AdmissionCategory.PLANNED_CESAREAN,
+    gestationWeeks: 38,
+    riskFlags: [RiskFlagKey.GESTATIONAL_DIABETES, RiskFlagKey.PRIOR_CESAREAN],
     nurse: 'nurse2',
     doctor: 'doctor2',
     bedNumber: 'BED-02',
@@ -240,6 +244,7 @@ const ADMISSIONS: AdmissionSpec[] = [
     nic: '200065403456',
     contactPhone: '+94 76 555 0103',
     category: AdmissionCategory.NORMAL_DELIVERY,
+    gestationWeeks: 40,
     riskFlags: [],
     nurse: 'nurse3',
     doctor: 'doctor1',
@@ -248,7 +253,7 @@ const ADMISSIONS: AdmissionSpec[] = [
       {
         minutesAgo: 70,
         maternal: { systolicBp: 112, diastolicBp: 70, pulseRateBpm: 78, temperatureCelsius: 36.8 },
-        fetal: { fetalHeartRateBpm: 138, variability: 'Moderate', liquorStatus: 'Clear' },
+        fetal: { fetalHeartRateBpm: 138, variability: 'Moderate', liquorStatus: AmnioticFluid.CLEAR },
         contraction: {
           contractionsCount: 2,
           observationWindowMinutes: 10,
@@ -259,7 +264,7 @@ const ADMISSIONS: AdmissionSpec[] = [
       {
         minutesAgo: 25,
         maternal: { systolicBp: 114, diastolicBp: 72, pulseRateBpm: 80, temperatureCelsius: 36.9 },
-        fetal: { fetalHeartRateBpm: 140, variability: 'Moderate', liquorStatus: 'Clear' },
+        fetal: { fetalHeartRateBpm: 140, variability: 'Moderate', liquorStatus: AmnioticFluid.CLEAR },
         labour: {
           cervicalDilationCm: 3,
           cervicalEffacementPercent: 50,
@@ -487,7 +492,6 @@ async function ensureAdmission(
   spec: AdmissionSpec,
   staff: Map<string, User>,
   beds: Map<string, Bed>,
-  adminReq: RequestUser,
 ): Promise<Admission> {
   const nurse = staff.get(spec.nurse);
   const doctor = staff.get(spec.doctor);
@@ -514,6 +518,9 @@ async function ensureAdmission(
       nurseReq,
       {
         admissionCategory: spec.category,
+        gestationWeeks: spec.gestationWeeks,
+        bedId: bed.id,
+        attendingDoctorId: doctor.id,
         riskFlagKeys: spec.riskFlags,
         noListedRiskFlagsConfirmed: spec.riskFlags.length === 0,
         riskFlagNotes: spec.riskNotes,
@@ -541,7 +548,7 @@ async function ensureAdmission(
     await patientAssignmentService.assignPatientStaff(
       admission.id,
       { staffId: doctor.id, assignmentRole: StaffAssignmentRole.ATTENDING_DOCTOR },
-      adminReq,
+      nurseReq,
       null,
       null,
     );
@@ -624,7 +631,7 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
 
   const admissionReferenceIds: string[] = [];
   for (const spec of ADMISSIONS) {
-    const admission = await ensureAdmission(spec, staff, beds, adminReq);
+    const admission = await ensureAdmission(spec, staff, beds);
     admissionReferenceIds.push(admission.admissionReferenceId);
   }
 

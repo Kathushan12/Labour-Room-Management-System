@@ -26,10 +26,18 @@ export const createTriageSchema = z
   .object({
     admissionCategory: z.nativeEnum(AdmissionCategory, {
       errorMap: () => ({
-        message:
-          'Admission category must be NORMAL_DELIVERY, SCHEDULED_CESAREAN, or OBSERVATION_20_PLUS_WEEKS',
+        message: 'Care pathway must be NORMAL_DELIVERY, PLANNED_CESAREAN or OBSERVATION_20PLUS',
       }),
     }),
+    gestationWeeks: z
+      .number({ required_error: 'Gestation (weeks) is required' })
+      .int('Gestation must be a whole number of weeks')
+      .min(20, 'Gestation must be between 20 and 44 weeks')
+      .max(44, 'Gestation must be between 20 and 44 weeks'),
+    bedId: z.string({ required_error: 'Select a bed' }).uuid('Select a bed'),
+    attendingDoctorId: z
+      .string({ required_error: 'Select the attending doctor' })
+      .uuid('Select the attending doctor'),
     riskFlagKeys: z.array(z.nativeEnum(RiskFlagKey)).optional().default([]),
     riskFlagNotes: z
       .record(z.nativeEnum(RiskFlagKey), z.string().trim().max(500).nullable())

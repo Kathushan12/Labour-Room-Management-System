@@ -131,6 +131,11 @@ export function emitToWard(wardId: string, event: SocketEvent, payload: unknown)
   return true;
 }
 
+// REQ-2.7: tells every open ward board to reload its beds. Carries no patient data.
+export function emitBedUpdated(wardId: string, bedId: string | null = null): boolean {
+  return emitToWard(wardId, SocketEvent.BED_UPDATED, { wardId, bedId, at: new Date().toISOString() });
+}
+
 /**
  * Forcibly disconnects all active socket connections belonging to a user
  * (e.g., when their session is revoked or account is deactivated).

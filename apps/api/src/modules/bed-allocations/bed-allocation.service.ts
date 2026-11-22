@@ -14,6 +14,8 @@ import { RequestUser } from '../../common/middleware/auth.middleware.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../../common/errors/auth.errors.js';
 import { toBedAllocationHistoryDto } from './bed-allocation.dto.js';
 import { IsNull } from 'typeorm';
+import { assertCanAccessAdmission } from '../admissions/patient-authorization.service.js';
+import { emitBedUpdated } from '../realtime/realtime.server.js';
 
 export async function allocateBed(
   admissionId: string,
@@ -24,6 +26,7 @@ export async function allocateBed(
   notes?: string,
 ): Promise<BedAllocationHistoryDto> {
   let createdAllocation: BedAllocationHistory;
+  await assertCanAccessAdmission(actor, admissionId, ipAddress, requestId, 'BED_ALLOCATE');
 
   try {
     createdAllocation = await AppDataSource.transaction(async (tm) => {
@@ -166,6 +169,7 @@ export async function allocateBed(
     throw err;
   }
 
+  emitBedUpdated(createdAllocation.bed.wardId, createdAllocation.bedId);
   return toBedAllocationHistoryDto(createdAllocation);
 }
 
@@ -178,6 +182,12 @@ export async function transferBed(
   reason?: string,
 ): Promise<BedAllocationHistoryDto> {
   let newAllocation: BedAllocationHistory;
+  const current = await AppDataSource.getRepository(BedAllocationHistory).findOne({
+    where: { id: currentAllocationId },
+  });
+  if (current) {
+    await assertCanAccessAdmission(actor, current.admissionId, ipAddress, requestId, 'BED_TRANSFER');
+  }
 
   try {
     newAllocation = await AppDataSource.transaction(async (tm) => {
@@ -336,6 +346,7 @@ export async function transferBed(
     throw err;
   }
 
+  emitBedUpdated(newAllocation.bed.wardId, null);
   return toBedAllocationHistoryDto(newAllocation);
 }
 
@@ -346,6 +357,13 @@ export async function releaseBed(
   requestId: string | null,
   reason?: string,
 ): Promise<BedAllocationHistoryDto> {
+  const current = await AppDataSource.getRepository(BedAllocationHistory).findOne({
+    where: { id: allocationId },
+  });
+  if (current) {
+    await assertCanAccessAdmission(actor, current.admissionId, ipAddress, requestId, 'BED_RELEASE');
+  }
+
   const released = await AppDataSource.transaction(async (tm) => {
     const allocation = await tm.findOne(BedAllocationHistory, {
       where: { id: allocationId, releasedAt: IsNull() },
@@ -375,6 +393,7 @@ export async function releaseBed(
       lockedBed.cleaningStatus = BedCleaningStatus.CLEANING_REQUIRED;
       lockedBed.updatedAt = now;
       await tm.save(lockedBed);
+      allocation.bed = lockedBed;
     }
 
     await tm.save(
@@ -398,6 +417,7 @@ export async function releaseBed(
     return allocation;
   });
 
+  if (released.bed) emitBedUpdated(released.bed.wardId, released.bedId);
   return toBedAllocationHistoryDto(released);
 }
 

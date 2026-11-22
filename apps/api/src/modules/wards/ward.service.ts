@@ -6,7 +6,6 @@ import {
   BedFunctioningStatus,
   BedOccupancyStatus,
   CreateWardRequest,
-  Permission,
   UpdateWardRequest,
   WardDto,
 } from '@lrms/shared';
@@ -27,7 +26,6 @@ import {
   findWardByCode,
   findWardById,
 } from './ward.repository.js';
-import { decryptPatientPii } from '../patients/patient.dto.js';
 import { escalationAlertService } from '../clinical-care/escalation-alert.service.js';
 
 export async function listWards(): Promise<WardDto[]> {
@@ -179,7 +177,7 @@ export async function updateWard(
 
 export async function getWardBedBoard(
   wardId: string,
-  actor: RequestUser,
+  _actor: RequestUser,
 ): Promise<BedBoardSummaryDto> {
   const ward = await findWardById(wardId);
   if (!ward) {
@@ -191,8 +189,6 @@ export async function getWardBedBoard(
     where: { wardId },
     order: { bedNumber: 'ASC' },
   });
-
-  const canViewPii = actor.permissions.includes(Permission.PATIENTS_VIEW_PII);
 
   const bedDtos: BedDto[] = [];
   let functioningCount = 0;
@@ -210,8 +206,6 @@ export async function getWardBedBoard(
       },
       relations: [
         'admission',
-        'admission.patient',
-        'admission.patient.pii',
         'admission.riskFlags',
         'admission.riskFlags.definition',
         'assignedByUser',
@@ -251,18 +245,6 @@ export async function getWardBedBoard(
     // Determine patient display name
     let activeAllocationDto = null;
     if (activeAllocation) {
-      let displayName = 'Patient';
-      const patientPii = activeAllocation.admission?.patient?.pii;
-      if (patientPii && canViewPii) {
-        try {
-          const decrypted = decryptPatientPii(patientPii);
-          if (decrypted.fullName) {
-            displayName = decrypted.fullName;
-          }
-        } catch {
-          // If decryption fails or not configured
-        }
-      }
 
       const activeFlags = (activeAllocation.admission?.riskFlags || [])
         .filter((f) => f.isActive && f.definition)
@@ -273,7 +255,7 @@ export async function getWardBedBoard(
         admissionId: activeAllocation.admissionId,
         admissionReferenceId: activeAllocation.admission.admissionReferenceId,
         patientId: activeAllocation.admission.patientId,
-        patientDisplayName: displayName,
+        patientDisplayName: activeAllocation.admission.admissionReferenceId,
         admissionCategory: activeAllocation.admission.admissionCategory,
         currentCarePlan: activeAllocation.admission.currentCarePlan,
         admittedAt: activeAllocation.admission.admittedAt.toISOString(),

@@ -1,6 +1,10 @@
-import { EntityManager, In } from 'typeorm';
+import { EntityManager, In, IsNull } from 'typeorm';
 import {
   AdmissionCategory,
+  BedCleaningStatus,
+  BedFunctioningStatus,
+  BedOccupancyStatus,
+  BedUnavailableDetails,
   AdmissionDto,
   AdmissionStatus,
   CarePlanState,
@@ -19,10 +23,13 @@ import {
   Admission,
   AdmissionRiskFlag,
   AuditLog,
+  Bed,
+  BedAllocationHistory,
   Patient,
   PatientPii,
   PatientStaffAssignment,
   RiskFlagDefinition,
+  User,
   Ward,
 } from '../../database/entities/index.js';
 import { blindIndexService } from '../../common/crypto/blind-index.service.js';
@@ -37,15 +44,16 @@ import {
   FindAdmissionsFilter,
 } from './admission.repository.js';
 import { assertCanAccessAdmission } from './patient-authorization.service.js';
+import { emitBedUpdated } from '../realtime/realtime.server.js';
 
 function mapCategoryToInitialCarePlan(category: AdmissionCategory): CarePlanState {
   switch (category) {
     case AdmissionCategory.NORMAL_DELIVERY:
       return CarePlanState.NORMAL_DELIVERY;
-    case AdmissionCategory.SCHEDULED_CESAREAN:
-      return CarePlanState.SCHEDULED_CESAREAN;
-    case AdmissionCategory.OBSERVATION_20_PLUS_WEEKS:
-      return CarePlanState.OBSERVATION_20_PLUS_WEEKS;
+    case AdmissionCategory.PLANNED_CESAREAN:
+      return CarePlanState.PLANNED_CESAREAN;
+    case AdmissionCategory.OBSERVATION_20PLUS:
+      return CarePlanState.OBSERVATION_20PLUS;
   }
 }
 
@@ -79,8 +87,8 @@ function assertRiskFlagSelectionRules(
 }
 
 /**
- * Generates concurrency-safe unique Admission Reference IDs using a dedicated PostgreSQL sequence
- * (`ADM-YYYYMM-XXXX`), preventing collisions or deleted-ID reuse across concurrent admissions.
+ * Generates the Admission Reference ID `LR-YYMM-NNNN` (REQ-3.1) from a PostgreSQL sequence, so
+ * concurrent admissions never collide and numbers are never reused.
  */
 async function generateAdmissionReferenceId(tm: EntityManager, now = new Date()): Promise<string> {
   const rows = (await tm.query(
@@ -92,11 +100,11 @@ async function generateAdmissionReferenceId(tm: EntityManager, now = new Date())
     throw new Error('Failed to obtain sequential admission reference number');
   }
 
-  const yyyy = now.getUTCFullYear();
+  const yy = String(now.getUTCFullYear() % 100).padStart(2, '0');
   const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
   const suffix = String(seqNum).padStart(4, '0');
 
-  return `ADM-${yyyy}${mm}-${suffix}`;
+  return `LR-${yy}${mm}-${suffix}`;
 }
 
 export async function listRiskFlagDefinitions(): Promise<RiskFlagDefinitionDto[]> {
@@ -146,7 +154,8 @@ export async function getAdmissionDetail(
  * Atomic Rapid Triage Workflow:
  * - Validates category & explicit risk-flag screening assessment.
  * - Handles optional AES-256-GCM PII & HMAC blind-index duplicate-NIC safeguards.
- * - Generates sequential ADM-YYYYMM-XXXX Reference ID inside ACID transaction.
+ * - Locks the chosen bed (SELECT ... FOR UPDATE) and marks it OCCUPIED in the same transaction.
+ * - Generates the LR-YYMM-NNNN Reference ID inside the transaction.
  * - Rolls back completely if any step or critical audit write fails.
  */
 export async function performRapidTriage(
@@ -229,15 +238,38 @@ export async function performRapidTriage(
   let result: { admission: AdmissionDto; patientId: string; linkedExistingPatient: boolean };
   try {
     result = await AppDataSource.transaction(async (tm) => {
-      const activeWard = await tm.findOne(Ward, {
-        where: { isActive: true },
-        order: { createdAt: 'ASC' },
+      // REQ-3.10: the bed row lock serialises concurrent admissions to the same bed.
+      const lockedBed = await tm.findOne(Bed, {
+        where: { id: input.bedId },
+        lock: { mode: 'pessimistic_write' },
       });
+      if (!lockedBed) {
+        throw new BadRequestError('Selected bed does not exist', 'BED_NOT_FOUND');
+      }
+      const bedTaken =
+        lockedBed.functioningStatus !== BedFunctioningStatus.FUNCTIONING ||
+        lockedBed.occupancyStatus !== BedOccupancyStatus.AVAILABLE ||
+        lockedBed.cleaningStatus !== BedCleaningStatus.CLEAN ||
+        (await tm.count(BedAllocationHistory, {
+          where: { bedId: lockedBed.id, releasedAt: IsNull() },
+        })) > 0;
+      if (bedTaken) {
+        throw await bedUnavailableError(tm, lockedBed);
+      }
 
+      const activeWard = await tm.findOne(Ward, { where: { id: lockedBed.wardId, isActive: true } });
       if (!activeWard) {
+        throw new BadRequestError('The selected bed belongs to an inactive ward', 'WARD_INACTIVE');
+      }
+
+      const doctor = await tm.findOne(User, {
+        where: { id: input.attendingDoctorId },
+        relations: ['role'],
+      });
+      if (!doctor || !doctor.isActive || doctor.role?.name !== UserRole.DOCTOR) {
         throw new BadRequestError(
-          'No active Labour Room ward is configured in the database',
-          'WARD_NOT_INITIALIZED',
+          'Attending doctor must be an active doctor account',
+          'INVALID_ATTENDING_DOCTOR',
         );
       }
 
@@ -311,12 +343,69 @@ export async function performRapidTriage(
         admissionCategory: input.admissionCategory,
         currentCarePlan: mapCategoryToInitialCarePlan(input.admissionCategory),
         status: AdmissionStatus.ADMITTED,
+        gestationWeeks: input.gestationWeeks,
         admittedAt: now,
         dischargedAt: null,
         noListedRiskFlagsConfirmed: Boolean(input.noListedRiskFlagsConfirmed),
         riskAssessmentCompletedAt: now,
       });
       await tm.save(admission);
+
+      const allocation = await tm.save(
+        tm.create(BedAllocationHistory, {
+          bedId: lockedBed.id,
+          admissionId: admission.id,
+          assignedByUserId: actor.id,
+          assignedAt: now,
+        }),
+      );
+      lockedBed.occupancyStatus = BedOccupancyStatus.OCCUPIED;
+      lockedBed.updatedAt = now;
+      await tm.save(lockedBed);
+      await tm.save(
+        tm.create(AuditLog, {
+          userId: actor.id,
+          action: 'BED_ALLOCATED',
+          entityName: 'BedAllocationHistory',
+          entityId: allocation.id,
+          ipAddress,
+          details: {
+            requestId,
+            bedId: lockedBed.id,
+            bedNumber: lockedBed.bedNumber,
+            admissionId: admission.id,
+            admissionReferenceId,
+            context: 'ADMISSION',
+          },
+        }),
+      );
+
+      const doctorAssignment = await tm.save(
+        tm.create(PatientStaffAssignment, {
+          admissionId: admission.id,
+          staffId: doctor.id,
+          assignmentRole: StaffAssignmentRole.ATTENDING_DOCTOR,
+          assignedByUserId: actor.id,
+          assignedAt: now,
+        }),
+      );
+      await tm.save(
+        tm.create(AuditLog, {
+          userId: actor.id,
+          action: 'PATIENT_STAFF_ASSIGNED',
+          entityName: 'PatientStaffAssignment',
+          entityId: doctorAssignment.id,
+          ipAddress,
+          details: {
+            requestId,
+            admissionId: admission.id,
+            admissionReferenceId,
+            staffId: doctor.id,
+            assignmentRole: StaffAssignmentRole.ATTENDING_DOCTOR,
+            context: 'INITIAL_TRIAGE_ASSIGNMENT',
+          },
+        }),
+      );
 
       for (const def of definitions) {
         const flag = tm.create(AdmissionRiskFlag, {
@@ -451,6 +540,12 @@ export async function performRapidTriage(
     });
   } catch (err: unknown) {
     const pgErr = err as { code?: string; constraint?: string; detail?: string; message?: string };
+    if (pgErr?.code === '23505' && pgErr?.constraint === 'idx_one_active_allocation_per_bed') {
+      const bed = await AppDataSource.getRepository(Bed).findOneOrFail({
+        where: { id: input.bedId },
+      });
+      throw await bedUnavailableError(AppDataSource.manager, bed);
+    }
     if (
       pgErr?.code === '23505' &&
       (pgErr?.constraint === 'uq_patient_pii_nic_blind_index' ||
@@ -465,7 +560,32 @@ export async function performRapidTriage(
     throw err;
   }
 
+  emitBedUpdated(result.admission.wardId, input.bedId);
   return result;
+}
+
+// REQ-3.11: tell the client which beds are still free so it can keep the form and re-pick.
+async function bedUnavailableError(tm: EntityManager, bed: Bed): Promise<ConflictError> {
+  const free = await tm
+    .createQueryBuilder(Bed, 'b')
+    .where('b.wardId = :wardId', { wardId: bed.wardId })
+    .andWhere('b.functioningStatus = :f', { f: BedFunctioningStatus.FUNCTIONING })
+    .andWhere('b.occupancyStatus = :o', { o: BedOccupancyStatus.AVAILABLE })
+    .andWhere('b.cleaningStatus = :c', { c: BedCleaningStatus.CLEAN })
+    .andWhere(
+      'NOT EXISTS (SELECT 1 FROM bed_allocation_history h WHERE h.bed_id = b.id AND h.released_at IS NULL)',
+    )
+    .orderBy('b.bedNumber', 'ASC')
+    .getMany();
+  const details: BedUnavailableDetails = {
+    bedId: bed.id,
+    availableBeds: free.map((b) => ({ id: b.id, bedNumber: b.bedNumber })),
+  };
+  return new ConflictError(
+    `Bed ${bed.bedNumber} is no longer available. Choose another bed.`,
+    'BED_UNAVAILABLE',
+    details,
+  );
 }
 
 export async function updateAdmissionRiskFlags(
