@@ -4,6 +4,7 @@ import {
   AnalyticsDateRangePreset,
   OperationalOverviewDto,
   OperationalReportType,
+  Permission,
 } from '@lrms/shared';
 import { analyticsApi } from '../../../services/analytics.api.js';
 import { PageHeader, SectionCard } from '../../../components/shared/HeadersAndCards.js';
@@ -16,6 +17,7 @@ import { AnalyticsKpiCard } from '../components/AnalyticsKpiCard.js';
 import { AnalyticsBarChart } from '../components/AnalyticsBarChart.js';
 import { AnalyticsDonutChart } from '../components/AnalyticsDonutChart.js';
 import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/AnalyticsStates.js';
+import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import {
   Baby,
@@ -68,15 +70,17 @@ export const OperationalDashboardPage: React.FC = () => {
         ]}
         action={
           <div className="flex items-center space-x-2">
-            <Button
-              size="sm"
-              onClick={() => setIsExportOpen(true)}
-              className="text-xs bg-teal-700 hover:bg-teal-800 text-white shadow-xs"
-              data-testid="export-report-btn"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5" />
-              Generate Official Report
-            </Button>
+            <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+              <Button
+                size="sm"
+                onClick={() => setIsExportOpen(true)}
+                className="text-xs bg-teal-700 hover:bg-teal-800 text-white shadow-xs"
+                data-testid="export-report-btn"
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                Generate Official Report
+              </Button>
+            </PermissionGuard>
           </div>
         }
       />
@@ -142,13 +146,15 @@ export const OperationalDashboardPage: React.FC = () => {
               <BellRing className="w-3.5 h-3.5 text-rose-600" />
               <span>Clinical Alerts & SLA</span>
             </Link>
-            <Link
-              to="/analytics/reports"
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-teal-50 border border-teal-200 text-teal-800 font-medium hover:bg-teal-100 shrink-0"
-            >
-              <Download className="w-3.5 h-3.5 text-teal-700" />
-              <span>Reports Catalog (13)</span>
-            </Link>
+            <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+              <Link
+                to="/analytics/reports"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-teal-50 border border-teal-200 text-teal-800 font-medium hover:bg-teal-100 shrink-0"
+              >
+                <Download className="w-3.5 h-3.5 text-teal-700" />
+                <span>Reports Catalog (13)</span>
+              </Link>
+            </PermissionGuard>
           </div>
 
           {/* Primary Top-Level KPI Grid (8 Cards) */}
@@ -315,13 +321,15 @@ export const OperationalDashboardPage: React.FC = () => {
       )}
 
       {/* Export Report Dialog */}
-      <ReportExportDialog
-        isOpen={isExportOpen}
-        onClose={() => setIsExportOpen(false)}
-        defaultReportType={OperationalReportType.DAILY_OPERATIONAL_SUMMARY}
-        defaultPreset={filters.preset}
-        defaultWardId={filters.wardId}
-      />
+      <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+        <ReportExportDialog
+          isOpen={isExportOpen}
+          onClose={() => setIsExportOpen(false)}
+          defaultReportType={OperationalReportType.DAILY_OPERATIONAL_SUMMARY}
+          defaultPreset={filters.preset}
+          defaultWardId={filters.wardId}
+        />
+      </PermissionGuard>
     </div>
   );
 };

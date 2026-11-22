@@ -3,6 +3,7 @@ import {
   AnalyticsDateRangePreset,
   BedUtilizationAnalyticsDto,
   OperationalReportType,
+  Permission,
 } from '@lrms/shared';
 import { analyticsApi } from '../../../services/analytics.api.js';
 import { PageHeader, SectionCard } from '../../../components/shared/HeadersAndCards.js';
@@ -16,6 +17,7 @@ import { AnalyticsBarChart } from '../components/AnalyticsBarChart.js';
 import { AnalyticsDonutChart } from '../components/AnalyticsDonutChart.js';
 import { AnalyticsDataTable, ColumnDef } from '../components/AnalyticsDataTable.js';
 import { AnalyticsLoadingSkeleton, AnalyticsErrorAlert } from '../components/AnalyticsStates.js';
+import { PermissionGuard } from '../../../components/auth/PermissionGuard.js';
 import { ReportExportDialog } from '../components/ReportExportDialog.js';
 import { BedDouble, Sparkles, CheckCircle2, Clock, Download } from 'lucide-react';
 import { Badge } from '../../../components/ui/badge.js';
@@ -117,14 +119,16 @@ export const BedAnalyticsPage: React.FC = () => {
           { label: 'Bed Utilization', active: true },
         ]}
         action={
-          <Button
-            size="sm"
-            onClick={() => setIsExportOpen(true)}
-            className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export Bed Report
-          </Button>
+          <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+            <Button
+              size="sm"
+              onClick={() => setIsExportOpen(true)}
+              className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export Bed Report
+            </Button>
+          </PermissionGuard>
         }
       />
 
@@ -263,13 +267,15 @@ export const BedAnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      <ReportExportDialog
-        isOpen={isExportOpen}
-        onClose={() => setIsExportOpen(false)}
-        defaultReportType={OperationalReportType.BED_UTILIZATION}
-        defaultPreset={filters.preset}
-        defaultWardId={filters.wardId}
-      />
+      <PermissionGuard permission={Permission.ANALYTICS_EXPORT}>
+        <ReportExportDialog
+          isOpen={isExportOpen}
+          onClose={() => setIsExportOpen(false)}
+          defaultReportType={OperationalReportType.BED_UTILIZATION}
+          defaultPreset={filters.preset}
+          defaultWardId={filters.wardId}
+        />
+      </PermissionGuard>
     </div>
   );
 };
