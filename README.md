@@ -9,6 +9,8 @@
 
 ---
 
+> **Disclaimer:** This is an academic project developed for CO2307 Software Engineering. Its workflow is modelled on the maternity ward at Colombo South Teaching Hospital (Kalubowila) for learning purposes only. It is not an official hospital system and is not affiliated with or endorsed by the hospital or the Ministry of Health. All patient and staff data in this repository is fictional.
+
 ## 1. Project Introduction
 
 The Labour Room Management System (LRMS) is a centralized, secure, low-latency clinical progression and real-time emergency notification platform designed specifically for hospital labour rooms. Modeled directly on the maternity unit workflow at Colombo South Teaching Hospital (Kalubowila), LRMS replaces error-prone paper Bed Head Tickets (BHTs) and untracked manual telephone calls with a verifiable, auditable digital workflow.
