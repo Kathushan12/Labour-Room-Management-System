@@ -2,11 +2,14 @@
 
 **Course:** CO2307 - Software Engineering  
 **Group:** Group 07  
+**University:** Department of Computer Engineering, Faculty of Engineering, University of Sri Jayewardenepura
 **Academic Year:** 2026  
 **Clinical Grounding:** Maternity Ward, Colombo South Teaching Hospital (Kalubowila)  
 **Standard References:** SLCOG (2026), WHO (2015)
 
 ---
+
+> **Disclaimer:** This is an academic project developed for CO2307 Software Engineering. Its workflow is modelled on the maternity ward at Colombo South Teaching Hospital (Kalubowila) for learning purposes only. It is not an official hospital system and is not affiliated with or endorsed by the hospital or the Ministry of Health. All patient and staff data in this repository is fictional.
 
 ## 1. Project Introduction
 
