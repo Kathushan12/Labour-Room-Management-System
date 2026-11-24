@@ -2,6 +2,7 @@
 
 **Course:** CO2307 - Software Engineering  
 **Group:** Group 07  
+**University:** Department of Computer Engineering, Faculty of Engineering, University of Sri Jayewardenepura
 **Academic Year:** 2026  
 **Clinical Grounding:** Maternity Ward, Colombo South Teaching Hospital (Kalubowila)  
 **Standard References:** SLCOG (2026), WHO (2015)
