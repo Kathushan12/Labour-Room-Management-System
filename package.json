@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Labour Room Management System (LRMS) - University of Peradeniya CO2307 Group 07",
+  "description": "Labour Room Management System (LRMS) - University of Sri Jayewardenepura CO2307 Group 07",
   "packageManager": "pnpm@12.18.0",
   "engines": {
     "node": ">=20.0.0",
